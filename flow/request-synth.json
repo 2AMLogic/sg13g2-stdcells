@@ -1,0 +1,7 @@
+{
+  "engine": "yosys",
+  "sources": ["../rtl/add8.v"],
+  "hdl_toplevel": "add8",
+  "pdk": {"cell_library": "sg13g2_stdcell", "corner": "typ_1p20V_25C"},
+  "constraints": {"clock_port": "clk", "clock_period_ns": 10.0}
+}

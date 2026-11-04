@@ -1,0 +1,164 @@
+{
+  "schema_version": 2,
+  "engine": "yosys",
+  "engine_version": "0.67+post",
+  "hdl_toplevel": "add8",
+  "parameters": {},
+  "defines": {},
+  "run_id": "run-c4a5fb26182d4bf78c83ff4ca6304556",
+  "status": "ok",
+  "instance_count": 39,
+  "area_um2": 411.8688,
+  "sequential_area_um2": 0.0,
+  "instance_counts_by_type": {
+    "sg13g2_a21oi_1": 5,
+    "sg13g2_a221oi_1": 1,
+    "sg13g2_and2_1": 3,
+    "sg13g2_nand2_1": 3,
+    "sg13g2_nand2b_1": 3,
+    "sg13g2_nor2_1": 4,
+    "sg13g2_nor2b_1": 1,
+    "sg13g2_nor3_1": 1,
+    "sg13g2_o21ai_1": 3,
+    "sg13g2_or2_1": 3,
+    "sg13g2_xnor2_1": 8,
+    "sg13g2_xor2_1": 4
+  },
+  "macros": [],
+  "macro_instance_counts_by_type": {},
+  "macro_instance_count": 0,
+  "cells_without_area": [],
+  "leakage_power_nw": 5.351730900000001,
+  "leakage_by_type_nw": {
+    "sg13g2_a21oi_1": 0.11447700000000001,
+    "sg13g2_a221oi_1": 0.157856,
+    "sg13g2_and2_1": 0.13761,
+    "sg13g2_nand2_1": 0.0812456,
+    "sg13g2_nand2b_1": 0.128618,
+    "sg13g2_nor2_1": 0.08292350000000001,
+    "sg13g2_nor2b_1": 0.130258,
+    "sg13g2_nor3_1": 0.0950841,
+    "sg13g2_o21ai_1": 0.126648,
+    "sg13g2_or2_1": 0.114895,
+    "sg13g2_xnor2_1": 0.194767,
+    "sg13g2_xor2_1": 0.184817
+  },
+  "timing": {
+    "source": "abc_stime",
+    "wire_load": null,
+    "critical_path_ps": 1048.49,
+    "delay_target_ps": 10000,
+    "regions": [
+      {
+        "module": "add8",
+        "critical_path_ps": 1048.49
+      }
+    ]
+  },
+  "clock_targets": {
+    "clocks": [],
+    "delay_target_ps": 10000,
+    "delay_target_basis": "clock_period_ns",
+    "per_clock_enforced": false
+  },
+  "sta": null,
+  "sta_unavailable_reason": "the optional klt_statime_native extension is not installed (it is not shipped with the published klayout-tools package), so no gate-level static timing analysis was attempted -- from a repo checkout, run `uv sync --group statime` (or `maturin develop --release` inside native/statime/) and re-run to populate `sta`; from an installed package, `klt sta` with a `verilog` request gives a netlist-level timing estimate (needs OpenSTA)",
+  "structural": {
+    "latches": 0,
+    "expected_latches": 0,
+    "unexpected_latches": 0,
+    "comb_loops": 0,
+    "multi_driven": 0,
+    "has_critical": false
+  },
+  "cell_exclusions": {
+    "mode": "additive",
+    "requested": [],
+    "library_defaults": [
+      "sg13g2_lgcp_1",
+      "sg13g2_sighold",
+      "sg13g2_slgcp_1",
+      "sg13g2_sdfbbp_1",
+      "sg13g2_dfrbp_2"
+    ],
+    "effective": [
+      "sg13g2_lgcp_1",
+      "sg13g2_sighold",
+      "sg13g2_slgcp_1",
+      "sg13g2_sdfbbp_1",
+      "sg13g2_dfrbp_2"
+    ],
+    "validated": null,
+    "engine_supports_dont_use": true
+  },
+  "abc_constr": {
+    "source": "builtin",
+    "driving_cell": "sg13g2_buf_4",
+    "load_ff": 6.0
+  },
+  "warnings": {
+    "total": 0,
+    "by_category": {},
+    "representatives": []
+  },
+  "memory_mapping": {
+    "status": "none_detected",
+    "reason": null,
+    "modules": [],
+    "script_path": {
+      "path": "flow/.klt/synthesize/run-c4a5fb26182d4bf78c83ff4ca6304556/add8_memory_evidence.ys",
+      "scope": "repo"
+    }
+  },
+  "blackbox_modules": [],
+  "netlist_path": {
+    "path": "flow/.klt/synthesize/run-c4a5fb26182d4bf78c83ff4ca6304556/add8_synth.v",
+    "scope": "repo"
+  },
+  "netlist_sha256": "2514e12d0149fbe675094cf609f4eabb017ece87729706678b515544927e0cea",
+  "script_path": {
+    "path": "flow/.klt/synthesize/run-c4a5fb26182d4bf78c83ff4ca6304556/synth_add8.ys",
+    "scope": "repo"
+  },
+  "run_script_path": {
+    "path": "flow/.klt/synthesize/run-c4a5fb26182d4bf78c83ff4ca6304556/synth_add8.run.ys",
+    "scope": "repo"
+  },
+  "provenance": {
+    "klt_version": "0.8.1.dev1329+g106513697889",
+    "klt_git_commit": "1065136978893f675064a803f3d5e6e3529a0e73",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1065136978893f675064a803f3d5e6e3529a0e73",
+    "klayout_version": "0.30.12",
+    "pdk": {
+      "name": "ihp-sg13g2",
+      "source": "PDK_ROOT environment variable",
+      "version": "fetched:0.3.0"
+    },
+    "deck": {
+      "name": "sg13g2_stdcell__typ_1p20V_25C",
+      "content_hash": "sha256:7677a8918689f452e80405ad16a83e744709342574f2aedcc507c2758986b396",
+      "released": false
+    },
+    "input": {
+      "content_hash": "sha256:634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139",
+      "role": "source"
+    },
+    "parameters": {},
+    "defines": {}
+  },
+  "equivalence": {
+    "status": "equivalent",
+    "engine": "yosys",
+    "engine_version": "0.67+post",
+    "timeout_s": 60.0,
+    "elapsed_s": 0.041,
+    "artifacts": {
+      "script_path": "/home/ubuntu/GitHub/sg13g2-stdcells/.loom/worktrees/issue-9/flow/.klt/synthesize/run-c4a5fb26182d4bf78c83ff4ca6304556/.klt/equiv/equiv.ys",
+      "netlist_path": "/home/ubuntu/GitHub/sg13g2-stdcells/.loom/worktrees/issue-9/flow/.klt/synthesize/run-c4a5fb26182d4bf78c83ff4ca6304556/.klt/equiv/equiv_netlist.v",
+      "log_path": "/home/ubuntu/GitHub/sg13g2-stdcells/.loom/worktrees/issue-9/flow/.klt/synthesize/run-c4a5fb26182d4bf78c83ff4ca6304556/.klt/equiv/equiv.log"
+    }
+  },
+  "restructuring": null,
+  "arithmetic": null,
+  "baseline": null
+}

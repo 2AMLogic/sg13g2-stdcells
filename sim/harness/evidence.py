@@ -104,22 +104,111 @@ class BaseExtensions:
         return lines
 
 
-#: Manifest (``tb.json``) key -> :class:`BaseExtensions` attribute.
+SENSES: tuple[str, ...] = ("positive_unate", "negative_unate", "non_unate")
+
+
+@dataclass
+class CharacterizationExtensions(BaseExtensions):
+    """Cell-characterization evidence: one timing/energy arc at one corner.
+
+    Replaces the open ``extra`` bag for this library. On a ``characterization``
+    record every field below except ``arc_when`` (empty = unconditional arc)
+    is required; on any other record kind they must be left unset.
+    ``data_provenance`` (inherited) says how the numbers were obtained;
+    ``netlist_provenance`` says which netlist they were measured on.
+    """
+
+    cell: str = ""
+    arc_related_pin: str = ""
+    arc_when: str = ""
+    arc_sense: str = ""
+    input_slew_ns: float | None = None
+    output_load_pf: float | None = None
+    delay_ns: float | None = None
+    transition_ns: float | None = None
+    energy_pj: float | None = None
+    corner: str = ""
+    netlist_provenance: str = ""
+
+    _REQUIRED_TEXT = ("cell", "arc_related_pin", "arc_sense", "corner", "netlist_provenance")
+    _REQUIRED_NUM = ("input_slew_ns", "output_load_pf", "delay_ns", "transition_ns", "energy_pj")
+
+    def validate(self) -> None:
+        problems: list[str] = []
+        try:
+            super().validate()
+        except EvidenceFormatError as exc:
+            problems.append(str(exc).split("\n  - ", 1)[-1])
+        fields = (*self._REQUIRED_TEXT, *self._REQUIRED_NUM, "arc_when")
+        if self.is_characterization:
+            from .corners import CHAR_CORNER_PVT
+
+            problems += [f"{n} is required" for n in self._REQUIRED_TEXT if not getattr(self, n)]
+            problems += [f"{n} is required" for n in self._REQUIRED_NUM if getattr(self, n) is None]
+            if self.arc_sense and self.arc_sense not in SENSES:
+                problems.append(f"arc_sense {self.arc_sense!r} is not one of {', '.join(SENSES)}")
+            if self.corner and self.corner not in CHAR_CORNER_PVT:
+                problems.append(
+                    f"corner {self.corner!r} is not a characterization corner "
+                    f"({', '.join(CHAR_CORNER_PVT)})"
+                )
+            for n in ("input_slew_ns", "output_load_pf", "delay_ns", "transition_ns"):
+                v = getattr(self, n)
+                if isinstance(v, (int, float)) and not isinstance(v, bool) and v < 0:
+                    problems.append(f"{n} must not be negative")
+            for n in self._REQUIRED_NUM:
+                v = getattr(self, n)
+                if v is not None and (isinstance(v, bool) or not isinstance(v, (int, float))):
+                    problems.append(f"{n} must be a number, got {v!r}")
+        else:
+            problems += [
+                f"{n} is only valid on a characterization record"
+                for n in fields
+                if getattr(self, n) not in ("", None)
+            ]
+        if problems:
+            raise EvidenceFormatError(
+                "record would not conform to the evidence schema:\n  - " + "\n  - ".join(problems)
+            )
+
+    def render_lines(self) -> list[str]:
+        lines = super().render_lines()
+        if not self.is_characterization:
+            return lines
+        arc = f"{self.arc_related_pin} ({self.arc_sense})"
+        if self.arc_when:
+            arc += f" when {self.arc_when}"
+        lines += [
+            f"- **Cell**: {self.cell}",
+            f"- **Arc**: {arc}",
+            f"- **Corner**: {self.corner}",
+            f"- **Input slew / output load**: {self.input_slew_ns} ns / {self.output_load_pf} pF",
+            f"- **Delay / transition / energy**: {self.delay_ns} ns / "
+            f"{self.transition_ns} ns / {self.energy_pj} pJ",
+            f"- **Netlist provenance**: {self.netlist_provenance}",
+        ]
+        return lines
+
+
+#: Manifest (``tb.json``) key -> :class:`CharacterizationExtensions` attribute.
 MANIFEST_KEYS: dict[str, str] = {
     "record_kind": "record_kind",
     "data_provenance": "data_provenance",
     "extra": "extra",
     "notes": "notes",
+    **{
+        k: k
+        for k in (
+            "cell", "arc_related_pin", "arc_when", "arc_sense", "input_slew_ns",
+            "output_load_pf", "delay_ns", "transition_ns", "energy_pj", "corner",
+            "netlist_provenance",
+        )
+    },
 }
 
 
-def from_manifest(block: dict | None) -> BaseExtensions:
-    """Build :class:`BaseExtensions` from a ``tb.json`` ``evidence`` block.
-
-    A block that has replaced :class:`BaseExtensions` with its own subclass
-    should replace this function too (or wrap it), since the manifest keys
-    it accepts are exactly this class's field set.
-    """
+def from_manifest(block: dict | None) -> CharacterizationExtensions:
+    """Build :class:`CharacterizationExtensions` from a ``tb.json`` ``evidence`` block."""
     block = dict(block or {})
     unknown = sorted(set(block) - set(MANIFEST_KEYS))
     if unknown:
@@ -130,4 +219,4 @@ def from_manifest(block: dict | None) -> BaseExtensions:
     kwargs = {MANIFEST_KEYS[key]: value for key, value in block.items()}
     if "notes" in kwargs and isinstance(kwargs["notes"], str):
         kwargs["notes"] = [kwargs["notes"]]
-    return BaseExtensions(**kwargs)
+    return CharacterizationExtensions(**kwargs)

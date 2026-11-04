@@ -93,3 +93,7 @@ flow/build/
 .loom/gh-config-by-owner-*/
 /.loom-local/
 # <<< loom-managed <<<
+flow/build/
+flow/.klt/
+verification/sim_build/
+verification/results.xml

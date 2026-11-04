@@ -23,7 +23,7 @@ re-derive it.
 | `toolchain.py` | Toolchain pin/drift checking against `sim/toolchain.json` (PDK version, ngspice floor, Python floor). Fully generic already — no block-specific content. |
 | `testbench.py` | The `tb.json` manifest schema: netlist-fragment discipline (forbidden directives the harness owns), `checks` validation, `netlist_provenance` semantics. Fully generic already. |
 | `runner.py` | `compose_deck()` — assembles one complete ngspice deck from a testbench fragment, the resolved PDK's models, and one PVT point's corner sections. `run_point()` / `run_grid()` execute it and parse measurements. |
-| `evidence.py` | `BaseExtensions` — an open, unstructured evidence-record extension slot (`extra` dict + `notes`), so a fresh block has a working evidence path before it has ratified its own schema. |
+| `evidence.py` | `BaseExtensions` — the open evidence slot (`extra` dict + `notes`) — and, for this library, `CharacterizationExtensions`: a validated per-arc cell-characterization record (cell, arc related pin / when / sense, input slew, output load, delay / transition / energy, corner, `netlist_provenance`). `from_manifest` returns it; fields are required on `record_kind=characterization` and rejected on other kinds. Both `data_provenance` (how the numbers were obtained) and `netlist_provenance` (which netlist) exist. |
 | `report.py` | Record-id minting (`<YYYYMMDD>-<HHMMSS>-<short-sha>`), grid summaries, per-axis sensitivity, spec-check evaluation, and an append-only Markdown writer. |
 | `cli.py` | `list` / `run` / `selftest` subcommands wiring the above together. |
 
@@ -87,10 +87,13 @@ This core deliberately does not know:
 From `sim/`:
 
 ```
-python3 -m harness.cli list
-python3 -m harness.cli run <experiment-slug> --corners mos
-python3 -m harness.cli selftest <experiment-slug>
+python3 -m harness list
+python3 -m harness run <experiment-slug> --corners mos
+python3 -m harness selftest <experiment-slug>
 ```
+
+`python3 -m harness.cli <cmd>` is equivalent. From the repo root,
+`python3 -m sim.harness <cmd>` also works.
 
 `harness/` needs no third-party dependencies — everything above is Python
 standard library, so it runs the same way in a fresh agent container as on a
@@ -107,3 +110,13 @@ future core fix (a corrected `sabotage()` self-test, a `toolchain.py` bug
 fix) without a manual merge. Extending through the documented extension
 points — subclassing, registration functions, injected callables — keeps
 that path open.
+
+## This library's characterization corners (DRAFT, pending #1)
+
+`corners.py` registers the corner set `sg13g2-stdcells-char` = `tt`, `ff`, `ss`
+(the built-in entries, unedited). Their supply/temperature pairings live in
+one constant, `corners.CHAR_CORNER_PVT` (TT/1.20 V/25 C, FF/1.32 V/-40 C,
+SS/1.08 V/125 C), taken from the README target table and **not ratified** until
+#1 lands; a ratification change is a one-line edit there.
+`corners.characterization_points()` returns exactly those 3 paired points, not
+the 27-point `build_grid` factorial. Tests: `python -m pytest sim/tests`.
