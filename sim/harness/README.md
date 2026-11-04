@@ -87,10 +87,13 @@ This core deliberately does not know:
 From `sim/`:
 
 ```
-python3 -m harness.cli list
-python3 -m harness.cli run <experiment-slug> --corners mos
-python3 -m harness.cli selftest <experiment-slug>
+python3 -m harness list
+python3 -m harness run <experiment-slug> --corners mos
+python3 -m harness selftest <experiment-slug>
 ```
+
+`python3 -m harness.cli <cmd>` is equivalent. From the repo root,
+`python3 -m sim.harness <cmd>` also works.
 
 `harness/` needs no third-party dependencies — everything above is Python
 standard library, so it runs the same way in a fresh agent container as on a
