@@ -175,11 +175,12 @@ class Cell:
 
     def add(self, kind, d, g, s, w_nm):
         cap = self.proc["finger_max_n"] if kind == "n" else self.proc["finger_max_p"]
+        grid = grid_nm(self.proc)
         ng = 1
-        while w_nm % (10 * ng) or w_nm // ng > cap:
+        while w_nm % (grid * ng) or w_nm // ng > cap:
             ng += 1
-            if ng > w_nm // GRID_NM:
-                raise ValueError(f"no finger split of {w_nm} nm fits finger cap {cap} nm on the {GRID_NM} nm grid")
+            if ng > w_nm // grid:
+                raise ValueError(f"no finger split of {w_nm} nm fits finger cap {cap} nm on the {grid} nm grid")
         self.devices.append((kind, d, g, s, w_nm, ng))
 
     def network(self, tree, kind, top, bot, signal, unit, scale, outside=0):
@@ -237,7 +238,28 @@ def build(cell, proc):
 
 
 # ---------------------------------------------------------------- config
-GRID_NM = 10  # finger-width grid, nm
+DEFAULT_GRID_NM = 10  # finger-width grid, nm, when process.grid_nm is absent
+
+# Names the generator mints for internal nodes: n<digits> (stack nodes),
+# <pin>_b (inverted input) and <pin>_i (pre-inverter output stage).
+RESERVED_PIN = re.compile(r"n\d+|.*_b|.*_i", re.DOTALL)
+
+
+def grid_nm(proc):
+    return proc.get("grid_nm", DEFAULT_GRID_NM)
+
+
+def _check_pins(cell, proc):
+    name = cell["name"]
+    rails = {proc["vdd_net"], proc["vss_net"]}
+    both = set(cell["inputs"]) & set(cell["outputs"])
+    if both:
+        raise ValueError(f"cell {name!r}: pin {sorted(both)[0]!r} is both an input and an output")
+    for pin in list(cell["inputs"]) + list(cell["outputs"]):
+        if RESERVED_PIN.fullmatch(pin):
+            raise ValueError(f"cell {name!r}: pin {pin!r} collides with generated internal node names (n<digits>, *_b, *_i)")
+        if pin in rails:
+            raise ValueError(f"cell {name!r}: pin {pin!r} collides with a supply net")
 
 
 def validate(config):
@@ -251,9 +273,12 @@ def validate(config):
     for key in ("l_nm", "unit_n_nm", "unit_p_nm", "finger_max_n", "finger_max_p"):
         if proc[key] <= 0:
             raise ValueError(f"process.{key} must be positive")
+    if "grid_nm" in proc and (isinstance(proc["grid_nm"], bool) or not isinstance(proc["grid_nm"], int) or proc["grid_nm"] <= 0):
+        raise ValueError("process.grid_nm must be a positive int")
+    grid = grid_nm(proc)
     for key in ("unit_n_nm", "unit_p_nm"):
-        if proc[key] % GRID_NM:
-            raise ValueError(f"process.{key} must be a multiple of the {GRID_NM} nm grid")
+        if proc[key] % grid:
+            raise ValueError(f"process.{key} must be a multiple of the {grid} nm grid")
     try:
         proc["device_params"].format(w=1, l=1, ng=1)
     except (KeyError, IndexError, ValueError) as e:
@@ -273,6 +298,7 @@ def validate(config):
             raise ValueError(f"cell {c['name']!r}: drive must be an int >= 1")
         if not c["outputs"]:
             raise ValueError(f"cell {c['name']!r}: no outputs")
+        _check_pins(c, proc)
         for pin, fn in c["outputs"].items():
             used = set()
             _collect(parse(fn), used)

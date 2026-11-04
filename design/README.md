@@ -28,7 +28,8 @@ function string. Output is byte-deterministic (sorted, no timestamps), so
   "process": {                       // every key required
     "supply_v": 1.0,                 // number; printed in the header comment only
     "l_nm": 100,                     // channel length, nm
-    "unit_n_nm": 500, "unit_p_nm": 800,   // unit device widths, nm; must be multiples of the 10 nm grid
+    "unit_n_nm": 500, "unit_p_nm": 800,   // unit device widths, nm; must be multiples of the grid
+    "grid_nm": 10,                   // optional positive int (default 10): width grid for unit widths and fingers
     "finger_max_n": 1000, "finger_max_p": 1200,  // max width per finger, nm (>= 10; unsplittable widths exit 2)
     "nmos_model": "...", "pmos_model": "...",    // model/subckt name per device
     "nmos_prefix": "XMN", "pmos_prefix": "XMP",  // instance-name prefixes (+ index)
@@ -46,6 +47,11 @@ function string. Output is byte-deterministic (sorted, no timestamps), so
 Extra keys (e.g. `library`, `scope`) are ignored, so a port may keep its own
 metadata in the same file. Cell names must be unique and every variable in a
 function must be a declared input.
+
+**Reserved pin names.** The generator mints internal nodes named `n<digits>`,
+`<pin>_b` and `<pin>_i`, so no input/output pin may match `n<digits>` or end in
+`_b`/`_i` (case-sensitive; `n`, `nA` are fine), equal `vdd_net`/`vss_net`, or
+appear in both `inputs` and `outputs`. `validate()` rejects these naming the cell and pin.
 
 **Function syntax.** `!` not, `*` and, `+` or, `^` xor, parentheses. `*`, `+`
 and `^` cannot be mixed at one nesting level without parentheses (no precedence

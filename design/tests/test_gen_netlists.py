@@ -149,6 +149,43 @@ class ParserTest(unittest.TestCase):
             gn.generate(cfg)
 
 
+class PinNameAndGridTest(unittest.TestCase):
+    def _cfg(self, inputs, outputs, **proc):
+        cfg = copy.deepcopy(CFG)
+        cfg["process"].update(proc)
+        cfg["cells"] = [{"name": "t", "family": "t", "drive": 1, "inputs": inputs, "outputs": outputs}]
+        return cfg
+
+    def test_reserved_pin_names_rejected(self):
+        bad = [(["n1"], {"Y": "!n1"}), (["A_b"], {"Y": "!A_b"}), (["A"], {"Y_i": "!A"}),
+               (["A"], {"Y_b": "!A"}), (["VDD"], {"Y": "!VDD"}), (["A"], {"VSS": "!A"}),
+               (["A", "B"], {"A": "!B"}), (["n12"], {"Y": "!n12"})]
+        for ins, outs in bad:
+            with self.assertRaises(ValueError, msg=(ins, outs)) as cm:
+                gn.generate(self._cfg(ins, outs))
+            self.assertIn("'t'", str(cm.exception))
+
+    def test_legal_pin_names_accepted(self):
+        for ins, outs in [(["n"], {"Y": "!n"}), (["nA"], {"Y": "!nA"}), (["A_B"], {"Y": "!A_B"}),
+                          (["A1", "S"], {"X": "A1*S"})]:
+            gn.generate(self._cfg(ins, outs))
+
+    def test_grid_nm(self):
+        with self.assertRaises(ValueError):
+            gn.generate(self._cfg(["A"], {"Y": "!A"}, unit_n_nm=505))
+        gn.generate(self._cfg(["A"], {"Y": "!A"}, unit_n_nm=505, grid_nm=5))
+        for bad in (0, -5, 2.5, True, "5"):
+            with self.assertRaises(ValueError, msg=bad):
+                gn.generate(self._cfg(["A"], {"Y": "!A"}, grid_nm=bad))
+
+    def test_grid_drives_finger_split(self):
+        c = gn.Cell("t", dict(PROC, grid_nm=5, finger_max_n=300))
+        c.add("n", "a", "b", "c", 505)  # only 101 fingers of 5 nm fit the 5 nm grid under the cap
+        self.assertEqual(c.devices[0][5], 101)
+        with self.assertRaises(ValueError):
+            gn.Cell("t", dict(PROC, finger_max_n=300)).add("n", "a", "b", "c", 505)
+
+
 class DeterminismAndCheckTest(unittest.TestCase):
     def run_cli(self, *args):
         return subprocess.run([sys.executable, str(DESIGN / "gen_netlists.py"), *args], capture_output=True, text=True)
