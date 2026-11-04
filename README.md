@@ -66,27 +66,33 @@ result. Where the agents hit friction with the open-source tooling — most ofte
 filed as a public issue against the tool itself, so the fix benefits everyone
 using IHP SG13G2, not just this repo.
 
-## Target specification (DRAFT — engineering to ratify, see issue #1)
+## Target specification
 
-All rows are DRAFT until issue #1 ratifies them. The reference column is
-ETH Zurich's EZ130 8T (arXiv:2609.29965, Apache-2.0), a library for this same
-process characterized with commercial tools — it is an external reference
-point, not a result of this repo.
+Ratified by decision record
+[`spec/0001-target-specification.md`](spec/0001-target-specification.md), which
+carries the per-row reasoning. The reference column is ETH Zurich's EZ130 8T
+(arXiv:2609.29965, Apache-2.0), a library for this same process characterized
+with commercial tools — it is an external reference point, ETH Zurich's
+published result, not a result of this repo. Where the paper and the ETH library
+page disagree, both are shown with their source.
 
-| Parameter | Target | Stretch | EZ130 8T (reference) |
-|---|---|---|---|
-| Row height | 3.36 um (8 tracks) | — | 3.36 um |
-| Routing grid | 0.42 um x 0.42 um | — | 0.42 um x 0.42 um |
-| Intra-cell routing | Metal1 only | — | Metal1 only |
-| Pin access | every pin on a grid point | — | every pin on grid |
-| Combinational cells | 40 | 120 | ~180 |
-| Sequential cells | 0 (out of scope, see Status) | 8 | ~40 |
-| DRC | clean, `klt drc`, sg13g2 deck | — | Calibre clean |
-| LVS | layout-vs-schematic match, `klt lvs` | — | Calibre clean |
-| Liberty corners | TT/1.20 V/25 C | + FF/1.32 V/-40 C, SS/1.08 V/125 C | all three |
-| Benchmark cell area vs `sg13g2_stdcell` | <= 1.00x | <= 0.80x | 0.65x reported |
-| Benchmark energy vs `sg13g2_stdcell` | <= 1.00x | <= 0.80x | 0.61x reported |
-| Benchmark clock period vs `sg13g2_stdcell` | within 10% | within 5% | "virtually the same" |
+| # | Parameter | Target | Stretch | EZ130 8T (ETH Zurich's reference) |
+|---|---|---|---|---|
+| 1 | Row height | 3.36 um (8 tracks) | — | 3.36 um |
+| 2 | Routing grid | 0.42 um x 0.42 um | — | 0.42 um x 0.42 um |
+| 3 | Intra-cell routing | Metal1 only | — | Metal1 only |
+| 4 | Pin access | every pin on a grid point | — | every pin on grid |
+| 5 | Combinational cells | 40 | 120 | ~180 |
+| 6 | Sequential cells | 0 (out of scope, see Status) | 8 | ~40 |
+| 7 | DRC | clean, `klt drc`, sg13g2 deck | — | Calibre clean |
+| 8 | LVS | layout-vs-schematic match, `klt lvs` | — | Calibre clean |
+| 9 | Liberty corners | TT/1.20 V/25 C | + FF/1.32 V/-40 C, SS/1.08 V/125 C | all three |
+| 10 | Benchmark cell area vs `sg13g2_stdcell` | <= 1.00x | <= 0.80x | 0.65x (ETH paper) / 0.67x (ETH library page) |
+| 11 | Benchmark energy vs `sg13g2_stdcell` | <= 1.00x | <= 0.80x | 0.61x (ETH paper) / 0.67x (ETH library page) |
+| 12 | Benchmark clock period vs `sg13g2_stdcell` | within 10% | within 5% | "virtually the same" (ETH) |
+
+Rows 10–12 are measured on combinational-only netlists at target scope; see the
+record for why and for what that means for comparison with ETH Zurich's figures.
 
 ## Repo layout
 
