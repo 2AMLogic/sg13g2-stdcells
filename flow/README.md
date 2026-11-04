@@ -33,11 +33,22 @@ The three gates, and where each is read:
    `"kind": "supply"` over every strap layer, reporting one electrical
    island per supply and zero `missing_tie`.
 
-No `request-par.json` is scaffolded here, and gate 1 above is unreachable
-on this PDK today: `request.power` is unsupported against this PDK's
-standard-cell library — it ships no tap or endcap cells at all, so a `klt
-place-and-route` request naming a `power` block against it raises "no
-tapcell master known" rather than building a PDN. A starter file naming
-layers this library has no masters for would be worse than none. Tracked as
-klayout-tools#2441; once it closes, add a `power` block here following
-whatever shape it lands on.
+## Baseline run (issue #9)
+
+`request-synth.json`, `request-par.json` (with `power: {"preset": "sg13g2"}`),
+`request-lvs.json` and `erc-spec.json` run the combinational `rtl/add8.v` on
+the stock `sg13g2_stdcell`: `flow/run.sh` writes a new, append-only
+`records/<date>-<sha>/` and ends with `check-evidence.sh`, which rejects a
+request without a `power` block (`test-check-evidence.sh` proves it). Results,
+caveats and the metric definitions are in
+`records/20261104-df96543/RECORD.md`.
+
+The earlier note that gate 1 was "unreachable on this PDK today" is
+superseded: klayout-tools#2441, #2444 and #2447 are closed, and
+`power.preset: "sg13g2"` reaches `power.pdn: true` at `target_stage: route`.
+The caveats that remain, from that record: the library has no tap/endcap
+cells (`tapcell_master: null`, `tapless: true`), so gate 3's `missing_tie` is
+inapplicable rather than zero; and `klt drc` was not run, so #2444 is not
+verified here.
+
+Cold start: `PDK_ROOT=<dir containing ihp-sg13g2> flow/run.sh`.

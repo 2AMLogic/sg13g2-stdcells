@@ -1,0 +1,13 @@
+{
+  "layout": {
+    "netlist": "__LAYOUT_NETLIST__",
+    "top": "add8"
+  },
+  "reference": {
+    "netlist": "__PNR_VERILOG__",
+    "top": "add8",
+    "form": "gate-level-verilog",
+    "library": "sg13g2_stdcell",
+    "pdk": "ihp-sg13g2"
+  }
+}
