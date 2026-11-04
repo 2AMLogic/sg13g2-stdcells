@@ -28,8 +28,8 @@ function string. Output is byte-deterministic (sorted, no timestamps), so
   "process": {                       // every key required
     "supply_v": 1.0,                 // number; printed in the header comment only
     "l_nm": 100,                     // channel length, nm
-    "unit_n_nm": 500, "unit_p_nm": 800,   // unit device widths, nm
-    "finger_max_n": 1000, "finger_max_p": 1200,  // max width per finger, nm
+    "unit_n_nm": 500, "unit_p_nm": 800,   // unit device widths, nm; must be multiples of the 10 nm grid
+    "finger_max_n": 1000, "finger_max_p": 1200,  // max width per finger, nm (>= 10; unsplittable widths exit 2)
     "nmos_model": "...", "pmos_model": "...",    // model/subckt name per device
     "nmos_prefix": "XMN", "pmos_prefix": "XMP",  // instance-name prefixes (+ index)
     "vdd_net": "VDD", "vss_net": "VSS",          // rails; also the bulk nets

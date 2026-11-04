@@ -178,6 +178,8 @@ class Cell:
         ng = 1
         while w_nm % (10 * ng) or w_nm // ng > cap:
             ng += 1
+            if ng > w_nm // GRID_NM:
+                raise ValueError(f"no finger split of {w_nm} nm fits finger cap {cap} nm on the {GRID_NM} nm grid")
         self.devices.append((kind, d, g, s, w_nm, ng))
 
     def network(self, tree, kind, top, bot, signal, unit, scale, outside=0):
@@ -235,6 +237,9 @@ def build(cell, proc):
 
 
 # ---------------------------------------------------------------- config
+GRID_NM = 10  # finger-width grid, nm
+
+
 def validate(config):
     """Raise ValueError on a malformed config; return it unchanged."""
     proc = config.get("process")
@@ -246,6 +251,9 @@ def validate(config):
     for key in ("l_nm", "unit_n_nm", "unit_p_nm", "finger_max_n", "finger_max_p"):
         if proc[key] <= 0:
             raise ValueError(f"process.{key} must be positive")
+    for key in ("unit_n_nm", "unit_p_nm"):
+        if proc[key] % GRID_NM:
+            raise ValueError(f"process.{key} must be a multiple of the {GRID_NM} nm grid")
     try:
         proc["device_params"].format(w=1, l=1, ng=1)
     except (KeyError, IndexError, ValueError) as e:

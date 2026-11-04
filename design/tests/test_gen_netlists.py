@@ -188,6 +188,22 @@ class DeterminismAndCheckTest(unittest.TestCase):
             bad.write_text("{}")
             self.assertEqual(self.run_cli("--config", str(bad), "--out", td).returncode, 2)
 
+    def _run_bad(self, **proc_over):
+        cfg = copy.deepcopy(CFG)
+        cfg["process"].update(proc_over)
+        with tempfile.TemporaryDirectory() as td:
+            c = pathlib.Path(td) / "c.json"
+            c.write_text(json.dumps(cfg))
+            return subprocess.run([sys.executable, str(DESIGN / "gen_netlists.py"), "--config", str(c), "--out", td],
+                                  capture_output=True, text=True, timeout=30)
+
+    def test_off_grid_unit_width_exit_2(self):
+        self.assertEqual(self._run_bad(unit_n_nm=505).returncode, 2)
+        self.assertEqual(self._run_bad(unit_p_nm=805).returncode, 2)
+
+    def test_finger_cap_below_grid_exit_2(self):
+        self.assertEqual(self._run_bad(finger_max_n=5).returncode, 2)
+
 
 if __name__ == "__main__":
     unittest.main()
