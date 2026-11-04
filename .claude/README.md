@@ -31,7 +31,7 @@ the broad categories are:
   go unused
 
 ### Repo scripts
-- `./scripts/**` and `./.loom/scripts/**` — this repo's and Loom's own helper
+- `./scripts/*` and `./.loom/scripts/*` — this repo's and Loom's own helper
   scripts
 
 ### Common utilities
@@ -93,9 +93,6 @@ Representative tools by category:
 - `get_ui_state` - Comprehensive UI state (workspace, config, terminals) — this
   replaced the removed per-file readers
 - `get_heartbeat` - Check whether the Loom app is running
-- `trigger_start` - Trigger workspace start with confirmation dialog
-- `trigger_force_start` - Trigger force start without confirmation (immediate reset)
-- `stop_engine` - Stop all terminals
 
 **Durable watches**: `register_watch` / `list_watches` / `remove_watch` — operator
 watches on issue/PR terminal state that survive the registering session.
@@ -127,7 +124,7 @@ see #3345):
 | `/loom:architect` | Architect | Creates architectural proposals with `loom:architect` |
 | `/loom:hermit` | Hermit | Identifies bloat and creates simplification issues |
 | `/loom:doctor` | Doctor | Addresses PR feedback and resolves conflicts |
-| `/loom:guide` | Guide | Triages issues and applies `loom:urgent` to top 3 |
+| `/loom:guide` | Guide | Triages issues: tier labels, unblocking, epics, WORK_PLAN |
 | `/loom:champion` | Champion | Auto-merges approved PRs with `loom:pr` label |
 | `/loom:auditor` | Auditor | Validates that `main` builds and runs; files findings |
 | `/loom:help` | Help | Read-only overview of the installed `/loom:*` commands; `/loom:help <command>` describes one |
@@ -162,7 +159,7 @@ The roles work together following the label-based workflow:
 2. **User approves** → adds `loom:issue` label
 3. **curator** enhances issues → marks as `loom:curated`
 4. **User approves** → adds `loom:issue` label
-5. **guide** prioritizes → adds `loom:urgent` to top 3
+5. **guide** triages → tier labels, unblocks, refreshes WORK_PLAN
 6. **builder** implements → creates PR with `loom:review-requested`
 7. **judge** reviews → approves or requests changes
 8. **doctor** fixes feedback → transitions back to `loom:review-requested`
