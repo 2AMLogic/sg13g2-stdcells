@@ -43,13 +43,12 @@ Deliberately not being built yet, and what each waits on:
   search, which is strictly harder than a combinational arc sweep. The
   combinational set comes first; sequential cells wait on that machinery
   working.
-- **Liberty characterization of any cell.** `klt` reads NLDM Liberty but no
-  verb writes it (`2AMLogic/klayout-tools#2498`). Until that lands, a cell
-  designed here cannot be synthesized against without a commercial
-  characterizer, so no `.lib` is committed and `views/` stays empty.
+- **Liberty characterization of any cell.** `klt characterize` emits Liberty
+  (klayout-tools#2528), but there is no cell yet to characterize, so no `.lib`
+  is committed and `views/` stays empty.
 - **The synthesis benchmark.** The area/timing/energy comparison in the table
-  below cannot be run until there is a `.lib` to run it with. It waits on the
-  same issue.
+  below cannot be run until there is a `.lib` to run it with. It waits on
+  cells and a generator, and on the benchmark basis in the decision record.
 - **Any claim about beating `sg13g2_stdcell`.** The reference numbers in this
   repo are ETH Zurich's, measured with commercial tools on their own library.
   Nothing here restates them as ours, and nothing will until this repo has
@@ -82,8 +81,8 @@ page disagree, both are shown with their source.
 | 2 | Routing grid | 0.42 um x 0.42 um | — | 0.42 um x 0.42 um |
 | 3 | Intra-cell routing | Metal1 only | — | Metal1 only |
 | 4 | Pin access | every pin on a grid point | — | every pin on grid |
-| 5 | Combinational cells | 40 | 120 | ~180 |
-| 6 | Sequential cells | 0 (out of scope, see Status) | 8 | ~40 |
+| 5 | Combinational cells | 40 | 120 | 220 total, all cell types (ETH paper; library page); split not published |
+| 6 | Sequential cells | 0 (out of scope, see Status) | 8 | included in the 220 total; split not published |
 | 7 | DRC | clean, `klt drc`, sg13g2 deck | — | Calibre clean |
 | 8 | LVS | layout-vs-schematic match, `klt lvs` | — | Calibre clean |
 | 9 | Liberty corners | TT/1.20 V/25 C | + FF/1.32 V/-40 C, SS/1.08 V/125 C | all three |
