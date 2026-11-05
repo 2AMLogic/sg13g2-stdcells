@@ -204,3 +204,33 @@ def build_grid(
             itertools.product(corners, temperatures, supplies)
         )
     ]
+
+
+# ---------------------------------------------------------------------------
+# sg13g2-stdcells characterization corners (DRAFT -- pending #1 ratification)
+# ---------------------------------------------------------------------------
+# The README target table's "Liberty corners" row. This is the ONE place the
+# pairings live: a ratification change is an edit to CHAR_CORNER_PVT only.
+# Process sections reuse the built-in tt/ff/ss corners (no core edits); V and
+# T are not part of a Corner, so they are paired here and surfaced as exactly
+# three PvtPoints -- deliberately NOT the 3 x 3 x 3 full factorial.
+
+#: Name of the corner set registered below.
+CHAR_CORNER_SET = "sg13g2-stdcells-char"
+
+#: DRAFT (pending #1): corner name -> (supply V, temperature C).
+CHAR_CORNER_PVT: dict[str, tuple[float, float]] = {
+    "tt": (1.20, 25.0),
+    "ff": (1.32, -40.0),
+    "ss": (1.08, 125.0),
+}
+
+register_corner_set(CHAR_CORNER_SET, tuple(CHAR_CORNER_PVT))
+
+
+def characterization_points() -> list[PvtPoint]:
+    """The three paired characterization PVT points, in ``CHAR_CORNER_PVT`` order."""
+    return [
+        PvtPoint(corner=CORNERS[name], temp_c=temp_c, vdd=vdd, index=i)
+        for i, (name, (vdd, temp_c)) in enumerate(CHAR_CORNER_PVT.items())
+    ]

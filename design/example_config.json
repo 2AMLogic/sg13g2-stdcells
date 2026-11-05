@@ -1,0 +1,183 @@
+{
+ "schema_version": 1,
+ "library": "demo",
+ "scope": "combinational",
+ "process": {
+  "supply_v": 1.0,
+  "l_nm": 100,
+  "unit_n_nm": 500,
+  "unit_p_nm": 800,
+  "finger_max_n": 1000,
+  "finger_max_p": 1200,
+  "nmos_model": "demo_nmos",
+  "pmos_model": "demo_pmos",
+  "nmos_prefix": "XMN",
+  "pmos_prefix": "XMP",
+  "vdd_net": "VDD",
+  "vss_net": "VSS",
+  "device_params": "w={w} l={l} ng={ng} m=1"
+ },
+ "cells": [
+  {
+   "name": "demo_inv_1",
+   "family": "inv",
+   "drive": 1,
+   "inputs": [
+    "A"
+   ],
+   "outputs": {
+    "Y": "!A"
+   }
+  },
+  {
+   "name": "demo_inv_2",
+   "family": "inv",
+   "drive": 2,
+   "inputs": [
+    "A"
+   ],
+   "outputs": {
+    "Y": "!A"
+   }
+  },
+  {
+   "name": "demo_buf_2",
+   "family": "buf",
+   "drive": 2,
+   "inputs": [
+    "A"
+   ],
+   "outputs": {
+    "X": "A"
+   }
+  },
+  {
+   "name": "demo_nand2_1",
+   "family": "nand2",
+   "drive": 1,
+   "inputs": [
+    "A",
+    "B"
+   ],
+   "outputs": {
+    "Y": "!(A*B)"
+   }
+  },
+  {
+   "name": "demo_nor4_1",
+   "family": "nor4",
+   "drive": 1,
+   "inputs": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "outputs": {
+    "Y": "!(A+B+C+D)"
+   }
+  },
+  {
+   "name": "demo_nand4_1",
+   "family": "nand4",
+   "drive": 1,
+   "inputs": [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   "outputs": {
+    "Y": "!(A*B*C*D)"
+   }
+  },
+  {
+   "name": "demo_a21o_2",
+   "family": "a21o",
+   "drive": 2,
+   "inputs": [
+    "A1",
+    "A2",
+    "B1"
+   ],
+   "outputs": {
+    "X": "((A1*A2)+B1)"
+   }
+  },
+  {
+   "name": "demo_a21oi_1",
+   "family": "a21oi",
+   "drive": 1,
+   "inputs": [
+    "A1",
+    "A2",
+    "B1"
+   ],
+   "outputs": {
+    "Y": "!((A1*A2)+B1)"
+   }
+  },
+  {
+   "name": "demo_and2_1",
+   "family": "and2",
+   "drive": 1,
+   "inputs": [
+    "A",
+    "B"
+   ],
+   "outputs": {
+    "X": "(A*B)"
+   }
+  },
+  {
+   "name": "demo_xor2_1",
+   "family": "xor2",
+   "drive": 1,
+   "inputs": [
+    "A",
+    "B"
+   ],
+   "outputs": {
+    "X": "(A^B)"
+   }
+  },
+  {
+   "name": "demo_xnor2_1",
+   "family": "xnor2",
+   "drive": 1,
+   "inputs": [
+    "A",
+    "B"
+   ],
+   "outputs": {
+    "Y": "!(A^B)"
+   }
+  },
+  {
+   "name": "demo_mux2_1",
+   "family": "mux2",
+   "drive": 1,
+   "inputs": [
+    "A0",
+    "A1",
+    "S"
+   ],
+   "outputs": {
+    "X": "((A0*!S)+(A1*S))"
+   }
+  },
+  {
+   "name": "demo_mux2i_1",
+   "family": "mux2i",
+   "drive": 1,
+   "inputs": [
+    "A0",
+    "A1",
+    "S"
+   ],
+   "outputs": {
+    "Y": "!((A0*!S)+(A1*S))"
+   }
+  }
+ ]
+}

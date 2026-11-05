@@ -1,0 +1,68 @@
+{
+ "schema_version": 1,
+ "library": "sg13g2_stdcells",
+ "scope": "combinational",
+ "process": {
+  "supply_v": 1.2,
+  "l_nm": 130,
+  "unit_n_nm": 500,
+  "unit_p_nm": 800,
+  "finger_max_n": 1000,
+  "finger_max_p": 1200,
+  "nmos_model": "sg13_lv_nmos",
+  "pmos_model": "sg13_lv_pmos",
+  "nmos_prefix": "XMN",
+  "pmos_prefix": "XMP",
+  "vdd_net": "VDD",
+  "vss_net": "VSS",
+  "device_params": "w={w} l={l} ng={ng} m=1"
+ },
+ "layout": {
+  "row_height_nm": 3360,
+  "gate_pitch_nm": 420,
+  "channel_tracks": 1,
+  "n_diff_y0_nm": 400,
+  "p_diff_top_margin_nm": 400,
+  "layers": {
+   "nwell": [31, 0],
+   "activ": [1, 0],
+   "gatpoly": [5, 0],
+   "psd": [14, 0],
+   "nsd": [7, 0],
+   "cont": [6, 0],
+   "metal1": [8, 0],
+   "metal1_label": [8, 25]
+  },
+  "rules": {
+   "poly_width_nm": 130,
+   "poly_space_nm": 180,
+   "poly_endcap_nm": 180,
+   "poly_to_activ_nm": 70,
+   "cont_nm": 160,
+   "cont_space_nm": 180,
+   "activ_enc_cont_nm": 70,
+   "poly_enc_cont_nm": 70,
+   "m1_width_nm": 160,
+   "m1_space_nm": 180,
+   "rail_width_nm": 160,
+   "nwell_enc_pactiv_nm": 310,
+   "sd_enc_activ_nm": 180
+  }
+ },
+ "cells": [
+  {
+   "name": "sg13g2_inv_1",
+   "family": "inv",
+   "drive": 1,
+   "inputs": ["A"],
+   "outputs": {"Y": "!A"}
+  },
+  {
+   "name": "sg13g2_nand2_1",
+   "family": "nand2",
+   "drive": 1,
+   "inputs": ["A", "B"],
+   "outputs": {"Y": "!(A*B)"}
+  }
+ ]
+}

@@ -1,0 +1,158 @@
+"""Tests for layout/gen_layouts.py: config validation, determinism, --check
+exit codes, named placement failures, and a second (fake) process config."""
+import copy
+import json
+import pathlib
+import subprocess
+import sys
+import tempfile
+import unittest
+
+LAYOUT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(LAYOUT))
+import gen_layouts as gl  # noqa: E402
+
+CONFIG = LAYOUT / "example_config.json"
+CFG = json.loads(CONFIG.read_text())
+SCRIPT = LAYOUT / "gen_layouts.py"
+
+
+def run(*args):
+    return subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True)
+
+
+def read_gds_boxes(data):
+    """Independent minimal GDS reader: [(layer, datatype, xs, ys)] for BOUNDARYs."""
+    import struct
+    i, out, cur = 0, [], {}
+    while i < len(data):
+        n, rt, _dt = struct.unpack(">HBB", data[i:i + 4])
+        body = data[i + 4:i + n]
+        if rt == 0x0D:
+            cur["l"] = struct.unpack(">h", body)[0]
+        elif rt == 0x0E:
+            cur["d"] = struct.unpack(">h", body)[0]
+        elif rt == 0x10 and "d" in cur:
+            v = struct.unpack(f">{len(body) // 4}i", body)
+            out.append((cur["l"], cur["d"], v[0::2], v[1::2]))
+            cur = {}
+        elif rt == 0x11:
+            cur = {}
+        i += n
+    return out
+
+
+class Validation(unittest.TestCase):
+    def bad(self, mutate):
+        cfg = copy.deepcopy(CFG)
+        mutate(cfg)
+        with self.assertRaises(ValueError):
+            gl.generate(cfg)
+
+    def test_missing_layout_block(self):
+        self.bad(lambda c: c.pop("layout"))
+
+    def test_missing_rule(self):
+        self.bad(lambda c: c["layout"]["rules"].pop("m1_width_nm"))
+
+    def test_bad_layer(self):
+        self.bad(lambda c: c["layout"]["layers"].update(metal1=[8]))
+
+    def test_odd_pitch(self):
+        self.bad(lambda c: c["layout"].update(gate_pitch_nm=421))
+
+    def test_netlist_side_validation_still_applies(self):
+        self.bad(lambda c: c["process"].pop("l_nm"))
+
+    def test_cli_exit_2(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d) / "c.json"
+            p.write_text("{}")
+            self.assertEqual(run("--config", str(p)).returncode, 2)
+
+
+class Determinism(unittest.TestCase):
+    def test_two_runs_identical(self):
+        self.assertEqual(gl.generate(CFG), gl.generate(copy.deepcopy(CFG)))
+
+    def test_committed_gds_fresh(self):
+        r = run("--config", str(CONFIG), "--check")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_check_exit_codes(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            cfg = d / "c.json"
+            cfg.write_text(json.dumps(CFG))
+            self.assertEqual(run("--config", str(cfg), "--check").returncode, 1)  # missing
+            self.assertEqual(run("--config", str(cfg)).returncode, 0)
+            self.assertEqual(run("--config", str(cfg), "--check").returncode, 0)
+            edited = copy.deepcopy(CFG)
+            edited["layout"]["rules"]["rail_width_nm"] += 10
+            cfg.write_text(json.dumps(edited))
+            self.assertEqual(run("--config", str(cfg), "--check").returncode, 1)  # changed
+            (d / "gds" / "stray.gds").write_bytes(b"")
+            cfg.write_text(json.dumps(CFG))
+            self.assertEqual(run("--config", str(cfg), "--check").returncode, 1)  # stray
+
+
+class Geometry(unittest.TestCase):
+    def test_gds_is_parseable_and_on_layout_grid(self):
+        files = gl.generate(CFG)
+        L = {tuple(v): k for k, v in CFG["layout"]["layers"].items()}
+        for name, data in files.items():
+            boxes = read_gds_boxes(data)
+            seen = {L[(l, d)] for l, d, _, _ in boxes}
+            self.assertTrue({"activ", "gatpoly", "cont", "metal1", "nwell", "psd"} <= seen, name)
+            for _, _, xs, ys in boxes:
+                self.assertTrue(all(x >= -1000 for x in xs + ys))
+
+    def test_cell_width_follows_pitch(self):
+        S, W, H = gl.layout_cell(CFG["cells"][1], CFG["process"], CFG["layout"])
+        self.assertEqual((W, H), (3 * 420, 3360))
+
+
+class Failures(unittest.TestCase):
+    def test_unplaceable_cell_named_and_nothing_written(self):
+        cfg = copy.deepcopy(CFG)
+        cfg["cells"].append({"name": "x_xor2_1", "family": "xor2", "drive": 1, "inputs": ["A", "B"], "outputs": {"X": "(A^B)"}})
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(cfg)
+        self.assertIn("x_xor2_1", str(cm.exception))
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d) / "c.json"
+            p.write_text(json.dumps(cfg))
+            r = run("--config", str(p))
+            self.assertEqual(r.returncode, 3)
+            self.assertIn("x_xor2_1", r.stderr)
+            self.assertFalse((pathlib.Path(d) / "gds").exists())
+
+    def test_row_too_short(self):
+        cfg = copy.deepcopy(CFG)
+        cfg["layout"]["row_height_nm"] = 2000
+        with self.assertRaises(gl.PlaceError):
+            gl.generate(cfg)
+
+
+class FakeProcess(unittest.TestCase):
+    """A second process (different names, layers, geometry) needs no code change."""
+
+    def test_fake_process(self):
+        cfg = copy.deepcopy(CFG)
+        cfg["process"].update(nmos_model="fake_n", pmos_model="fake_p", vdd_net="PWR", vss_net="GND", l_nm=200)
+        lay = cfg["layout"]
+        lay["row_height_nm"] = 4800
+        lay["gate_pitch_nm"] = 600
+        lay["layers"] = {k: [50 + i, 3] for i, k in enumerate(lay["layers"])}
+        lay["rules"].update(m1_width_nm=200, m1_space_nm=220, rail_width_nm=200, poly_width_nm=200)
+        base, fake = gl.generate(CFG), gl.generate(cfg)
+        self.assertEqual(set(base), set(fake))
+        self.assertNotEqual(base["sg13g2_inv_1.gds"], fake["sg13g2_inv_1.gds"])
+        layers = {(l, d) for data in fake.values() for l, d, _, _ in read_gds_boxes(data)}
+        self.assertTrue(all(l >= 50 and d == 3 for l, d in layers))
+        S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], lay)
+        self.assertEqual((W, H), (2 * 600, 4800))
+
+
+if __name__ == "__main__":
+    unittest.main()

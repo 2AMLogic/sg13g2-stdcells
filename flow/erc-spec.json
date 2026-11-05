@@ -1,0 +1,113 @@
+{
+  "stackup": [
+    {
+      "name": "GatPoly",
+      "layer": "5/0",
+      "role": "gate",
+      "active_layer": "1/0"
+    },
+    {
+      "name": "Metal1",
+      "layer": "8/0",
+      "label_layer": "8/25"
+    },
+    {
+      "name": "Metal2",
+      "layer": "10/0",
+      "label_layer": "10/25"
+    },
+    {
+      "name": "Metal3",
+      "layer": "30/0",
+      "label_layer": "30/25"
+    },
+    {
+      "name": "Metal4",
+      "layer": "50/0",
+      "label_layer": "50/25"
+    },
+    {
+      "name": "Metal5",
+      "layer": "67/0",
+      "label_layer": "67/25"
+    },
+    {
+      "name": "TopMetal1",
+      "layer": "126/0",
+      "label_layer": "126/25"
+    },
+    {
+      "name": "TopMetal2",
+      "layer": "134/0",
+      "label_layer": "134/25"
+    }
+  ],
+  "vias": [
+    {
+      "name": "Cont",
+      "layer": "6/0",
+      "between": [
+        "GatPoly",
+        "Metal1"
+      ]
+    },
+    {
+      "name": "Via1",
+      "layer": "19/0",
+      "between": [
+        "Metal1",
+        "Metal2"
+      ]
+    },
+    {
+      "name": "Via2",
+      "layer": "29/0",
+      "between": [
+        "Metal2",
+        "Metal3"
+      ]
+    },
+    {
+      "name": "Via3",
+      "layer": "49/0",
+      "between": [
+        "Metal3",
+        "Metal4"
+      ]
+    },
+    {
+      "name": "Via4",
+      "layer": "66/0",
+      "between": [
+        "Metal4",
+        "Metal5"
+      ]
+    },
+    {
+      "name": "TopVia1",
+      "layer": "125/0",
+      "between": [
+        "Metal5",
+        "TopMetal1"
+      ]
+    },
+    {
+      "name": "TopVia2",
+      "layer": "133/0",
+      "between": [
+        "TopMetal1",
+        "TopMetal2"
+      ]
+    }
+  ],
+  "nets": [
+    {
+      "name": "VDD",
+      "kind": "supply"
+    },
+    {
+      "name": "VSS",
+      "kind": "supply"
+    }
+  ]
+}

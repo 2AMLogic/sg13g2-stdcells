@@ -1,6 +1,6 @@
 {
-  "loom_version": "0.19.1263",
-  "loom_commit": "7ae272097",
+  "loom_version": "0.19.1264",
+  "loom_commit": "9e3ef4f96e11227c9119f1d551489e578c9e2f22",
   "install_date": "2026-09-25",
   "loom_source_remote": "git@github.com:rjwalters/loom.git",
   "installed_files": [
@@ -631,7 +631,28 @@
     ".loom/scripts/warn-operator-gated.sh",
     ".loom/scripts/warn-out-of-set-deps.sh",
     ".loom/scripts/worktree-return.sh",
-    ".loom/scripts/worktree.sh"
+    ".loom/scripts/worktree.sh",
+    ".loom/hooks/tests/test-guard-mcp-tools.sh",
+    ".loom/hooks/tests/test-guard-secret-scan.sh",
+    ".loom/hooks/tests/test-roll-pause.sh",
+    ".agents/skills/loom-builder/SKILL.md",
+    ".agents/skills/loom-curator/SKILL.md",
+    ".agents/skills/loom-doctor/SKILL.md",
+    ".loom/hooks/tests/test-guard-background-subagents.sh",
+    ".loom/hooks/tests/test-guard-loom-workspace.sh",
+    ".loom/hooks/tests/test-guard-worktree-paths.sh",
+    ".loom/hooks/tests/test-hook-wiring.sh",
+    ".loom/scripts/lib/repo-root.sh",
+    ".loom/scripts/tests/lib/assert.sh",
+    ".loom/scripts/tests/lib/post-merge-cleanup-harness.sh",
+    ".loom/scripts/tests/lib/session-lock-sandbox.sh",
+    ".loom/scripts/tests/lib/trust-stub.sh",
+    ".loom/scripts/tests/lib/write-scope-fixture.sh",
+    ".loom/scripts/tests/test-merge-pr-notify-cleared-blockers.sh",
+    ".loom/scripts/tests/test-roll-pause-resume-live.sh",
+    ".loom/scripts/tests/test-spawn-claude-ambient-scrub.sh",
+    ".loom/scripts/tests/test-worktree-stale-closed-branch.sh"
   ],
-  "last_resync": "2026-11-04"
+  "last_resync": "2026-11-05",
+  "requires_daemon": "0.19.1146"
 }

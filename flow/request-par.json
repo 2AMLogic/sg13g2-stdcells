@@ -1,0 +1,18 @@
+{
+  "engine": "openroad",
+  "netlist": "build/add8_synth.v",
+  "hdl_toplevel": "add8",
+  "pdk": {"cell_library": "sg13g2_stdcell", "corner": "typ_1p20V_25C"},
+  "floorplan": {
+    "method": "utilization",
+    "utilization_pct": 38,
+    "aspect_ratio": 1.0,
+    "core_margin_um": 4.0,
+    "site": "CoreSite"
+  },
+  "io": {"layer_h": "Metal3", "layer_v": "Metal2"},
+  "constraints": {"clock_port": "clk", "clock_period_ns": 10.0},
+  "power": {"preset": "sg13g2"},
+  "seed": 1,
+  "target_stage": "route"
+}
