@@ -184,7 +184,7 @@ Wording and scoping, recorded here rather than silently edited:
 6. Added "Benchmark basis" under rows 10–12 (baseline Liberty, flow stage,
    row 12 metric, row 11 conditions). No bound changes.
 7. Ratification conditions (operator r6-q27, 2026-11-05): row 11's stage and
-   quantity are defined in Benchmark basis items 4 and 5. Row 12 is written
+   quantity are defined in Benchmark basis items 2 and 4. Row 12 is written
    one-sided (<= 1.10x / <= 1.05x for "within 10% / 5%"), so a faster result
    no longer fails; no bound tightens or loosens on the slow side. Reference
    column rows 7–8 say "Calibre", not "Calibre clean" (ETH does not state
