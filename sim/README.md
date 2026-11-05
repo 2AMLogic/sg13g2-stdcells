@@ -21,7 +21,9 @@ python3 -m unittest sim.characterize.tests.test_request
 One corner per invocation (TT/1.20 V/25 C by default). FF/SS are one
 invocation per corner with `--backend batch`, never a local loop.
 
-**Status: no record has been produced yet.** The PSP103 OSDI models are OSDI
-v0.4 and need ngspice >= 44; this host has 42, and the batch backend rejects a
-host-path `osdi_preload` (filed as 2AMLogic/klayout-tools#4911). The request
-builder and record writer are covered by unit tests only.
+**Status**: first real record, `sim/characterize/records/20261105-042154-1376b8f.md`
+(`sg13g2_inv_1`, TT/1.20 V/25 C, 5x5 slew x load grid, one arc, local backend,
+klt 0.9.0.dev1379, ngspice-46). The local run needs ngspice >= 44 for the OSDI
+v0.4 PSP103 models. The request preloads `psp103.osdi` (the module the PDK's
+`psp103va` model cards bind to), not `psp103_nqs.osdi`. FF/SS corners are not
+yet run (batch only).
