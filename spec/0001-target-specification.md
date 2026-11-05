@@ -1,11 +1,17 @@
 # 0001 — Target specification
 
-Status: proposed
+Status: RATIFIED
 
 Issue: #1. This record is ratified by its own PR being reviewed and merged with
 both reviewer keys (`ratification/ee-key/`, `ratification/market-key/`), neither
 held by an author of the PR or the design. The `Status:` line above is flipped to
 `RATIFIED` in that PR after both keys post and before merge (`CLAUDE.md`).
+
+Ratified 2026-11-05 by the operator (rjwalters), attended `fleet:decide` round
+20261105-r6, ruling r6-q27. Both keys re-reviewed the Doctor's head `b4ae4809`:
+the market key found it adequate, and the EE key requested one definition (row 11's
+stage and quantity). That definition was ratified as a condition and is made
+below; the EE key re-checked it before merge.
 
 ## Target table
 
@@ -17,12 +23,12 @@ held by an author of the PR or the design. The `Status:` line above is flipped t
 | 4 | Pin access | every pin on a grid point | — | every pin on grid |
 | 5 | Combinational cells | 40 | 120 | 220 total, all cell types (paper; library page); split not published |
 | 6 | Sequential cells | 0 (out of scope, see README Status) | 8 | included in the 220 total; split not published |
-| 7 | DRC | clean, `klt drc`, sg13g2 deck | — | Calibre clean |
-| 8 | LVS | layout-vs-schematic match, `klt lvs` | — | Calibre clean |
+| 7 | DRC | clean, `klt drc`, sg13g2 deck | — | Calibre (ETH's physical verification tool; "clean" is not stated) |
+| 8 | LVS | layout-vs-schematic match, `klt lvs` | — | Calibre (ETH's physical verification tool; "clean" is not stated) |
 | 9 | Liberty corners | TT/1.20 V/25 C | + FF/1.32 V/-40 C, SS/1.08 V/125 C | all three |
 | 10 | Benchmark cell area vs `sg13g2_stdcell` | <= 1.00x | <= 0.80x | 0.65x (paper) / 0.67x (library page) |
 | 11 | Benchmark energy vs `sg13g2_stdcell` | <= 1.00x | <= 0.80x | 0.61x (paper) / 0.67x (library page) |
-| 12 | Benchmark clock period vs `sg13g2_stdcell` | within 10% | within 5% | "virtually the same" |
+| 12 | Benchmark clock period vs `sg13g2_stdcell` | <= 1.10x | <= 1.05x | "virtually the same" |
 
 ### Reference attribution
 
@@ -43,8 +49,7 @@ re-read from the paper or the library page by the author of this record; the
 EE-key review on this PR reports checking them against both sources. The ratios
 are arithmetic on those percentages. The earlier "~180" / "~40"
 combinational/sequential split was not in either source (both give 220 cells
-total, including physical cells) and has been removed. Both sources give 220
-total with no split. "Virtually the same" (row 12) is the paper's wording; the
+total, including physical cells) and has been removed. "Virtually the same" (row 12) is the paper's wording; the
 paper's Table II gives 5.05 ns vs 4.89 ns, i.e. 1.033x. Treat all figures in the
 reference column as ETH Zurich's, cited and not reproduced here.
 
@@ -53,7 +58,7 @@ reference column as ETH Zurich's, cited and not reproduced here.
 ### Rows 1–4: geometry — copied deliberately, not derived
 
 Row height, routing grid, Metal1-only intra-cell routing, and on-grid pin access
-are taken directly from ETH Zurich's EZ130 8T (arXiv:2609.29965, Apache-2.0).
+are taken directly from ETH Zurich's EZ130 8T (arXiv:2609.29965; the library is Apache-2.0).
 The copy is the point: a benchmark against `sg13g2_stdcell` is only evidence
 about open tools if the geometry matches the reference's. A library on a
 different grid would still be a library, but would show the effect of different
@@ -116,8 +121,8 @@ characterize` is deferred, which is the gate on any sequential stretch (row 6).
 Target is <= 1.00x on area and energy ("do not lose to `sg13g2_stdcell`"),
 stretch <= 0.80x. Setting the target at ETH Zurich's reported result (0.65x /
 0.61x per the paper, 0.67x per the library page) would adopt someone else's
-measurement as our commitment before anything is built. Clock period: within 10%
-at target, within 5% at stretch; ETH Zurich describe theirs as "virtually the
+measurement as our commitment before anything is built. Clock period: <= 1.10x
+at target, <= 1.05x at stretch (one-sided: faster never fails); ETH Zurich describe theirs as "virtually the
 same" (1.033x in their Table II). These rows are measured on this repo's own
 cells with open tools and recorded as evidence; until then they are unmeasured
 (README Status).
@@ -135,7 +140,7 @@ This paragraph fixes what the unchanged ratios mean. No bound changes.
    re-characterized baseline only.
 2. **Flow and stage.** Same open flow (Yosys/ABC, OpenROAD), same designs, same
    constraints and floorplan rules on both libraries. Rows 10 and 12 are
-   post-synthesis at target; a post-layout result is a separate, labelled
+   post-synthesis at target, and so is row 11; a post-layout result is a separate, labelled
    result in which tap, tie and fill cells are counted, since `sg13g2_stdcell`
    integrates taps in-cell while a dedicated-tap library does not. Because the
    routing grid differs from the stock tech LEF (row 2), the benchmark flow
@@ -145,7 +150,12 @@ This paragraph fixes what the unchanged ratios mean. No bound changes.
    virtual clock with identical input and output delays on both libraries, at
    TT at target and at every stretch corner for the stretch.
 4. **Row 11 conditions.** TT corner, one fixed seeded random-vector stimulus
-   set, and the same power-report tool, for both libraries.
+   set, and the same power-report tool, for both libraries. The quantity is
+   **total energy over that vector set at the same clock period** (the row 12
+   virtual clock) for both libraries, post-synthesis like rows 10 and 12.
+5. **Same inputs on both sides.** Both libraries are characterized from the
+   same netlist level, and area and delay come from one synthesis run under
+   the same delay target.
 
 The benchmark designs are chosen by the benchmark issue, not by this record.
 ETH Zurich's benchmarks register their I/O with flip-flops and their 35%/39%
@@ -173,6 +183,12 @@ Wording and scoping, recorded here rather than silently edited:
    (see row 9).
 6. Added "Benchmark basis" under rows 10–12 (baseline Liberty, flow stage,
    row 12 metric, row 11 conditions). No bound changes.
+7. Ratification conditions (operator r6-q27, 2026-11-05): row 11's stage and
+   quantity are defined in Benchmark basis items 4 and 5. Row 12 is written
+   one-sided (<= 1.10x / <= 1.05x for "within 10% / 5%"), so a faster result
+   no longer fails; no bound tightens or loosens on the slow side. Reference
+   column rows 7–8 say "Calibre", not "Calibre clean" (ETH does not state
+   clean). The Apache-2.0 note is attached to the library, not the paper.
 
 ## Not ratified here
 

@@ -6,7 +6,7 @@ designed by AI agents driving
 flow — cocotb + Icarus and Yosys/OpenROAD on the digital side, xschem + ngspice
 on the analog side.
 
-It is the set of small logic gates — inverters, NANDs, adders, flip-flops —
+It is the set of small logic gates — inverters, NANDs, adders and, later, flip-flops (see Status) —
 that a synthesis tool assembles a digital chip out of, laid out by hand-written
 generators at a fixed 3.36 um row height and characterized into the timing and
 power tables (`.lib`) that every downstream tool reads.
@@ -70,7 +70,7 @@ using IHP SG13G2, not just this repo.
 Ratified by decision record
 [`spec/0001-target-specification.md`](spec/0001-target-specification.md), which
 carries the per-row reasoning. The reference column is ETH Zurich's EZ130 8T
-(arXiv:2609.29965, Apache-2.0), a library for this same process characterized
+(arXiv:2609.29965; the library is Apache-2.0), a library for this same process characterized
 with commercial tools — it is an external reference point, ETH Zurich's
 published result, not a result of this repo. Where the paper and the ETH library
 page disagree, both are shown with their source.
@@ -83,12 +83,12 @@ page disagree, both are shown with their source.
 | 4 | Pin access | every pin on a grid point | — | every pin on grid |
 | 5 | Combinational cells | 40 | 120 | 220 total, all cell types (ETH paper; library page); split not published |
 | 6 | Sequential cells | 0 (out of scope, see Status) | 8 | included in the 220 total; split not published |
-| 7 | DRC | clean, `klt drc`, sg13g2 deck | — | Calibre clean |
-| 8 | LVS | layout-vs-schematic match, `klt lvs` | — | Calibre clean |
+| 7 | DRC | clean, `klt drc`, sg13g2 deck | — | Calibre (ETH's physical verification tool; "clean" is not stated) |
+| 8 | LVS | layout-vs-schematic match, `klt lvs` | — | Calibre (ETH's physical verification tool; "clean" is not stated) |
 | 9 | Liberty corners | TT/1.20 V/25 C | + FF/1.32 V/-40 C, SS/1.08 V/125 C | all three |
 | 10 | Benchmark cell area vs `sg13g2_stdcell` | <= 1.00x | <= 0.80x | 0.65x (ETH paper) / 0.67x (ETH library page) |
 | 11 | Benchmark energy vs `sg13g2_stdcell` | <= 1.00x | <= 0.80x | 0.61x (ETH paper) / 0.67x (ETH library page) |
-| 12 | Benchmark clock period vs `sg13g2_stdcell` | within 10% | within 5% | "virtually the same" (ETH) |
+| 12 | Benchmark clock period vs `sg13g2_stdcell` | <= 1.10x | <= 1.05x | "virtually the same" (ETH) |
 
 Rows 10–12 are measured on combinational-only netlists at target scope; see the
 record for why and for what that means for comparison with ETH Zurich's figures.
