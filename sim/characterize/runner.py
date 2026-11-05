@@ -13,9 +13,9 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from ..harness.evidence import BaseExtensions
+from ..harness.evidence import CharacterizationExtensions
 from ..harness.report import allocate_record_id, git_provenance
-from .request import CellSpec, Corner, build_request
+from .request import CellSpec, build_request
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
@@ -78,10 +78,11 @@ def extract_arcs(response: dict, cell: CellSpec) -> list[dict]:
     return arcs
 
 
-def build_record_data(response: dict, cell: CellSpec, corner: Corner, backend: str) -> dict:
+def build_record_data(response: dict, cell: CellSpec, backend: str) -> dict:
     prov = response.get("provenance") or {}
     return {
         "cell": cell.name,
+        "netlist_provenance": f"netlist supplied to klt characterize: {cell.netlist}",
         "corner": response["corner"],
         "backend": backend,
         "klt": {"version": klt_version(), "provenance_version": prov.get("klt_version"),
@@ -96,25 +97,58 @@ def build_record_data(response: dict, cell: CellSpec, corner: Corner, backend: s
     }
 
 
-def evidence_for(data: dict) -> BaseExtensions:
-    ext = BaseExtensions(record_kind="characterization", data_provenance="simulated")
-    ext.extra = {
-        "klt version": data["klt"]["version"],
-        "backend": data["backend"],
-        "cell": data["cell"],
-        "corner": json.dumps(data["corner"], sort_keys=True),
-        "slew axis (ns)": json.dumps(data["axes"]["input_transition_ns"]),
-        "load axis (pF)": json.dumps(data["axes"]["output_load_pf"]),
-        "arcs": ", ".join(f"{a['related_pin']}->{a['output_pin']}" for a in data["arcs"]),
-    }
-    ext.validate()
-    return ext
+def _when(side_inputs: dict) -> str:
+    return " & ".join(f"{k}={v}" for k, v in sorted(side_inputs.items()))
 
 
-def render(record_id: str, git: dict, data: dict, ext: BaseExtensions) -> str:
+def evidence_for(data: dict) -> list[CharacterizationExtensions]:
+    """One validated extension per arc and per (slew, load) grid point.
+
+    The scalar fields summarise the rise/fall tables: delay and transition are
+    the worse (larger) of the two edges, energy is the Liberty internal energy
+    of one full cycle (rise_power + fall_power). The full tables stay in the
+    record's Data block.
+    """
+    corner = data["corner"]["name"]
+    slews = data["axes"]["input_transition_ns"]
+    loads = data["axes"]["output_load_pf"]
+    exts = []
+    for arc in data["arcs"]:
+        missing = [t for t in ("rise_power", "fall_power") if t not in arc]
+        if missing:
+            raise CharacterizeFailed(
+                f"arc {arc['related_pin']}->{arc['output_pin']} lacks energy tables: {missing}"
+            )
+        for i, slew in enumerate(slews):
+            for j, load in enumerate(loads):
+                ext = CharacterizationExtensions(
+                    record_kind="characterization",
+                    data_provenance="simulated",
+                    cell=data["cell"],
+                    arc_related_pin=arc["related_pin"],
+                    arc_when=_when(arc["side_inputs"]),
+                    arc_sense=arc["timing_sense"],
+                    input_slew_ns=slew,
+                    output_load_pf=load,
+                    delay_ns=max(arc["cell_rise"][i][j], arc["cell_fall"][i][j]),
+                    transition_ns=max(arc["rise_transition"][i][j], arc["fall_transition"][i][j]),
+                    energy_pj=arc["rise_power"][i][j] + arc["fall_power"][i][j],
+                    corner=corner,
+                    netlist_provenance=data["netlist_provenance"],
+                )
+                ext.validate()
+                exts.append(ext)
+    return exts
+
+
+def render(record_id: str, git: dict, data: dict, exts: list[CharacterizationExtensions]) -> str:
     lines = [f"# {record_id}", "", "**Kind**: characterization (raw klt characterize measurements)",
              f"**Repo commit**: {git['commit']}{' (dirty)' if git['dirty'] else ''}", ""]
-    lines += ext.render_lines()
+    lines += [f"**Notes**: klt {data['klt']['version']}, backend {data['backend']}; "
+              "delay/transition = worse of rise/fall, energy = rise + fall internal energy.", ""]
+    for ext in exts:
+        lines += [f"### {ext.arc_related_pin} slew {ext.input_slew_ns} ns, load {ext.output_load_pf} pF",
+                  *ext.render_lines(), ""]
     lines += ["", "## Data", "", "```json", json.dumps(data, indent=2, sort_keys=True), "```", ""]
     return "\n".join(lines)
 
@@ -123,31 +157,31 @@ def record(data: dict, records_dir: Path = RECORDS_DIR, repo_root: Path = REPO_R
     """Append one record. Never overwrites: exclusive-create, new id on collision."""
     records_dir.mkdir(parents=True, exist_ok=True)
     git = git_provenance(repo_root)
-    ext = evidence_for(data)
+    exts = evidence_for(data)
     while True:
         record_id = allocate_record_id(repo_root, records_dir, git=git)
         path = records_dir / f"{record_id}.md"
         try:
             with open(path, "x") as fh:
-                fh.write(render(record_id, git, {**data, "record_id": record_id}, ext))
+                fh.write(render(record_id, git, {**data, "record_id": record_id}, exts))
             return path
         except FileExistsError:  # raced: mint another
             continue
 
 
-def characterize_and_record(cell: CellSpec, corner: Corner, pdk_dir, backend: str = "local",
+def characterize_and_record(cell: CellSpec, corner: str, pdk_dir, backend: str = "local",
                             records_dir: Path = RECORDS_DIR, **axes) -> Path:
     response = run_klt(build_request(cell, corner, pdk_dir, **axes), backend=backend)
-    return record(build_record_data(response, cell, corner, backend), records_dir=records_dir)
+    return record(build_record_data(response, cell, backend), records_dir=records_dir)
 
 
 def main(argv=None) -> int:
     import argparse
-    from .request import SG13G2_INV_1, TT
+    from .request import DEFAULT_CORNER, SG13G2_INV_1
     ap = argparse.ArgumentParser(prog="python3 -m sim.characterize")
     ap.add_argument("--pdk-dir", default=os.environ.get("SG13G2_PDK_PATH") or
                     os.path.join(os.environ.get("PDK_ROOT", ""), "ihp-sg13g2"))
     ap.add_argument("--backend", default="local")
     args = ap.parse_args(argv)
-    print(characterize_and_record(SG13G2_INV_1, TT, args.pdk_dir, backend=args.backend))
+    print(characterize_and_record(SG13G2_INV_1, DEFAULT_CORNER, args.pdk_dir, backend=args.backend))
     return 0
