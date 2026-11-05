@@ -19,6 +19,13 @@ class RequestTests(unittest.TestCase):
         self.assertTrue(r["options"]["osdi_preload"][0].startswith("/pdk/"))
         json.dumps(r)
 
+    def test_osdi_preload_is_the_module_the_models_declare(self):
+        # The PDK's `.model ... psp103va` cards bind to psp103.osdi; psp103_nqs.osdi
+        # registers a different module name and leaves them "unknown model type"
+        # (ngspice_fatal on the first real run).
+        r = build_request(SG13G2_INV_1, DEFAULT_CORNER, "/pdk")
+        self.assertEqual(r["options"]["osdi_preload"], ["/pdk/libs.tech/ngspice/osdi/psp103.osdi"])
+
     def test_corner_comes_from_harness(self):
         for name, (vdd, temp) in CHAR_CORNER_PVT.items():
             c = build_request(SG13G2_INV_1, name, "/pdk")["corner"]

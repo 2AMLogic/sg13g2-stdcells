@@ -13,9 +13,11 @@ DEFAULT_SLEWS_NS: tuple[float, ...] = (0.02, 0.05, 0.1, 0.2, 0.4)
 DEFAULT_LOADS_PF: tuple[float, ...] = (0.001, 0.003, 0.01, 0.03, 0.1)
 
 #: Models: the low-voltage MOS corner library and the PSP103 OSDI that its
-#: devices need preloaded (paths relative to the PDK variant directory).
+#: `.model ... psp103va` cards need (psp103_nqs.osdi registers a different module
+#: name, so it leaves them "unknown model type"). Paths are relative to the PDK
+#: variant directory.
 MODEL_LIB = "libs.tech/ngspice/models/cornerMOSlv.lib"
-OSDI_PRELOAD = ("libs.tech/ngspice/osdi/psp103_nqs.osdi",)
+OSDI_PRELOAD = ("libs.tech/ngspice/osdi/psp103.osdi",)
 CELL_NETLIST = "libs.ref/sg13g2_stdcell/spice/sg13g2_stdcell.spice"
 
 
