@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..harness.corners import CHAR_CORNER_PVT, CORNERS, FAMILIES
+
 #: Default NLDM axes: input transition (ns) x output load (pF). Strictly
 #: ascending, as klt requires.
 DEFAULT_SLEWS_NS: tuple[float, ...] = (0.02, 0.05, 0.1, 0.2, 0.4)
@@ -21,15 +23,30 @@ class RequestError(ValueError):
     """The request inputs are malformed (raised before klt is ever run)."""
 
 
-@dataclass(frozen=True)
-class Corner:
-    name: str
-    process: str  # model-library section, e.g. "mos_tt"
-    supply_v: float
-    temperature_c: float
+#: Corner used by the CLI driver; a key of ``sim.harness.corners.CHAR_CORNER_PVT``.
+DEFAULT_CORNER = "tt"
 
 
-TT = Corner("tt_1p20v_25c", "mos_tt", 1.20, 25.0)
+def corner_block(name: str) -> dict:
+    """The klt request ``corner`` block for characterization corner ``name``.
+
+    The V/T pairing comes from ``CHAR_CORNER_PVT`` and the process section from
+    ``CORNERS`` -- this module keeps no copy of either.
+    """
+    if name not in CHAR_CORNER_PVT:
+        raise RequestError(
+            f"{name!r} is not a characterization corner ({', '.join(CHAR_CORNER_PVT)})"
+        )
+    sections = CORNERS[name].sections
+    if len(FAMILIES) != 1:
+        raise RequestError(f"cannot map corner {name!r} to one model section: families {FAMILIES}")
+    supply_v, temperature_c = CHAR_CORNER_PVT[name]
+    return {
+        "name": name,
+        "process": f"{FAMILIES[0]}_{sections[0]}",
+        "supply_v": supply_v,
+        "temperature_c": temperature_c,
+    }
 
 
 @dataclass(frozen=True)
@@ -61,7 +78,7 @@ def _axis(values, label: str) -> list[float]:
 
 def build_request(
     cell: CellSpec,
-    corner: Corner,
+    corner: str,
     pdk_dir: str | Path,
     slews_ns=DEFAULT_SLEWS_NS,
     loads_pf=DEFAULT_LOADS_PF,
@@ -86,12 +103,7 @@ def build_request(
             "pins": pins,
             "power_pins": {"vdd": cell.vdd, "gnd": cell.gnd},
         },
-        "corner": {
-            "name": corner.name,
-            "process": corner.process,
-            "supply_v": corner.supply_v,
-            "temperature_c": corner.temperature_c,
-        },
+        "corner": corner_block(corner),
         "grid": {
             "input_transition_ns": _axis(slews_ns, "slew"),
             "output_load_pf": _axis(loads_pf, "load"),
