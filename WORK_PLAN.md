@@ -53,7 +53,7 @@ Issues carrying `loom:curated`.
 
 ## Proposed (Architect / Hermit)
 
-- **#21**: Remove unexercised local-ngspice half of sim/harness (cli, runner, testbench, pdk, toolchain) *(hermit)*
+_None._
 
 ## Epics
 
@@ -71,6 +71,6 @@ _None._
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 1 |
-| Architect / Hermit proposals | 1 |
+| Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

@@ -4,7 +4,11 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-06
 
+- **PR #29**: refactor(sim): remove unexercised local-ngspice half of sim/harness
+- **PR #28**: feat(manifests): add block manifest and graded klt signoff T1 report
 - **PR #12**: docs(spec): add target-specification decision record and sync README table
+- **Issue #21** (closed): Remove unexercised local-ngspice half of sim/harness (cli, runner, testbench, pdk, toolchain)
+- **Issue #27** (closed): manifests: block manifest and first graded klt signoff T1 verdict
 - **Issue #1** (closed): Ratify the target specification
 
 ### 2026-11-05
