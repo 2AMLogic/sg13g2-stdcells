@@ -108,8 +108,74 @@ class Geometry(unittest.TestCase):
                 self.assertTrue(all(x >= -1000 for x in xs + ys))
 
     def test_cell_width_follows_pitch(self):
-        S, W, H = gl.layout_cell(CFG["cells"][1], CFG["process"], CFG["layout"])
+        cell = next(c for c in CFG["cells"] if c["name"] == "sg13g2_nand2_1")
+        S, W, H = gl.layout_cell(cell, CFG["process"], CFG["layout"])
         self.assertEqual((W, H), (3 * 420, 3360))
+
+
+def cell_named(name):
+    return next(c for c in CFG["cells"] if c["name"] == name)
+
+
+def layout_of(cell, cfg=CFG):
+    return gl.layout_cell(cell, cfg["process"], cfg["layout"])
+
+
+class MultiFinger(unittest.TestCase):
+    def test_two_finger_inverter_places(self):
+        S, W, H = layout_of(cell_named("sg13g2_inv_2"))
+        self.assertEqual((W, H), (3 * 420, 3360))
+        cols = [b for b in S.boxes if b[0] == "gatpoly" and b[4] - b[2] > 1000]  # full-height stripes
+        self.assertEqual(sorted((b[1] + b[3]) // 2 for b in cols), [420, 840])
+
+    def test_width_grows_with_finger_count(self):
+        w = {n: layout_of(cell_named(n))[1] for n in ("sg13g2_inv_1", "sg13g2_inv_2", "sg13g2_inv_4")}
+        self.assertEqual(w, {"sg13g2_inv_1": 2 * 420, "sg13g2_inv_2": 3 * 420, "sg13g2_inv_4": 5 * 420})
+
+    def test_fingers_share_a_gate_bridge_and_one_pad(self):
+        S, _, _ = layout_of(cell_named("sg13g2_inv_4"))
+        pw = CFG["layout"]["rules"]["poly_width_nm"]
+        bridges = [b for b in S.boxes if b[0] == "gatpoly" and b[4] - b[2] == pw and b[3] - b[1] > pw]
+        self.assertEqual(len(bridges), 1)
+        self.assertEqual(sum(1 for lbl in S.labels if lbl[3] == "A"), 1)
+
+    def test_single_finger_cell_has_no_bridge(self):
+        S, _, _ = layout_of(cell_named("sg13g2_inv_1"))
+        pw = CFG["layout"]["rules"]["poly_width_nm"]
+        self.assertEqual(sum(1 for b in S.boxes if b[0] == "gatpoly" and b[4] - b[2] == pw and b[3] - b[1] > pw), 0)
+
+    def test_multi_finger_output_deterministic(self):
+        a = gl.generate(CFG)["sg13g2_inv_4.gds"]
+        self.assertEqual(a, gl.generate(copy.deepcopy(CFG))["sg13g2_inv_4.gds"])
+
+    def test_series_stack_of_fingers_still_exits_3_with_reason(self):
+        cfg = copy.deepcopy(CFG)
+        cfg["cells"].append({"name": "x_nand2_2", "family": "nand2", "drive": 2, "inputs": ["A", "B"], "outputs": {"Y": "!(A*B)"}})
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(cfg)
+        self.assertIn("x_nand2_2", str(cm.exception))
+        self.assertIn("channel tracks", str(cm.exception))
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d) / "c.json"
+            p.write_text(json.dumps(cfg))
+            r = run("--config", str(p))
+            self.assertEqual(r.returncode, 3)
+            self.assertIn("x_nand2_2", r.stderr)
+
+    def test_even_finger_series_chain_needs_diffusion_break(self):
+        cfg = copy.deepcopy(CFG)
+        cfg["cells"] = [{"name": "x_nand4_1", "family": "nand4", "drive": 1, "inputs": ["A", "B", "C", "D"], "outputs": {"Y": "!(A*B*C*D)"}}]
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(cfg)
+        self.assertIn("x_nand4_1", str(cm.exception))
+        self.assertIn("diffusion", str(cm.exception))
+
+    def test_no_rule_value_loosened(self):
+        self.assertEqual(CFG["layout"]["rules"], {
+            "poly_width_nm": 130, "poly_space_nm": 180, "poly_endcap_nm": 180, "poly_to_activ_nm": 70, "cont_nm": 160,
+            "cont_space_nm": 180, "activ_enc_cont_nm": 70, "poly_enc_cont_nm": 70, "m1_width_nm": 160, "m1_space_nm": 180,
+            "rail_width_nm": 160, "nwell_enc_pactiv_nm": 310, "sd_enc_activ_nm": 180})
+        self.assertEqual(CFG["layout"]["channel_tracks"], 1)
 
 
 class Failures(unittest.TestCase):

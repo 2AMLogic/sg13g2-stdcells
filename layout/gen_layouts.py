@@ -18,7 +18,11 @@ layer map and every design rule come from the config's `layout` object
 
 Placement model (deliberately small; anything outside it is a named failure):
   * one NMOS diffusion strip (bottom) and one PMOS strip (top), one gate
-    column per device pair, diffusion shared between neighbouring devices;
+    column per finger, diffusion shared between neighbouring devices; a device
+    of F fingers is F adjacent columns alternating source/drain, joined by a
+    poly bridge below the NMOS diffusion and given one gate contact. The NMOS
+    and PMOS device on one gate net are drawn with the same finger count (the
+    larger; a device with fewer netlist fingers is folded, same total width);
   * the strips are ordered so each is a single chain of devices sharing a
     source/drain net, and both orderings have the same gate-net sequence, so
     each poly column crosses both strips;
@@ -88,17 +92,25 @@ def validate(config):
 
 
 # ---------------------------------------------------------------- ordering
-def _chains(devs, ends):
-    """All orderings of devs (index, kind, d, g, s, w, ng) as one chain where
-    neighbours share a diffusion net. Yields lists of (dev, left_net, right_net)."""
+def end_net(l, r, fingers):
+    """Net at the far end of a device whose `fingers` columns alternate l, r, l, ..."""
+    return r if fingers % 2 else l
+
+
+def _chains(devs):
+    """All orderings of devs (index, kind, d, g, s, w, fingers) as one chain where
+    neighbours share a diffusion net. A device of F fingers is F columns that
+    alternate source/drain, so it ends on its right net only for odd F; for even F
+    it ends back on its left net. Yields lists of (dev, left_net, right_net)."""
     n = len(devs)
     out = []
 
-    def extend(order, left_nets, used):
+    def extend(order, used):
         if len(order) == n:
             out.append(list(order))
             return
-        tail = order[-1][2]
+        i0, l0, r0 = order[-1]
+        tail = end_net(l0, r0, devs[i0][6])
         for i in range(n):
             if i in used:
                 continue
@@ -107,14 +119,14 @@ def _chains(devs, ends):
                 if l == tail:
                     order.append((i, l, r))
                     used.add(i)
-                    extend(order, left_nets, used)
+                    extend(order, used)
                     used.discard(i)
                     order.pop()
 
     for i in range(n):
         d = devs[i]
         for l, r in ((d[2], d[4]), (d[4], d[2])):
-            extend([(i, l, r)], None, {i})
+            extend([(i, l, r)], {i})
     return out
 
 
@@ -122,7 +134,7 @@ def order_strips(ndevs, pdevs):
     """Pick (n_order, p_order) with equal gate-net sequences, deterministically."""
     if len(ndevs) != len(pdevs):
         raise PlaceError(f"{len(ndevs)} NMOS vs {len(pdevs)} PMOS devices: gate columns cannot pair up")
-    nch, pch = _chains(ndevs, None), _chains(pdevs, None)
+    nch, pch = _chains(ndevs), _chains(pdevs)
     if not nch:
         raise PlaceError("NMOS devices do not form a single diffusion chain (needs a diffusion break)")
     if not pch:
@@ -163,18 +175,36 @@ def layout_cell(cell, proc, lay):
     devs = [(i,) + d for i, d in enumerate(c.devices)]  # (i, kind, drain, gate, source, w, ng)
     ndevs = [(i, k, d, g, s, w, ng) for (i, k, d, g, s, w, ng) in devs if k == "n"]
     pdevs = [(i, k, d, g, s, w, ng) for (i, k, d, g, s, w, ng) in devs if k == "p"]
+    # Fingers per gate net: a poly column crosses both strips, so the NMOS and
+    # PMOS device on one gate net are drawn with the same finger count, the larger
+    # of the two. A device with fewer netlist fingers is folded (same total W).
+    grid = proc.get("grid_nm", gn.DEFAULT_GRID_NM)
+    fingers = {}
     for d in devs:
-        if d[6] != 1:
-            raise PlaceError(f"device of {d[5]} nm needs {d[6]} fingers; multi-finger devices are not placed")
+        fingers[d[3]] = max(fingers.get(d[3], 1), d[6])
+
+    def fold(d):
+        k = fingers[d[3]]
+        if d[5] % (k * grid):
+            raise PlaceError(f"{d[1]}MOS device of {d[5]} nm on gate {d[3]} cannot be drawn as {k} fingers on the {grid} nm grid")
+        return d[:6] + (k,)
+
+    ndevs, pdevs = [fold(d) for d in ndevs], [fold(d) for d in pdevs]
+    for kind, ds in (("N", ndevs), ("P", pdevs)):
+        if len({d[5] // d[6] for d in ds}) > 1:
+            raise PlaceError(f"{kind}MOS devices have different finger widths {sorted({d[5] // d[6] for d in ds})} nm; one diffusion strip has one height")
     nord, pord = order_strips(ndevs, pdevs)
-    N = len(nord)
+    cols = [(j, k) for j, (i, _, _) in enumerate(nord) for k in range(ndevs[i][6])]  # column -> (position in order, finger)
+    N = len(cols)
+    if N != sum(pdevs[i][6] for i, _, _ in pord):
+        raise PlaceError("NMOS and PMOS strips have different column counts")
     W = (N + 1) * P
     rail = R["rail_width_nm"]
     vdd, vss = proc["vdd_net"], proc["vss_net"]
     node_x = [P // 2 + j * P for j in range(N + 1)]
     gate_x = [(j + 1) * P for j in range(N)]
-    wn = max(ndevs[i][5] for i, _, _ in nord)
-    wp = max(pdevs[i][5] for i, _, _ in pord)
+    wn = ndevs[nord[0][0]][5] // ndevs[nord[0][0]][6]  # finger width (uniform, checked above)
+    wp = pdevs[pord[0][0]][5] // pdevs[pord[0][0]][6]
     n_y0 = lay["n_diff_y0_nm"]
     n_y1 = n_y0 + wn
     p_y1 = H - lay["p_diff_top_margin_nm"]
@@ -189,10 +219,9 @@ def layout_cell(cell, proc, lay):
 
     # Node nets for each strip: node j sits between device j-1 and j.
     def nodes(order, devs_):
-        nets = [None] * (N + 1)
-        for j, (i, l, r) in enumerate(order):
-            nets[j] = l
-            nets[j + 1] = r
+        nets = [order[0][1]]
+        for i, l, r in order:  # F fingers alternate l, r, l, ...; the next device starts on the last node
+            nets += [r if f % 2 == 0 else l for f in range(devs_[i][6])]
         return nets
 
     nn, pn = nodes(nord, ndevs), nodes(pord, pdevs)
@@ -210,8 +239,19 @@ def layout_cell(cell, proc, lay):
     # Poly columns: one stripe per gate, crossing both strips.
     pw = R["poly_width_nm"]
     ext = R["poly_endcap_nm"]
-    for j in range(N):
-        S.box("gatpoly", gate_x[j] - pw // 2, n_y0 - ext, gate_x[j] + pw // 2, p_y1 + ext)
+    # Fingers of one device are joined by a poly bridge below the NMOS diffusion,
+    # poly_to_activ clear of it; only those columns grow down to the bridge.
+    bridge_y1 = n_y0 - R["poly_to_activ_nm"]
+    bridge_y0 = bridge_y1 - pw
+    dev_cols = {}  # position in order -> [column indices]
+    for c, (pos, _) in enumerate(cols):
+        dev_cols.setdefault(pos, []).append(c)
+    for c in range(N):
+        multi = len(dev_cols[cols[c][0]]) > 1
+        S.box("gatpoly", gate_x[c] - pw // 2, min(n_y0 - ext, bridge_y0) if multi else n_y0 - ext, gate_x[c] + pw // 2, p_y1 + ext)
+    for cs in dev_cols.values():
+        if len(cs) > 1:
+            S.box("gatpoly", gate_x[cs[0]] - pw // 2, bridge_y0, gate_x[cs[-1]] + pw // 2, bridge_y1)
 
     # Contacts per node (stacked inside the diffusion) and the M1 stub on them.
     mw = R["m1_width_nm"]
@@ -253,7 +293,7 @@ def layout_cell(cell, proc, lay):
     seen_gate = {}
     for j, g in enumerate(gates):
         if g in seen_gate:
-            raise PlaceError(f"gate net {g} drives two columns; joining them needs more routing than one track model")
+            raise PlaceError(f"gate net {g} drives the columns of two different devices; joining them needs more routing than one track model")
         seen_gate[g] = j
 
     # Horizontal tracks for signal nets with more than one attachment.
@@ -290,29 +330,33 @@ def layout_cell(cell, proc, lay):
         S.box("metal1", *rect)
 
     poly_pads = []
-    # Gate pads: poly + contact + M1, offset to a side whose M1 neighbours leave room.
-    for j, g in enumerate(gates):
+    # Gate pads: one per device (its fingers are bridged), poly + contact + M1, on
+    # the first finger/side whose M1 and poly neighbours leave room.
+    for pos, g in enumerate(gates):
+        mine = dev_cols[pos]
         placed = None
-        for sgn in (-1, 1):
-            cx = gate_x[j] + sgn * (R["poly_enc_cont_nm"] + half_c)
-            pad = (cx - mw // 2, gate_pad_y, cx + mw // 2, gate_pad_y + R["cont_nm"])
-            others = [r for n2, r in m1 if n2 != g]
-            if cx - half_c - R["poly_enc_cont_nm"] < 0 or cx + half_c + R["poly_enc_cont_nm"] > W:
-                continue
-            ppad = (min(cx - half_c - R["poly_enc_cont_nm"], gate_x[j] - pw // 2), gate_pad_y - R["poly_enc_cont_nm"],
-                    max(cx + half_c + R["poly_enc_cont_nm"], gate_x[j] + pw // 2), gate_pad_y - R["poly_enc_cont_nm"] + pad_h)
-            others_poly = [(gate_x[k] - pw // 2, ppad[1], gate_x[k] + pw // 2, ppad[3]) for k in range(N) if k != j] + poly_pads
-            if any(_overlap_or_close(ppad, r, R["poly_space_nm"]) for r in others_poly):
-                continue
-            if all(not _overlap_or_close(pad, r, R["m1_space_nm"]) for r in others):
-                placed = (cx, pad)
-                poly_pads.append(ppad)
+        for j in mine:
+            for sgn in (-1, 1):
+                cx = gate_x[j] + sgn * (R["poly_enc_cont_nm"] + half_c)
+                pad = (cx - mw // 2, gate_pad_y, cx + mw // 2, gate_pad_y + R["cont_nm"])
+                others = [r for n2, r in m1 if n2 != g]
+                if cx - half_c - R["poly_enc_cont_nm"] < 0 or cx + half_c + R["poly_enc_cont_nm"] > W:
+                    continue
+                ppad = (min(cx - half_c - R["poly_enc_cont_nm"], gate_x[j] - pw // 2), gate_pad_y - R["poly_enc_cont_nm"],
+                        max(cx + half_c + R["poly_enc_cont_nm"], gate_x[j] + pw // 2), gate_pad_y - R["poly_enc_cont_nm"] + pad_h)
+                others_poly = [(gate_x[k] - pw // 2, ppad[1], gate_x[k] + pw // 2, ppad[3]) for k in range(N) if k not in mine] + poly_pads
+                if any(_overlap_or_close(ppad, r, R["poly_space_nm"]) for r in others_poly):
+                    continue
+                if all(not _overlap_or_close(pad, r, R["m1_space_nm"]) for r in others):
+                    placed = (j, cx, pad, ppad)
+                    break
+            if placed:
                 break
         if placed is None:
             raise PlaceError(f"no Metal1-clean spot for the gate contact of {g} (neighbouring stubs/tracks in the way)")
-        cx, pad = placed
-        S.box("gatpoly", min(cx - half_c - R["poly_enc_cont_nm"], gate_x[j] - pw // 2), gate_pad_y - R["poly_enc_cont_nm"],
-              max(cx + half_c + R["poly_enc_cont_nm"], gate_x[j] + pw // 2), gate_pad_y - R["poly_enc_cont_nm"] + pad_h)
+        j, cx, pad, ppad = placed
+        poly_pads.append(ppad)
+        S.box("gatpoly", *ppad)
         S.box("cont", cx - half_c, gate_pad_y, cx + half_c, gate_pad_y + R["cont_nm"])
         S.box("metal1", *pad)
         m1.append((g, pad))

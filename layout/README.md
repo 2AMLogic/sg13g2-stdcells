@@ -51,14 +51,32 @@ The `process` and `cells` objects are exactly `design/README.md`'s contract. The
 
 ### Placement model and its limits
 
-One NMOS and one PMOS diffusion strip, one poly column per device pair, Metal1
-only. Each strip must be a single chain of devices sharing source/drain nets, and
-both chains must have the same gate-net sequence. Outside that model the generator
-exits `3` naming the reason, e.g. a diffusion break is needed (XOR, mux), a
-multi-finger device, a gate net driving two columns, more nets to join than
-`channel_tracks`, or no Metal1-clean place for a gate contact. Sequential cells,
-multi-row cells, well/substrate taps, and Metal2 routing are out of scope for this
-first slice. The generator never relaxes a rule to place a cell.
+One NMOS and one PMOS diffusion strip, Metal1 only. A device of F fingers (the
+`ng` from `design/gen_netlists.py`) is F adjacent poly columns on the strip,
+alternating source and drain; the columns of one device are joined by a poly bridge
+below the NMOS diffusion (`poly_width_nm` tall, `poly_to_activ_nm` clear of it) and
+share one gate contact. A poly column crosses both strips, so the NMOS and PMOS
+device on one gate net get the same finger count, the larger of the two; the other
+is folded into that many fingers (same total width, which must divide evenly on
+`process.grid_nm`, default 10, else exit `3`). Cell width is `(columns + 1) *
+gate_pitch_nm`, counting fingers. Each strip must be a single chain of devices
+sharing source/drain nets, both chains must have the same gate-net sequence, and all
+devices in a strip must have the same finger width.
+
+Outside that model the generator exits `3` naming the cell and the reason:
+* a diffusion break is needed (XOR, mux) -- including any series stack of
+  even-finger devices: F alternating columns end on the net they started on for even
+  F, so the next device in the chain cannot share that diffusion (`nand4_1`);
+* a gate net driving the columns of two different devices;
+* more nets to join than `channel_tracks` -- every extra finger boundary re-attaches
+  its net, so a series stack that is folded (`nand2_2`: `Y` and `n1`) needs two
+  tracks where the config allows one;
+* devices of different finger widths in one strip (`a21oi_1`);
+* a row/channel too short, or no Metal1-clean place for a gate contact.
+
+Sequential cells, multi-row cells, well/substrate taps, and Metal2 routing are out
+of scope for this first slice. The generator never relaxes a rule to place a cell;
+`channel_tracks` and every `rules` value are unchanged from the first slice.
 
 ### Pinning from a sibling
 
@@ -72,10 +90,21 @@ second process config producing different output with the same engine.
 ### Recorded DRC evidence
 
 `layout/drc/*.json` are `klt drc --deck sg13g2 --format json` reports (curated
-deck, klt pinned in `toolchain.json`) for `sg13g2_inv_1` and `sg13g2_nand2_1`
-generated from `example_config.json`: 0 violations on each. That is a result
-against the rules the curated deck models, not a sign-off. The reports list
-`coverage.rules_checked`; the deck does not enforce e.g. contact-to-gate spacing or
-the latch-up rules (see `coverage.unmodeled_rules`), and no LVS has been run on
-these cells. The example rule values are this repo's draft SG13G2 geometry, not
-ratified spec rows (issue #1).
+deck) for `sg13g2_inv_1`, `sg13g2_nand2_1`, `sg13g2_inv_2` and `sg13g2_inv_4`
+generated from `example_config.json`: 0 violations on each. `inv_2` and `inv_4` are
+the multi-finger cells (2 and 4 columns); both were run with klt `0.9.2.dev103`
+(`9f4cec3`) on klayout `0.30.13`, whereas the first two reports were run on klt
+`0.9.0.dev1379` / klayout `0.30.12` (each report's `provenance` says which; the
+newer reports carry `klayout_version_mismatch: true`). Those are results against the
+rules the curated deck models, not a sign-off. The reports list `coverage.rules_checked`;
+the deck does not enforce e.g. contact-to-gate spacing or the latch-up and pad
+rules, so `coverage.unmodeled_rules` -- `LU.a`, `LU.c`, `LU.c1`, `LU.d`, `LU.d1`,
+`Pad.a1`, `Pad.aR`, `Pad.bR`, `Pad.d`, `Pad.d1R`, `Pad.dR`, `Pad.gR`, `Pad.jR`,
+`Pad.kR` in every report -- stay unchecked, and no LVS has been run on these
+cells. In particular the poly bridge and the folded NMOS fingers have not been
+checked against the netlist. The example rule values are this repo's draft SG13G2
+geometry, not ratified spec rows (issue #1).
+
+Multi-input cells with fingers (`nand2_2`, `buf_2`, ...) are not in the config: with
+`channel_tracks: 1` they exit `3` (see above), so the second multi-finger cell
+is the 4-finger inverter, not a multi-input cell.
