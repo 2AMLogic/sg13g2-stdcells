@@ -58,6 +58,20 @@
    "outputs": {"Y": "!A"}
   },
   {
+   "name": "sg13g2_inv_2",
+   "family": "inv",
+   "drive": 2,
+   "inputs": ["A"],
+   "outputs": {"Y": "!A"}
+  },
+  {
+   "name": "sg13g2_inv_4",
+   "family": "inv",
+   "drive": 4,
+   "inputs": ["A"],
+   "outputs": {"Y": "!A"}
+  },
+  {
    "name": "sg13g2_nand2_1",
    "family": "nand2",
    "drive": 1,
