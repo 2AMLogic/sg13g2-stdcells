@@ -1,0 +1,65 @@
+block: sg13g2-stdcells  kind: mixed-signal
+partition boundary:
+  analog: transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS
+  digital: add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline
+tier: none
+T1: 3/22 items met
+
+[UNMET] T1 #1 [analog] Design sources
+        reason: no_evidence
+[MET  ] T1 #1 [digital] Design sources
+        cite: flow/records/20261104-df96543/synthesize.json (kind=synthesize, status=ok, content_hash=sha256:634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139, exit_status=0)
+        input: not re-hashed (content_hash compared against this envelope's own claim only -- the artifact itself was not read)
+        topic: not bound -- a passing synthesize envelope satisfies this item, but klt signoff cannot judge its relevance (cite an artifact-anchored generic envelope to bind it)
+[UNMET] T1 #2 [analog] Layout
+        reason: no_evidence
+[UNMET] T1 #2 [digital] Layout
+        reason: no_evidence
+[MET  ] T1 #3 [analog] DRC clean
+        cite: layout/drc/sg13g2_inv_1.json (kind=drc, status=clean, content_hash=sha256:b54701b1c1a0677c9069a445acc6975c7bf3bba9041bac91ee1ae986f979a159, exit_status=0)
+        input: re-hashed the artifact this envelope names -- matches
+        coverage: layers_in_stream_without_rules=1 (8/25), rules_skipped=34 (metal1.enclosing.via1.1, metal2.enclosing.via2.1, metal2.space.1, metal2.width.1, +30 more), deck_scope=19 (Act, Cnt, Gat, M1, +15 more)
+[UNMET] T1 #3 [digital] DRC clean
+        reason: no_evidence
+[UNMET] T1 #4 [analog] LVS clean
+        reason: no_evidence
+[MET  ] T1 #4 [digital] LVS clean
+        cite: flow/records/20261104-df96543/lvs.json (kind=lvs, status=match, content_hash=sha256:a8eedac6ece34023fc103f36f32ef62be5d671c862c6952982809bac24022bf5, exit_status=0)
+        input: not re-hashed (content_hash compared against this envelope's own claim only -- the artifact itself was not read)
+[UNMET] T1 #5 [analog] Full corner verification vs a ratified spec
+        reason: no_evidence
+[UNMET] T1 #5 [digital] Full corner verification vs a ratified spec
+        reason: no_evidence
+[UNMET] T1 #6 [analog] Statistical claims carry Monte Carlo evidence
+        reason: no_evidence
+[UNMET] T1 #6 [digital] Statistical claims carry Monte Carlo evidence
+        reason: no_evidence
+[UNMET] T1 #7 [analog] Post-layout verification
+        reason: no_evidence
+[UNMET] T1 #7 [digital] Post-layout verification
+        reason: no_evidence
+[UNMET] T1 #8 [analog] Characterization report
+        reason: no_evidence
+[UNMET] T1 #8 [digital] Characterization report
+        reason: no_evidence
+[UNMET] T1 #9 [analog] Testbenches shipped
+        reason: no_evidence
+[UNMET] T1 #9 [digital] Testbenches shipped
+        reason: no_evidence
+[UNMET] T1 #10 [analog] Repo hygiene
+        reason: no_evidence
+[UNMET] T1 #10 [digital] Repo hygiene
+        reason: no_evidence
+[UNMET] T1 #11 [analog] Power delivery (structural)
+        reason: no_evidence
+[UNMET] T1 #11 [digital] Power delivery (structural)
+        reason: supply_spec_incomplete
+[UNMET] T2 #- T2 — signoff-validated
+        reason: tier_not_supported
+[UNMET] T3 #- T3 — silicon-validated
+        reason: tier_not_supported
+[UNMET] T4 #- T4 — production-validated
+        reason: tier_not_supported
+
+source: docs/design-evidence-tiers.md (content_hash=sha256:9ffa0fef19d2c61eb00731e6d6833787be1c5506973082961eb7a72e066cc46c)
+build: klt 0.9.2.dev42+g94b54d114210
