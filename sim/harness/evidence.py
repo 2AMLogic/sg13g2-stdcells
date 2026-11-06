@@ -6,9 +6,7 @@ sweep checked against a pass/fail spec, or a ``characterization`` record
 that states a measured value plus how it was obtained), and
 :class:`BaseExtensions` -- an open, append-only-safe bag for whatever
 record-level fields a block's own evidence convention needs beyond the base
-fields already on ``testbench.Testbench`` (claim, netlist_provenance,
-measure, checks, ...) and ``report.build_record``'s own fields (grid,
-summary, sensitivity, environment). ``extra`` and ``notes`` round-trip
+fields a record carries (claim, netlist_provenance, measure, checks, ...). ``extra`` and ``notes`` round-trip
 through a ``tb.json`` manifest's ``evidence`` block untouched, and render as
 plain bullet lines in the Markdown record -- so a fresh block gets a working
 evidence path with zero schema fields of its own before it has decided what

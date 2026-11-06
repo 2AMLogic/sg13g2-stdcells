@@ -52,7 +52,9 @@ Two siblings, because this canary has two halves and no single sibling has both.
   canary with a real transistor-level `sim/` tree, so it supplies the PDK
   resolution, corner sweep, and evidence-recording patterns for per-cell
   SPICE characterization. Same process, same device models, same `klt` DRC/LVS
-  path.
+  path. Only its corner, evidence-schema and record-id patterns were kept
+  (`sim/harness/`); the local-ngspice runner half was removed (#21) —
+  simulation goes through `klt sim` / `klt characterize`.
 - **Digital/flow half — copy `sky130-modexp`.** It is the program's first
   digital canary, so it supplies the `rtl/` + `flow/` + `verification/` shape:
   Yosys synthesis and OpenROAD place-and-route driven through `klt`, with

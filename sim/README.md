@@ -1,6 +1,6 @@
 # sim
 
-Testbenches and PVT corner results (ngspice). harness/ carries the generic sim-harness-core scaffold (see harness/README.md); testbenches and results are empty until there is something to simulate.
+Testbenches and PVT corner results (ngspice). harness/ carries the PVT corner definitions, evidence schema and record-id helpers (see harness/README.md). Simulation runs through `klt` (see characterize/), not a local ngspice runner.
 
 ## characterize/
 
