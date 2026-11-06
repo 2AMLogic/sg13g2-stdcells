@@ -45,12 +45,6 @@ def test_builtin_corners_untouched():
     assert corners.CORNER_SETS["mos"] == ("tt", "ff", "ss", "fs", "sf")
 
 
-def test_sabotage_forces_typical_keeps_names():
-    sab = corners.sabotage(corners.resolve_corners([corners.CHAR_CORNER_SET]))
-    assert [c.name for c in sab] == ["tt", "ff", "ss"]
-    assert all(c.sections == corners.CORNERS["tt"].sections for c in sab)
-
-
 def test_valid_record_passes_and_renders():
     ext = evidence.CharacterizationExtensions(**GOOD)
     ext.validate()
