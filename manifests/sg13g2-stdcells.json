@@ -1,0 +1,18 @@
+{
+  "block": "sg13g2-stdcells",
+  "kind": "mixed-signal",
+  "partition_boundary": {
+    "analog": "transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS",
+    "digital": "add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline"
+  },
+  "evidence": {
+    "1.digital": "flow/records/20261104-df96543/synthesize.json",
+    "3.analog": "layout/drc/sg13g2_inv_1.json",
+    "4.digital": "flow/records/20261104-df96543/lvs.json",
+    "11.digital": [
+      "flow/records/20261104-df96543/erc.json",
+      "flow/records/20261104-df96543/lvs.json",
+      "flow/records/20261104-df96543/place-and-route.json"
+    ]
+  }
+}
