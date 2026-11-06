@@ -6,7 +6,7 @@ designed by AI agents driving
 flow — cocotb + Icarus and Yosys/OpenROAD on the digital side, xschem + ngspice
 on the analog side.
 
-It is the set of small logic gates — inverters, NANDs, adders, flip-flops —
+It is the set of small logic gates — inverters, NANDs, adders and, later, flip-flops (see Status) —
 that a synthesis tool assembles a digital chip out of, laid out by hand-written
 generators at a fixed 3.36 um row height and characterized into the timing and
 power tables (`.lib`) that every downstream tool reads.
@@ -43,13 +43,12 @@ Deliberately not being built yet, and what each waits on:
   search, which is strictly harder than a combinational arc sweep. The
   combinational set comes first; sequential cells wait on that machinery
   working.
-- **Liberty characterization of any cell.** `klt` reads NLDM Liberty but no
-  verb writes it (`2AMLogic/klayout-tools#2498`). Until that lands, a cell
-  designed here cannot be synthesized against without a commercial
-  characterizer, so no `.lib` is committed and `views/` stays empty.
+- **Liberty characterization of any cell.** `klt characterize` emits Liberty
+  (klayout-tools#2528), but there is no cell yet to characterize, so no `.lib`
+  is committed and `views/` stays empty.
 - **The synthesis benchmark.** The area/timing/energy comparison in the table
-  below cannot be run until there is a `.lib` to run it with. It waits on the
-  same issue.
+  below cannot be run until there is a `.lib` to run it with. It waits on
+  cells and a generator, and on the benchmark basis in the decision record.
 - **Any claim about beating `sg13g2_stdcell`.** The reference numbers in this
   repo are ETH Zurich's, measured with commercial tools on their own library.
   Nothing here restates them as ours, and nothing will until this repo has
@@ -66,27 +65,33 @@ result. Where the agents hit friction with the open-source tooling — most ofte
 filed as a public issue against the tool itself, so the fix benefits everyone
 using IHP SG13G2, not just this repo.
 
-## Target specification (DRAFT — engineering to ratify, see issue #1)
+## Target specification
 
-All rows are DRAFT until issue #1 ratifies them. The reference column is
-ETH Zurich's EZ130 8T (arXiv:2609.29965, Apache-2.0), a library for this same
-process characterized with commercial tools — it is an external reference
-point, not a result of this repo.
+Ratified by decision record
+[`spec/0001-target-specification.md`](spec/0001-target-specification.md), which
+carries the per-row reasoning. The reference column is ETH Zurich's EZ130 8T
+(arXiv:2609.29965; the library is Apache-2.0), a library for this same process characterized
+with commercial tools — it is an external reference point, ETH Zurich's
+published result, not a result of this repo. Where the paper and the ETH library
+page disagree, both are shown with their source.
 
-| Parameter | Target | Stretch | EZ130 8T (reference) |
-|---|---|---|---|
-| Row height | 3.36 um (8 tracks) | — | 3.36 um |
-| Routing grid | 0.42 um x 0.42 um | — | 0.42 um x 0.42 um |
-| Intra-cell routing | Metal1 only | — | Metal1 only |
-| Pin access | every pin on a grid point | — | every pin on grid |
-| Combinational cells | 40 | 120 | ~180 |
-| Sequential cells | 0 (out of scope, see Status) | 8 | ~40 |
-| DRC | clean, `klt drc`, sg13g2 deck | — | Calibre clean |
-| LVS | layout-vs-schematic match, `klt lvs` | — | Calibre clean |
-| Liberty corners | TT/1.20 V/25 C | + FF/1.32 V/-40 C, SS/1.08 V/125 C | all three |
-| Benchmark cell area vs `sg13g2_stdcell` | <= 1.00x | <= 0.80x | 0.65x reported |
-| Benchmark energy vs `sg13g2_stdcell` | <= 1.00x | <= 0.80x | 0.61x reported |
-| Benchmark clock period vs `sg13g2_stdcell` | within 10% | within 5% | "virtually the same" |
+| # | Parameter | Target | Stretch | EZ130 8T (ETH Zurich's reference) |
+|---|---|---|---|---|
+| 1 | Row height | 3.36 um (8 tracks) | — | 3.36 um |
+| 2 | Routing grid | 0.42 um x 0.42 um | — | 0.42 um x 0.42 um |
+| 3 | Intra-cell routing | Metal1 only | — | Metal1 only |
+| 4 | Pin access | every pin on a grid point | — | every pin on grid |
+| 5 | Combinational cells | 40 | 120 | 220 total, all cell types (ETH paper; library page); split not published |
+| 6 | Sequential cells | 0 (out of scope, see Status) | 8 | included in the 220 total; split not published |
+| 7 | DRC | clean, `klt drc`, sg13g2 deck | — | Calibre (ETH's physical verification tool; "clean" is not stated) |
+| 8 | LVS | layout-vs-schematic match, `klt lvs` | — | Calibre (ETH's physical verification tool; "clean" is not stated) |
+| 9 | Liberty corners | TT/1.20 V/25 C | + FF/1.32 V/-40 C, SS/1.08 V/125 C | all three |
+| 10 | Benchmark cell area vs `sg13g2_stdcell` | <= 1.00x | <= 0.80x | 0.65x (ETH paper) / 0.67x (ETH library page) |
+| 11 | Benchmark energy vs `sg13g2_stdcell` | <= 1.00x | <= 0.80x | 0.61x (ETH paper) / 0.67x (ETH library page) |
+| 12 | Benchmark clock period vs `sg13g2_stdcell` | <= 1.10x | <= 1.05x | "virtually the same" (ETH) |
+
+Rows 10–12 are measured on combinational-only netlists at target scope; see the
+record for why and for what that means for comparison with ETH Zurich's figures.
 
 ## Repo layout
 
