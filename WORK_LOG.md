@@ -2,6 +2,11 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-06
+
+- **PR #12**: docs(spec): add target-specification decision record and sync README table
+- **Issue #1** (closed): Ratify the target specification
+
 ### 2026-11-05
 
 - **PR #23**: feat: add config-driven static-CMOS cell layout generator with --check
