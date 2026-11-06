@@ -4,6 +4,8 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-06
 
+- **PR #32**: refactor(sim): remove dead PVT-grid and sabotage helpers
+- **Issue #31** (closed): Remove dead grid helpers left in sim/harness/corners.py after #21
 - **PR #29**: refactor(sim): remove unexercised local-ngspice half of sim/harness
 - **PR #28**: feat(manifests): add block manifest and graded klt signoff T1 report
 - **PR #12**: docs(spec): add target-specification decision record and sync README table
