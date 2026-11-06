@@ -47,7 +47,7 @@ DEFAULT_NOMINAL_SUPPLY_V: float = 1.2   # SG13G2 core supply; the
 # DEFAULT_SUPPLY_TOLERANCE above already is.
 
 #: Device families in the order their ``.lib`` sections are included in the
-#: generated deck (see runner.compose_deck). The generic core sweeps only
+#: generated deck. The generic core sweeps only
 #: "mos" by default; a block adds families (and per-corner sections for them)
 #: as it needs them.
 FAMILIES: tuple[str, ...] = ("mos",)
