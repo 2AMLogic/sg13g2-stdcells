@@ -3,7 +3,7 @@ partition boundary:
   analog: transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS
   digital: add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline
 tier: none
-T1: 3/22 items met
+T1: 5/22 items met
 
 [UNMET] T1 #1 [analog] Design sources
         reason: no_evidence
@@ -13,19 +13,24 @@ T1: 3/22 items met
         topic: not bound -- a passing synthesize envelope satisfies this item, but klt signoff cannot judge its relevance (cite an artifact-anchored generic envelope to bind it)
 [UNMET] T1 #2 [analog] Layout
         reason: no_evidence
-[UNMET] T1 #2 [digital] Layout
-        reason: no_evidence
+[MET  ] T1 #2 [digital] Layout
+        cite: flow/records/20261107-a1a4ec6/layout-attest.json (kind=generic, status=pass, content_hash=sha256:3a3336d6ce0bf0383fad65c3ad885f68a3cbbd83fde0971721a5daea61f2f1fd, exit_status=0)
+        input: re-hashed the artifact this envelope names -- matches
+        bound: T1 item #2 -> flow/records/20261107-a1a4ec6/add8.routed.gds (content_hash=sha256:3a3336d6ce0bf0383fad65c3ad885f68a3cbbd83fde0971721a5daea61f2f1fd)
+        regeneration: sha256:3a3336d6ce0bf0383fad65c3ad885f68a3cbbd83fde0971721a5daea61f2f1fd matches the bound artifact; generator `PDK_ROOT=<pdk> RECORD_ID=<id> flow/run.sh` was attested, not run by klt (generator correctness and topical relevance not checked)
 [MET  ] T1 #3 [analog] DRC clean
         cite: layout/drc/sg13g2_inv_1.json (kind=drc, status=clean, content_hash=sha256:b54701b1c1a0677c9069a445acc6975c7bf3bba9041bac91ee1ae986f979a159, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
         coverage: layers_in_stream_without_rules=1 (8/25), rules_skipped=34 (metal1.enclosing.via1.1, metal2.enclosing.via2.1, metal2.space.1, metal2.width.1, +30 more), deck_scope=19 (Act, Cnt, Gat, M1, +15 more)
-[UNMET] T1 #3 [digital] DRC clean
-        reason: no_evidence
+[MET  ] T1 #3 [digital] DRC clean
+        cite: flow/records/20261107-a1a4ec6/drc.json (kind=drc, status=clean, content_hash=sha256:3a3336d6ce0bf0383fad65c3ad885f68a3cbbd83fde0971721a5daea61f2f1fd, exit_status=0)
+        input: re-hashed the artifact this envelope names -- matches
+        coverage: layers_in_stream_without_rules=9 (8/2, 8/25, 10/2, 10/25, +5 more), rules_skipped=8 (metal5.enclosing.mim.1, mim.enclosing.topvia1.1, nwell.enclosing.nactiv.1, nwell.enclosing.nactiv.dig.1, +4 more), deck_scope=19 (Act, Cnt, Gat, M1, +15 more)
 [UNMET] T1 #4 [analog] LVS clean
         reason: no_evidence
 [MET  ] T1 #4 [digital] LVS clean
         cite: flow/records/20261104-df96543/lvs.json (kind=lvs, status=match, content_hash=sha256:a8eedac6ece34023fc103f36f32ef62be5d671c862c6952982809bac24022bf5, exit_status=0)
-        input: not re-hashed (content_hash compared against this envelope's own claim only -- the artifact itself was not read)
+        input: re-hashed the artifact this envelope names -- matches
 [UNMET] T1 #5 [analog] Full corner verification vs a ratified spec
         reason: no_evidence
 [UNMET] T1 #5 [digital] Full corner verification vs a ratified spec
@@ -62,4 +67,4 @@ T1: 3/22 items met
         reason: tier_not_supported
 
 source: docs/design-evidence-tiers.md (content_hash=sha256:9ffa0fef19d2c61eb00731e6d6833787be1c5506973082961eb7a72e066cc46c)
-build: klt 0.9.2.dev42+g94b54d114210
+build: klt 0.9.2.dev244+g92e2b15a66f2

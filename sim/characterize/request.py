@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -116,3 +117,75 @@ def build_request(
             "keep_artifacts": keep_artifacts,
         },
     }
+
+
+#: Name of the committed library view's Liberty library.
+LIBRARY_NAME = "sg13g2_stdcells_tt_1p20v_25c"
+
+
+def cells_from_config(config_path: str | Path, netlist_dir: str | Path) -> list[CellSpec]:
+    """One :class:`CellSpec` per cell of a ``design/gen_netlists.py`` config.
+
+    Pins and Liberty functions come from the config's ``inputs``/``outputs`` (never
+    retyped here); each cell's SPICE is ``<netlist_dir>/<cell>.spice`` as emitted by
+    ``design/gen_netlists.py`` from the *same* config.
+    """
+    cfg = json.loads(Path(config_path).read_text())
+    process = cfg["process"]
+    cells = cfg.get("cells") or []
+    if not cells:
+        raise RequestError(f"{config_path}: config declares no cells")
+    nl = Path(netlist_dir).resolve()
+    return [
+        CellSpec(
+            c["name"],
+            inputs=tuple(c["inputs"]),
+            outputs=dict(c["outputs"]),
+            vdd=process.get("vdd_net", "VDD"),
+            gnd=process.get("vss_net", "VSS"),
+            netlist=str(nl / f"{c['name']}.spice"),
+        )
+        for c in cells
+    ]
+
+
+def _cell_entry(cell: CellSpec, pdk: Path) -> dict:
+    if not cell.inputs or not cell.outputs:
+        raise RequestError(f"cell {cell.name!r} needs at least one input and one output")
+    netlist = Path(cell.netlist)
+    if not netlist.is_absolute():
+        netlist = pdk / netlist
+    pins = [{"name": n, "direction": "input"} for n in cell.inputs]
+    pins += [{"name": n, "direction": "output", "function": f} for n, f in cell.outputs.items()]
+    return {
+        "name": cell.name,
+        "netlist": str(netlist),
+        "pins": pins,
+        "power_pins": {"vdd": cell.vdd, "gnd": cell.gnd},
+    }
+
+
+def build_library_request(
+    cells: list[CellSpec],
+    corner: str,
+    pdk_dir: str | Path,
+    library_name: str = LIBRARY_NAME,
+    slews_ns=DEFAULT_SLEWS_NS,
+    loads_pf=DEFAULT_LOADS_PF,
+    keep_artifacts: bool = False,
+) -> dict:
+    """Return a multi-cell, single-corner ``klt characterize`` request (``cells`` form).
+
+    Same corner/grid/models/options as :func:`build_request`; one ``.lib`` results.
+    """
+    if not cells:
+        raise RequestError("a library request needs at least one cell")
+    names = [c.name for c in cells]
+    if len(set(names)) != len(names):
+        raise RequestError("duplicate cell names in library request")
+    pdk = Path(pdk_dir)
+    req = build_request(cells[0], corner, pdk, slews_ns, loads_pf, keep_artifacts)
+    del req["cell"]
+    req["library"] = {"name": library_name}
+    req["cells"] = [_cell_entry(c, pdk) for c in cells]
+    return req
