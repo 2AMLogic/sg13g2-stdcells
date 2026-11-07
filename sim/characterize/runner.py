@@ -7,6 +7,7 @@ append-only: a new run mints a new record id; nothing is overwritten.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -15,7 +16,8 @@ from pathlib import Path
 
 from ..harness.evidence import CharacterizationExtensions
 from ..harness.report import allocate_record_id, git_provenance
-from .request import CellSpec, build_request
+from .request import (LIBRARY_NAME, CellSpec, build_library_request, build_request,
+                      cells_from_config)
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
@@ -33,7 +35,8 @@ def klt_version() -> str:
     return (out.stdout or out.stderr).strip() or "unknown"
 
 
-def run_klt(request: dict, backend: str = "local", workdir: Path | None = None) -> dict:
+def run_klt(request: dict, backend: str = "local", workdir: Path | None = None,
+            lib_path: Path | None = None) -> dict:
     """Write ``request`` to a scratch dir, run klt, return the parsed JSON response.
 
     Raises :class:`CharacterizeFailed` loudly on a non-zero exit or unparsable output
@@ -45,6 +48,8 @@ def run_klt(request: dict, backend: str = "local", workdir: Path | None = None) 
     req_path.write_text(json.dumps(request, indent=2) + "\n")
     cmd = ["klt", "characterize", "--format", "json", "--backend", backend,
            "-o", str(scratch / "out"), str(req_path)]
+    if lib_path is not None:
+        cmd[-1:-1] = ["--lib", str(lib_path)]
     proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if proc.returncode != 0:
         raise CharacterizeFailed(
@@ -93,7 +98,8 @@ def build_record_data(response: dict, cell: CellSpec, backend: str) -> dict:
         },
         "units": response.get("units", {}),
         "arcs": extract_arcs(response, cell),
-        "leakage": (response.get("cells") or [{}])[0].get("leakage"),
+        "leakage": next((e.get("leakage") for e in response.get("cells") or []
+                         if e["cell"]["name"] == cell.name), None),
     }
 
 
@@ -142,22 +148,28 @@ def evidence_for(data: dict) -> list[CharacterizationExtensions]:
 
 
 def render(record_id: str, git: dict, data: dict, exts: list[CharacterizationExtensions]) -> str:
+    """``data`` is one cell's data, or ``{"cells": [per-cell data...], ...}`` for a library."""
+    if "cells" in data:
+        data = {**data, **{k: v for k, v in data["cells"][0].items() if k not in data}}
     lines = [f"# {record_id}", "", "**Kind**: characterization (raw klt characterize measurements)",
              f"**Repo commit**: {git['commit']}{' (dirty)' if git['dirty'] else ''}", ""]
     lines += [f"**Notes**: klt {data['klt']['version']}, backend {data['backend']}; "
               "delay/transition = worse of rise/fall, energy = rise + fall internal energy.", ""]
     for ext in exts:
-        lines += [f"### {ext.arc_related_pin} slew {ext.input_slew_ns} ns, load {ext.output_load_pf} pF",
+        lines += [f"### {ext.cell} {ext.arc_related_pin} slew {ext.input_slew_ns} ns, load {ext.output_load_pf} pF",
                   *ext.render_lines(), ""]
     lines += ["", "## Data", "", "```json", json.dumps(data, indent=2, sort_keys=True), "```", ""]
     return "\n".join(lines)
 
 
 def record(data: dict, records_dir: Path = RECORDS_DIR, repo_root: Path = REPO_ROOT) -> Path:
-    """Append one record. Never overwrites: exclusive-create, new id on collision."""
+    """Append one record. Never overwrites: exclusive-create, new id on collision.
+
+    ``data`` is one cell's data, or a library ``{"cells": [...]}`` (one record per run).
+    """
     records_dir.mkdir(parents=True, exist_ok=True)
     git = git_provenance(repo_root)
-    exts = evidence_for(data)
+    exts = [e for d in data.get("cells", [data]) for e in evidence_for(d)]
     while True:
         record_id = allocate_record_id(repo_root, records_dir, git=git)
         path = records_dir / f"{record_id}.md"
@@ -175,6 +187,53 @@ def characterize_and_record(cell: CellSpec, corner: str, pdk_dir, backend: str =
     return record(build_record_data(response, cell, backend), records_dir=records_dir)
 
 
+DEFAULT_CONFIG = REPO_ROOT / "layout" / "example_config.json"
+DEFAULT_LIB = REPO_ROOT / "views" / f"{LIBRARY_NAME}.lib"
+
+
+def generate_netlists(config: Path, out: Path) -> None:
+    """Emit the config's SPICE with the repo generator (not the committed ``demo_*``)."""
+    proc = subprocess.run(
+        ["python3", str(REPO_ROOT / "design" / "gen_netlists.py"), "--config", str(config),
+         "--out", str(out)], capture_output=True, text=True, check=False)
+    if proc.returncode != 0:
+        raise CharacterizeFailed(f"gen_netlists failed: {(proc.stdout + proc.stderr).strip()[:2000]}")
+
+
+def provenance_for(config: Path, corner: dict, data: dict) -> dict:
+    git = git_provenance(REPO_ROOT)
+    rel = os.path.relpath(config, REPO_ROOT)
+    return {
+        "library": LIBRARY_NAME,
+        "klt_version": data["klt"]["version"],
+        "repo_commit": git["commit"] + (" (dirty)" if git["dirty"] else ""),
+        "corner": corner,
+        "config": rel,
+        "config_sha256": hashlib.sha256(Path(config).read_bytes()).hexdigest(),
+        "cells": [c["cell"] for c in data["cells"]],
+        "evidence_record": data.get("record_id"),
+    }
+
+
+def characterize_library(config: Path, corner: str, pdk_dir, lib_path: Path = DEFAULT_LIB,
+                         backend: str = "local", records_dir: Path = RECORDS_DIR) -> Path:
+    """Characterize every cell of ``config`` into one committed ``.lib`` + sidecar + record."""
+    with tempfile.TemporaryDirectory(prefix="sg13g2-lib-") as tmp:
+        tmp = Path(tmp)
+        generate_netlists(config, tmp / "netlists")
+        cells = cells_from_config(config, tmp / "netlists")
+        request = build_library_request(cells, corner, pdk_dir)
+        response = run_klt(request, backend=backend, workdir=tmp / "work", lib_path=lib_path)
+    per_cell = [build_record_data(response, c, backend) for c in cells]
+    data = {**per_cell[0], "cells": per_cell,
+            "netlist_provenance": f"design/gen_netlists.py --config {os.path.relpath(config, REPO_ROOT)}"}
+    path = record(data, records_dir=records_dir)
+    data["record_id"] = path.stem
+    prov = provenance_for(config, response["corner"], data)
+    Path(str(lib_path) + ".provenance").write_text(json.dumps(prov, indent=2, sort_keys=True) + "\n")
+    return path
+
+
 def main(argv=None) -> int:
     import argparse
     from .request import DEFAULT_CORNER, SG13G2_INV_1
@@ -182,6 +241,14 @@ def main(argv=None) -> int:
     ap.add_argument("--pdk-dir", default=os.environ.get("SG13G2_PDK_PATH") or
                     os.path.join(os.environ.get("PDK_ROOT", ""), "ihp-sg13g2"))
     ap.add_argument("--backend", default="local")
+    ap.add_argument("--library", action="store_true",
+                    help=f"characterize every cell of --config into {DEFAULT_LIB.relative_to(REPO_ROOT)}")
+    ap.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    ap.add_argument("--lib", type=Path, default=DEFAULT_LIB)
     args = ap.parse_args(argv)
+    if args.library:
+        print(characterize_library(args.config.resolve(), DEFAULT_CORNER, args.pdk_dir,
+                                   lib_path=args.lib.resolve(), backend=args.backend))
+        return 0
     print(characterize_and_record(SG13G2_INV_1, DEFAULT_CORNER, args.pdk_dir, backend=args.backend))
     return 0
