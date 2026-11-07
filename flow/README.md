@@ -48,7 +48,9 @@ superseded: klayout-tools#2441, #2444 and #2447 are closed, and
 `power.preset: "sg13g2"` reaches `power.pdn: true` at `target_stage: route`.
 The caveats that remain, from that record: the library has no tap/endcap
 cells (`tapcell_master: null`, `tapless: true`), so gate 3's `missing_tie` is
-inapplicable rather than zero; and `klt drc` was not run, so #2444 is not
-verified here.
+inapplicable rather than zero. (That record's note that `klt drc` was not run
+is superseded: `flow/run.sh` now copies the routed GDS into the record and
+runs `klt drc`; see `records/20261107-a1a4ec6/RECORD.md`, which quotes the
+deck's coverage limits. `GDS_HASH_ONLY=1` keeps only a sha256 and size.)
 
 Cold start: `PDK_ROOT=<dir containing ihp-sg13g2> flow/run.sh`.
