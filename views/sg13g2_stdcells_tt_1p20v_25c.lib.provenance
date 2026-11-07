@@ -1,0 +1,20 @@
+{
+  "cells": [
+    "sg13g2_inv_1",
+    "sg13g2_inv_2",
+    "sg13g2_inv_4",
+    "sg13g2_nand2_1"
+  ],
+  "config": "layout/example_config.json",
+  "config_sha256": "1a02f3ccb5b49edc86ae1a82fa928c21b796adac72548066e773c47b0254b6f5",
+  "corner": {
+    "name": "tt",
+    "process": "mos_tt",
+    "supply_v": 1.2,
+    "temperature_c": 25.0
+  },
+  "evidence_record": "20261107-222836-6ee1577",
+  "klt_version": "klt 0.9.2.dev247+g6c8de4e4f36a",
+  "library": "sg13g2_stdcells_tt_1p20v_25c",
+  "repo_commit": "6ee1577d987531bf073075f031b20471240295f7 (dirty)"
+}
