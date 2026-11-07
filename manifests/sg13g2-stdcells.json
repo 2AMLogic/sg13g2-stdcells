@@ -6,8 +6,22 @@
     "digital": "add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline"
   },
   "evidence": {
+    "1.analog": {
+      "file": "manifests/envelopes/item1.analog.attest.json",
+      "content_hash": "sha256:94c4ce9742c7d86dc8035514b9454f3d0a87b2fecf4988e0e1569162d9761dda"
+    },
     "1.digital": "flow/records/20261104-df96543/synthesize.json",
+    "2.analog": {
+      "file": "manifests/envelopes/item2.analog.attest.json",
+      "content_hash": "sha256:d54584825e7b97f2f40b33f44b9760c9e1832f239d7889d193858fb6cf619cb6"
+    },
     "3.analog": "layout/drc/sg13g2_inv_1.json",
+    "4.analog": [
+      "layout/lvs/sg13g2_inv_1.json",
+      "layout/lvs/sg13g2_inv_2.json",
+      "layout/lvs/sg13g2_inv_4.json",
+      "layout/lvs/sg13g2_nand2_1.json"
+    ],
     "4.digital": "flow/records/20261104-df96543/lvs.json",
     "11.digital": [
       "flow/records/20261104-df96543/erc.json",

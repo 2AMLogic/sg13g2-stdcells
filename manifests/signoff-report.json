@@ -9,17 +9,17 @@
   "tier": null,
   "t1_item_count": 22,
   "build_t1_item_count": 22,
-  "t1_met_count": 3,
+  "t1_met_count": 5,
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:9ffa0fef19d2c61eb00731e6d6833787be1c5506973082961eb7a72e066cc46c",
   "build": {
-    "version": "0.9.2.dev42+g94b54d114210",
-    "package_version": "0.9.2.dev42+g94b54d114210",
-    "git_commit": "94b54d1142107ad2e8c765a2195afaa3b656e93a",
+    "version": "0.9.2.dev244+g92e2b15a66f2",
+    "package_version": "0.9.2.dev244+g92e2b15a66f2",
+    "git_commit": "92e2b15a66f2b9d6ae69ed1b6cf6ec2e99a1e0e6",
     "git_tag": null,
     "dirty": false,
     "is_release": false,
-    "grading_ruleset_id": "sha256:22c42b66c4d1f99b5c00f6bf53d80b20fa8365860d857a921508ca5ab5f3771b"
+    "grading_ruleset_id": "sha256:696ddfb02e2e156856e7ec94a89346821558215e65ce70dfaa84fe01e9bdfc9e"
   },
   "items": [
     {
@@ -30,10 +30,90 @@
       "partition_boundary": "transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS",
       "text": "committed schematic sources (or generator) plus the netlist derived from them, regenerated on design change.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/envelopes/item1.analog.attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:94c4ce9742c7d86dc8035514b9454f3d0a87b2fecf4988e0e1569162d9761dda",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 1,
+          "path": null,
+          "content_hash": "sha256:94c4ce9742c7d86dc8035514b9454f3d0a87b2fecf4988e0e1569162d9761dda",
+          "input_verified": true,
+          "members": [
+            {
+              "path": {
+                "path": "design/gen_netlists.py",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:c43d54d3eab74174ecd97131431a613841bec9f840e6271be9661f7f6f4ae50c",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/example_config.json",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:1a02f3ccb5b49edc86ae1a82fa928c21b796adac72548066e773c47b0254b6f5",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:65aa1e3c6e10bc76cea3cae6015b0c7b6f58161d896e8b6301fcf76a21d227e7",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/lvs/netlists/sg13g2_inv_2.spice",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:da42c9d5d4790a03f7959d0416799651ad1425a770ce08e879fde32741851d9f",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/lvs/netlists/sg13g2_inv_4.spice",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:f350f0e6257207c943ef822d4744a39bd50446f719c3ea96e871a7e40cfa894e",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/lvs/netlists/sg13g2_nand2_1.spice",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:1fc9770ab7c6d2a87ba9e0026f630a789f736b1e4cc4a17dbfd79755692ada59",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "manifests/inventories/item1.analog.json",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:00673dbd9027d70ad6567172545ac99a8c3d9b7cb1c302567bc0c57986922dc2",
+              "status": "verified"
+            }
+          ],
+          "summary": "T1 item 1 (Design sources): 10/10 attestation checks passed (klt signoff --attest)",
+          "source": "manifests/inventories/item1.analog.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 10,
+            "passed_count": 10
+          }
+        }
+      }
     },
     {
       "tier": "T1",
@@ -64,10 +144,66 @@
       "partition_boundary": "transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS",
       "text": "committed GDS/OASIS, reproducibly generated or with documented provenance.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/envelopes/item2.analog.attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:d54584825e7b97f2f40b33f44b9760c9e1832f239d7889d193858fb6cf619cb6",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 2,
+          "path": null,
+          "content_hash": "sha256:d54584825e7b97f2f40b33f44b9760c9e1832f239d7889d193858fb6cf619cb6",
+          "input_verified": true,
+          "members": [
+            {
+              "path": {
+                "path": "layout/gds/sg13g2_inv_1.gds",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:b54701b1c1a0677c9069a445acc6975c7bf3bba9041bac91ee1ae986f979a159",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/gds/sg13g2_inv_2.gds",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:e63de78e232b0c46b422e3a18b7a58afee6c4ccd4d210295e692b45937d9848d",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/gds/sg13g2_inv_4.gds",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:5d4c4abdfc1473f529ec21547bc8a3206468e54b20b0997b9ce35901eda907b1",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/gds/sg13g2_nand2_1.gds",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:aef3b756bf0ff36d1609938960084a5678c10c70b18680273b4cabbca9401552",
+              "status": "verified"
+            }
+          ],
+          "summary": "T1 item 2 (Layout): 12/12 attestation checks passed (klt signoff --attest)",
+          "source": "layout/gds/sg13g2_inv_1.gds",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": null,
+            "check_count": 12,
+            "passed_count": 12
+          }
+        }
+      }
     },
     {
       "tier": "T1",
@@ -187,9 +323,41 @@
       "text": "latest LVS report (or, per cell, a list of reports \u2014 all must pass) `status: match`, fresh, engine named, checked against the netlist from item 1 (schematic netlist for analog, synthesized/routed gate-level netlist for digital), **and that same report's `power_connectivity.status` not `\"mismatch\"`**. Those are two verdicts, not one: `klt lvs`'s top-level `status` is the *signal*- connectivity compare's own result, and since issue #1952 the power/ground half is reported beside it in its own `power_connectivity` block (`docs/cli/lvs.md` \u2192 \"Power/ground connectivity\"). `klt signoff` already grades this item on both \u2014 an `lvs`-kind check passes only on `status == \"match\"` **and** `power_connectivity.status != \"mismatch\"` (issue #1965) \u2014 so a claim resting on `status: match` alone is weaker than the tool that grades it. What the check verifies is per-standard-cell-instance *pin-to-net* correctness: on every abstracted instance, each pin the PDK library declares power/ground must reach the net the caller declared (`options.power_connectivity.expected_nets`) or, absent a declaration, the same net every other instance's same-named pin reaches; a disagreement renders `power.inconsistent_pin_net` / `power.unexpected_pin_net`, and a pin on no net at all renders `power.unconnected_pin`. **The check's reach is narrower than \"the power grid is verified\", and a claim must not say otherwise.** A `power_connectivity.status` of `\"unchecked\"` \u2014 every `reference.form` other than `gate-level-verilog`, an explicit `options.power_connectivity: false`, or a layout whose instances declare no PG pins at all \u2014 means the question was never asked; this item and `klt signoff` both read it as \"does not apply here\", never as \"verified\", so a fleet policy of \"re-run LVS, look for `match`\" is not by itself power-connectivity evidence (#1985). And even where it does run it is *not* a geometric rail/grid continuity check: whether a rail is an unbroken annulus, and whether the grid carries the current, stay `klt ring-check`, `klt power`, and the DRC deck's business \u2014 see \"Power/IR-drop + EM evidence\" below for what is and is not covered. Warnings-only mismatches must be listed with the claim. A second, independent engine's concurring verdict (#343) strengthens this from \"one toolchain agrees with itself\" to a cross-checked result. **PDK-runset path (issue #2870, operator ruling of 2026-10-08).** For device families the PDK's own open KLayout LVS runset recognises and the curated extraction deck does not, a `klt lvs` report with `\"engine\": \"klayout-runset\"` is accepted evidence for this item, on four conditions: (1) the runset is the PDK's own at a pinned revision \u2014 `klt signoff` checks `provenance.runset.content_hash` against a signoff-side allowlist (`signoff_runset.PINNED_RUNSETS`, hash \u2192 PDK revision), not against a field the block declares, and the runset file named by the report must still re-hash to that value; (2) the report is a `klt` envelope with the same `--check` re-hash guarantees as a curated-deck report (layout hash, reference netlist hash, plus the runset hash); (3) the report names its engine, and `klt signoff` carries `engine` and the runset hash distinctly in the check detail and the `met` citation; (4) every device is recognised \u2014 a non-empty `coverage.declared_not_recognized`, or a `device_census` whose per-class layout and reference counts differ, is a failure (`runset_unrecognised_device`), never a warning, even when `status` reads `match`. A report from a runset that is not in the allowlist is refused `runset_not_pinned`; one whose runset file changed since the run, `runset_hash_mismatch`. **This does not change** the default: curated decks stay the route wherever they recognise every device in the block, and a block may not choose the runset to avoid a curated-deck finding. The allowlist (`signoff_runset.PINNED_RUNSETS`, listed by `klt signoff --describe-grader` under `pinned_runsets`) holds the SG13G2, SG13CMOS5L and gf180mcu `*.lvs` runsets as of 2026-10-27. **Adding an entry** is a reviewed trust decision, never a copy of a hash from a report: fetch the PDK's runset file from its upstream repo at a named commit, `sha256` it (the same digest `_provenance.sha256_file` records), and add one entry recording `pdk`, `revision`, `repo`, `commit`, `path` and `reviewed_by`. The digest covers the top-level runset file only, so the `commit` is what fixes the `rule_decks/` it includes. A PDK whose runset cannot be fetched or run at a verifiable commit is left unpinned.",
       "notes": [],
       "status": "unmet",
-      "reason": "no_evidence",
+      "reason": "check_failed",
       "graded_by_build": true,
-      "citation": null
+      "citation": null,
+      "citations_graded": [
+        {
+          "citation": "layout/lvs/sg13g2_inv_1.json",
+          "status": "unmet",
+          "reason": "check_failed"
+        },
+        {
+          "citation": "layout/lvs/sg13g2_inv_2.json",
+          "status": "unmet",
+          "reason": "check_failed"
+        },
+        {
+          "citation": "layout/lvs/sg13g2_inv_4.json",
+          "status": "unmet",
+          "reason": "check_failed"
+        },
+        {
+          "citation": "layout/lvs/sg13g2_nand2_1.json",
+          "status": "unmet",
+          "reason": "check_failed"
+        }
+      ],
+      "members_covered": 0,
+      "members_total": 4,
+      "detail": {
+        "failed_citations": [
+          "layout/lvs/sg13g2_inv_1.json",
+          "layout/lvs/sg13g2_inv_2.json",
+          "layout/lvs/sg13g2_inv_4.json",
+          "layout/lvs/sg13g2_nand2_1.json"
+        ]
+      }
     },
     {
       "tier": "T1",

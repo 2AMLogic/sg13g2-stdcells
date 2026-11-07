@@ -3,16 +3,33 @@ partition boundary:
   analog: transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS
   digital: add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline
 tier: none
-T1: 3/22 items met
+T1: 5/22 items met
 
-[UNMET] T1 #1 [analog] Design sources
-        reason: no_evidence
+[MET  ] T1 #1 [analog] Design sources
+        cite: manifests/envelopes/item1.analog.attest.json (kind=generic, status=pass, content_hash=sha256:94c4ce9742c7d86dc8035514b9454f3d0a87b2fecf4988e0e1569162d9761dda, exit_status=0)
+        input: re-hashed the artifact this envelope names -- matches
+        bound: T1 item #1 -> 7 members (content_hash=sha256:94c4ce9742c7d86dc8035514b9454f3d0a87b2fecf4988e0e1569162d9761dda)
+        member design/gen_netlists.py: verified
+        member layout/example_config.json: verified
+        member layout/lvs/netlists/sg13g2_inv_1.spice: verified
+        member layout/lvs/netlists/sg13g2_inv_2.spice: verified
+        member layout/lvs/netlists/sg13g2_inv_4.spice: verified
+        member layout/lvs/netlists/sg13g2_nand2_1.spice: verified
+        member manifests/inventories/item1.analog.json: verified
+        regeneration: not claimed
 [MET  ] T1 #1 [digital] Design sources
         cite: flow/records/20261104-df96543/synthesize.json (kind=synthesize, status=ok, content_hash=sha256:634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139, exit_status=0)
         input: not re-hashed (content_hash compared against this envelope's own claim only -- the artifact itself was not read)
         topic: not bound -- a passing synthesize envelope satisfies this item, but klt signoff cannot judge its relevance (cite an artifact-anchored generic envelope to bind it)
-[UNMET] T1 #2 [analog] Layout
-        reason: no_evidence
+[MET  ] T1 #2 [analog] Layout
+        cite: manifests/envelopes/item2.analog.attest.json (kind=generic, status=pass, content_hash=sha256:d54584825e7b97f2f40b33f44b9760c9e1832f239d7889d193858fb6cf619cb6, exit_status=0)
+        input: re-hashed the artifact this envelope names -- matches
+        bound: T1 item #2 -> 4 members (content_hash=sha256:d54584825e7b97f2f40b33f44b9760c9e1832f239d7889d193858fb6cf619cb6)
+        member layout/gds/sg13g2_inv_1.gds: verified
+        member layout/gds/sg13g2_inv_2.gds: verified
+        member layout/gds/sg13g2_inv_4.gds: verified
+        member layout/gds/sg13g2_nand2_1.gds: verified
+        regeneration: not claimed
 [UNMET] T1 #2 [digital] Layout
         reason: no_evidence
 [MET  ] T1 #3 [analog] DRC clean
@@ -22,7 +39,7 @@ T1: 3/22 items met
 [UNMET] T1 #3 [digital] DRC clean
         reason: no_evidence
 [UNMET] T1 #4 [analog] LVS clean
-        reason: no_evidence
+        reason: check_failed
 [MET  ] T1 #4 [digital] LVS clean
         cite: flow/records/20261104-df96543/lvs.json (kind=lvs, status=match, content_hash=sha256:a8eedac6ece34023fc103f36f32ef62be5d671c862c6952982809bac24022bf5, exit_status=0)
         input: not re-hashed (content_hash compared against this envelope's own claim only -- the artifact itself was not read)
@@ -62,4 +79,4 @@ T1: 3/22 items met
         reason: tier_not_supported
 
 source: docs/design-evidence-tiers.md (content_hash=sha256:9ffa0fef19d2c61eb00731e6d6833787be1c5506973082961eb7a72e066cc46c)
-build: klt 0.9.2.dev42+g94b54d114210
+build: klt 0.9.2.dev244+g92e2b15a66f2

@@ -28,6 +28,14 @@
     "to the one it corrects -- so a later reader can see why the pin is",
     "where it is without re-deriving it from git blame.",
     "",
+    "Issue #42: klt_required_commands grew from [drc] to [drc, extract, lvs]",
+    "for layout/run_lvs.py (`klt lvs` extracts inline with the sg13g2 deck;",
+    "`extract` is pinned because the same flow uses it). The pin itself",
+    "(klt_install / klt_last_verified_commit) is unchanged; the LVS reports",
+    "in layout/lvs/ were produced by klt 0.9.2.dev244+g92e2b15a66f2 on klayout",
+    "0.30.13, recorded in each report's provenance. The shared check lives in",
+    "layout/toolchain_pin.py.",
+    "",
     "Field reference:",
     "  klt_install            exact commit to install `klt` from -- a",
     "                         `pip`/`uv tool install` VCS URL pinned with",
@@ -52,7 +60,7 @@
     "                         klt's)."
   ],
   "klt_install": "git+https://github.com/2AMLogic/klayout-tools@068b0c1da0e8d05438c48de2af40f5988230a158",
-  "klt_required_commands": ["drc"],
+  "klt_required_commands": ["drc", "extract", "lvs"],
   "klt_last_verified_commit": "068b0c1da0e8d05438c48de2af40f5988230a158",
   "klayout_package_min": "0.30"
 }

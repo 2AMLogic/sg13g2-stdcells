@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 1,
+  "summary": "T1 item 1 (Design sources): 10/10 attestation checks passed (klt signoff --attest)",
+  "source": "manifests/inventories/item1.analog.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 10,
+    "passed_count": 10,
+    "checks": [
+      {
+        "check": "present",
+        "role": "source",
+        "path": "design/gen_netlists.py",
+        "passed": true,
+        "content_hash": "sha256:c43d54d3eab74174ecd97131431a613841bec9f840e6271be9661f7f6f4ae50c"
+      },
+      {
+        "check": "present",
+        "role": "source",
+        "path": "layout/example_config.json",
+        "passed": true,
+        "content_hash": "sha256:1a02f3ccb5b49edc86ae1a82fa928c21b796adac72548066e773c47b0254b6f5"
+      },
+      {
+        "check": "present",
+        "role": "derived",
+        "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+        "passed": true,
+        "content_hash": "sha256:65aa1e3c6e10bc76cea3cae6015b0c7b6f58161d896e8b6301fcf76a21d227e7"
+      },
+      {
+        "check": "present",
+        "role": "derived",
+        "path": "layout/lvs/netlists/sg13g2_inv_2.spice",
+        "passed": true,
+        "content_hash": "sha256:da42c9d5d4790a03f7959d0416799651ad1425a770ce08e879fde32741851d9f"
+      },
+      {
+        "check": "present",
+        "role": "derived",
+        "path": "layout/lvs/netlists/sg13g2_inv_4.spice",
+        "passed": true,
+        "content_hash": "sha256:f350f0e6257207c943ef822d4744a39bd50446f719c3ea96e871a7e40cfa894e"
+      },
+      {
+        "check": "present",
+        "role": "derived",
+        "path": "layout/lvs/netlists/sg13g2_nand2_1.spice",
+        "passed": true,
+        "content_hash": "sha256:1fc9770ab7c6d2a87ba9e0026f630a789f736b1e4cc4a17dbfd79755692ada59"
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "layout/lvs/netlists/sg13g2_inv_1.spice",
+        "generator": "design/gen_netlists.py",
+        "argv": [
+          "python3",
+          "design/gen_netlists.py",
+          "--config",
+          "layout/example_config.json",
+          "--check",
+          "--out",
+          "layout/lvs/netlists"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "layout/lvs/netlists/sg13g2_inv_2.spice",
+        "generator": "design/gen_netlists.py",
+        "argv": [
+          "python3",
+          "design/gen_netlists.py",
+          "--config",
+          "layout/example_config.json",
+          "--check",
+          "--out",
+          "layout/lvs/netlists"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "layout/lvs/netlists/sg13g2_inv_4.spice",
+        "generator": "design/gen_netlists.py",
+        "argv": [
+          "python3",
+          "design/gen_netlists.py",
+          "--config",
+          "layout/example_config.json",
+          "--check",
+          "--out",
+          "layout/lvs/netlists"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "layout/lvs/netlists/sg13g2_nand2_1.spice",
+        "generator": "design/gen_netlists.py",
+        "argv": [
+          "python3",
+          "design/gen_netlists.py",
+          "--config",
+          "layout/example_config.json",
+          "--check",
+          "--out",
+          "layout/lvs/netlists"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.9.2.dev244+g92e2b15a66f2",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "paths": [
+        {
+          "path": {
+            "path": "design/gen_netlists.py",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:c43d54d3eab74174ecd97131431a613841bec9f840e6271be9661f7f6f4ae50c"
+        },
+        {
+          "path": {
+            "path": "layout/example_config.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:1a02f3ccb5b49edc86ae1a82fa928c21b796adac72548066e773c47b0254b6f5"
+        },
+        {
+          "path": {
+            "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:65aa1e3c6e10bc76cea3cae6015b0c7b6f58161d896e8b6301fcf76a21d227e7"
+        },
+        {
+          "path": {
+            "path": "layout/lvs/netlists/sg13g2_inv_2.spice",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:da42c9d5d4790a03f7959d0416799651ad1425a770ce08e879fde32741851d9f"
+        },
+        {
+          "path": {
+            "path": "layout/lvs/netlists/sg13g2_inv_4.spice",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:f350f0e6257207c943ef822d4744a39bd50446f719c3ea96e871a7e40cfa894e"
+        },
+        {
+          "path": {
+            "path": "layout/lvs/netlists/sg13g2_nand2_1.spice",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:1fc9770ab7c6d2a87ba9e0026f630a789f736b1e4cc4a17dbfd79755692ada59"
+        },
+        {
+          "path": {
+            "path": "manifests/inventories/item1.analog.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:00673dbd9027d70ad6567172545ac99a8c3d9b7cb1c302567bc0c57986922dc2"
+        }
+      ],
+      "content_hash": "sha256:94c4ce9742c7d86dc8035514b9454f3d0a87b2fecf4988e0e1569162d9761dda"
+    }
+  }
+}

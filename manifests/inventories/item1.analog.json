@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
+  "t1_item": 1,
+  "description": "Analog partition design sources: the netlist generator and its config, plus the generated reference netlists used by layout/run_lvs.py.",
+  "sources": [
+    "design/gen_netlists.py",
+    "layout/example_config.json"
+  ],
+  "derived": [
+    {
+      "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+      "generator": "design/gen_netlists.py",
+      "check": {
+        "argv": [
+          "python3",
+          "design/gen_netlists.py",
+          "--config",
+          "layout/example_config.json",
+          "--check",
+          "--out",
+          "layout/lvs/netlists"
+        ]
+      }
+    },
+    {
+      "path": "layout/lvs/netlists/sg13g2_inv_2.spice",
+      "generator": "design/gen_netlists.py",
+      "check": {
+        "argv": [
+          "python3",
+          "design/gen_netlists.py",
+          "--config",
+          "layout/example_config.json",
+          "--check",
+          "--out",
+          "layout/lvs/netlists"
+        ]
+      }
+    },
+    {
+      "path": "layout/lvs/netlists/sg13g2_inv_4.spice",
+      "generator": "design/gen_netlists.py",
+      "check": {
+        "argv": [
+          "python3",
+          "design/gen_netlists.py",
+          "--config",
+          "layout/example_config.json",
+          "--check",
+          "--out",
+          "layout/lvs/netlists"
+        ]
+      }
+    },
+    {
+      "path": "layout/lvs/netlists/sg13g2_nand2_1.spice",
+      "generator": "design/gen_netlists.py",
+      "check": {
+        "argv": [
+          "python3",
+          "design/gen_netlists.py",
+          "--config",
+          "layout/example_config.json",
+          "--check",
+          "--out",
+          "layout/lvs/netlists"
+        ]
+      }
+    }
+  ]
+}
