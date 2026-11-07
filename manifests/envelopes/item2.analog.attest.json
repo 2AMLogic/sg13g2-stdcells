@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 2,
+  "summary": "T1 item 2 (Layout): 12/12 attestation checks passed (klt signoff --attest)",
+  "source": "layout/gds/sg13g2_inv_1.gds",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 12,
+    "passed_count": 12,
+    "checks": [
+      {
+        "check": "stream_readable",
+        "role": "layout",
+        "passed": true,
+        "content_hash": "sha256:b54701b1c1a0677c9069a445acc6975c7bf3bba9041bac91ee1ae986f979a159",
+        "path": "layout/gds/sg13g2_inv_1.gds"
+      },
+      {
+        "check": "top_cell_non_empty",
+        "role": "layout",
+        "passed": true,
+        "top_cells": [
+          "sg13g2_inv_1"
+        ],
+        "path": "layout/gds/sg13g2_inv_1.gds"
+      },
+      {
+        "check": "dbu_on_grid",
+        "role": "layout",
+        "passed": true,
+        "dbu": 0.001,
+        "path": "layout/gds/sg13g2_inv_1.gds"
+      },
+      {
+        "check": "stream_readable",
+        "role": "layout",
+        "passed": true,
+        "content_hash": "sha256:e63de78e232b0c46b422e3a18b7a58afee6c4ccd4d210295e692b45937d9848d",
+        "path": "layout/gds/sg13g2_inv_2.gds"
+      },
+      {
+        "check": "top_cell_non_empty",
+        "role": "layout",
+        "passed": true,
+        "top_cells": [
+          "sg13g2_inv_2"
+        ],
+        "path": "layout/gds/sg13g2_inv_2.gds"
+      },
+      {
+        "check": "dbu_on_grid",
+        "role": "layout",
+        "passed": true,
+        "dbu": 0.001,
+        "path": "layout/gds/sg13g2_inv_2.gds"
+      },
+      {
+        "check": "stream_readable",
+        "role": "layout",
+        "passed": true,
+        "content_hash": "sha256:5d4c4abdfc1473f529ec21547bc8a3206468e54b20b0997b9ce35901eda907b1",
+        "path": "layout/gds/sg13g2_inv_4.gds"
+      },
+      {
+        "check": "top_cell_non_empty",
+        "role": "layout",
+        "passed": true,
+        "top_cells": [
+          "sg13g2_inv_4"
+        ],
+        "path": "layout/gds/sg13g2_inv_4.gds"
+      },
+      {
+        "check": "dbu_on_grid",
+        "role": "layout",
+        "passed": true,
+        "dbu": 0.001,
+        "path": "layout/gds/sg13g2_inv_4.gds"
+      },
+      {
+        "check": "stream_readable",
+        "role": "layout",
+        "passed": true,
+        "content_hash": "sha256:aef3b756bf0ff36d1609938960084a5678c10c70b18680273b4cabbca9401552",
+        "path": "layout/gds/sg13g2_nand2_1.gds"
+      },
+      {
+        "check": "top_cell_non_empty",
+        "role": "layout",
+        "passed": true,
+        "top_cells": [
+          "sg13g2_nand2_1"
+        ],
+        "path": "layout/gds/sg13g2_nand2_1.gds"
+      },
+      {
+        "check": "dbu_on_grid",
+        "role": "layout",
+        "passed": true,
+        "dbu": 0.001,
+        "path": "layout/gds/sg13g2_nand2_1.gds"
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.9.2.dev244+g92e2b15a66f2",
+    "klayout_version": "0.30.13",
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "paths": [
+        {
+          "path": {
+            "path": "layout/gds/sg13g2_inv_1.gds",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:b54701b1c1a0677c9069a445acc6975c7bf3bba9041bac91ee1ae986f979a159"
+        },
+        {
+          "path": {
+            "path": "layout/gds/sg13g2_inv_2.gds",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:e63de78e232b0c46b422e3a18b7a58afee6c4ccd4d210295e692b45937d9848d"
+        },
+        {
+          "path": {
+            "path": "layout/gds/sg13g2_inv_4.gds",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:5d4c4abdfc1473f529ec21547bc8a3206468e54b20b0997b9ce35901eda907b1"
+        },
+        {
+          "path": {
+            "path": "layout/gds/sg13g2_nand2_1.gds",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:aef3b756bf0ff36d1609938960084a5678c10c70b18680273b4cabbca9401552"
+        }
+      ],
+      "content_hash": "sha256:d54584825e7b97f2f40b33f44b9760c9e1832f239d7889d193858fb6cf619cb6"
+    }
+  }
+}

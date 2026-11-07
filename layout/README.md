@@ -15,6 +15,7 @@ pins both files).
 python3 layout/gen_layouts.py --config layout/example_config.json           # write layout/gds/*.gds
 python3 layout/gen_layouts.py --config layout/example_config.json --check   # freshness
 python3 -m unittest discover -s layout/tests                                # tests
+python3 layout/run_lvs.py --config layout/example_config.json               # LVS -> layout/lvs/
 klt drc layout/gds/sg13g2_inv_1.gds --deck sg13g2                           # DRC
 ```
 
@@ -100,11 +101,63 @@ rules the curated deck models, not a sign-off. The reports list `coverage.rules_
 the deck does not enforce e.g. contact-to-gate spacing or the latch-up and pad
 rules, so `coverage.unmodeled_rules` -- `LU.a`, `LU.c`, `LU.c1`, `LU.d`, `LU.d1`,
 `Pad.a1`, `Pad.aR`, `Pad.bR`, `Pad.d`, `Pad.d1R`, `Pad.dR`, `Pad.gR`, `Pad.jR`,
-`Pad.kR` in every report -- stay unchecked, and no LVS has been run on these
-cells. In particular the poly bridge and the folded NMOS fingers have not been
-checked against the netlist. The example rule values are this repo's draft SG13G2
+`Pad.kR` in every report -- stay unchecked. LVS is recorded separately below;
+it does not pass. The example rule values are this repo's draft SG13G2
 geometry, not ratified spec rows (issue #1).
 
 Multi-input cells with fingers (`nand2_2`, `buf_2`, ...) are not in the config: with
 `channel_tracks: 1` they exit `3` (see above), so the second multi-finger cell
 is the 4-finger inverter, not a multi-input cell.
+
+### Recorded LVS evidence (issue #42)
+
+`layout/run_lvs.py` runs `klt lvs` (inline extraction, deck `sg13g2`, reference
+form `subckt-call`) on every cell in the config against the netlist
+`design/gen_netlists.py` generates from the **same** config
+(`layout/example_config.json`; not the `design/netlists/demo_*.spice` files,
+which use a different L and supply). It writes `layout/lvs/<cell>.json` and the
+reference netlists it compared against, `layout/lvs/netlists/<cell>.spice`.
+
+```
+python3 layout/run_lvs.py --config layout/example_config.json           # run, write reports
+python3 layout/run_lvs.py --config layout/example_config.json --check   # netlists fresh + klt lvs --check
+```
+
+Run from the repo root (klt gets cwd-relative paths). The runner first checks
+`klt --help` against `layout/toolchain.json` (`layout/toolchain_pin.py`). Exit
+codes: `0` all `match`; `1` tooling error or `--check` drift; `2` invalid
+config; `4` reports written but a cell is not `match`.
+
+**Result: all four cells are `status: mismatch`.** Reports are kept as-is.
+`power_connectivity.status` is `unchecked` (it does not apply to the
+`subckt-call` form, where the rails take part in the ordinary compare).
+
+| cell | status | errors |
+| --- | --- | --- |
+| `sg13g2_inv_1` | mismatch | 12 |
+| `sg13g2_inv_2` | mismatch | 16 |
+| `sg13g2_inv_4` | mismatch | 20 |
+| `sg13g2_nand2_1` | mismatch | 18 |
+
+Observed in the reports: both sides have the same device count, but no device
+or net pairs up, and each report carries `device.body_unverified` warnings. The
+generated layouts draw no well or substrate tap (out of scope above), so the
+extracted NMOS body sits on the deck-synthesized `vsubs` net and the PMOS body
+on an anonymous well net, whereas the reference ties them to `VSS` / `VDD`.
+That is the likely root cause, but it is **not demonstrated**: an attempt to
+isolate it with `hints.same_nets` was rejected by klt (the anonymous well net
+cannot be named), so the signal topology (poly bridge, folded fingers of
+`inv_2`/`inv_4`) is still unverified. The tool gap is filed as
+2AMLogic/klayout-tools#5125. Closing it in this repo means adding tap
+generation to `gen_layouts.py` (separate work), then re-running the runner; a
+passing run is a later record that supersedes these, not an edit of them.
+
+Manifest: `manifests/sg13g2-stdcells.json` cites analog items 1 (attested
+inventory `manifests/inventories/item1.analog.json`: generator, config and
+generated netlists, each netlist freshness-checked), 2 (attested over the four
+GDS streams) and 4 (the four LVS reports). `manifests/envelopes/*.json` are
+`klt signoff --attest` output. `manifests/signoff-report.*` were regenerated
+with `klt signoff --manifest` (T1 5/22 on main -> 7/22 met with analog items 1 and 2); analog item 4 grades
+`unmet` / `check_failed`, as it should. Item 2 carries no regeneration claim
+(`--generator`/`--regenerated-hash`): for a multi-stream attestation there is
+no stated single hash to compare, so it binds the committed bytes only.
