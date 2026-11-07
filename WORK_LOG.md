@@ -4,6 +4,8 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-06
 
+- **PR #36**: feat(layout): place multi-finger devices as adjacent poly columns
+- **Issue #35** (closed): layout: place multi-finger devices in gen_layouts.py so drive-2 and 4-input cells lay out
 - **PR #32**: refactor(sim): remove dead PVT-grid and sabotage helpers
 - **Issue #31** (closed): Remove dead grid helpers left in sim/harness/corners.py after #21
 - **PR #29**: refactor(sim): remove unexercised local-ngspice half of sim/harness
