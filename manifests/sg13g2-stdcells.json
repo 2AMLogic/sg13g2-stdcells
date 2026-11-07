@@ -7,7 +7,12 @@
   },
   "evidence": {
     "1.digital": "flow/records/20261104-df96543/synthesize.json",
+    "2.digital": {
+      "file": "flow/records/20261107-a1a4ec6/layout-attest.json",
+      "content_hash": "sha256:3a3336d6ce0bf0383fad65c3ad885f68a3cbbd83fde0971721a5daea61f2f1fd"
+    },
     "3.analog": "layout/drc/sg13g2_inv_1.json",
+    "3.digital": "flow/records/20261107-a1a4ec6/drc.json",
     "4.digital": "flow/records/20261104-df96543/lvs.json",
     "11.digital": [
       "flow/records/20261104-df96543/erc.json",
