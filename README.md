@@ -108,6 +108,28 @@ views/         generated LEF/Liberty views
 ratification/  the two reviewer-key skills a spec ratification needs
 ```
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every pull request and on push to `main`. It
+needs only Python 3, `pytest` and `jq` — no klt, ngspice or PDK, so
+tool-dependent runs (SPICE, DRC, LVS, place-and-route) are not covered by CI.
+To reproduce locally, from the repo root:
+
+```
+python3 -m unittest discover -s design/tests
+python3 -m unittest discover -s layout/tests
+python3 -m unittest discover -s sim/characterize/tests
+python3 -m pytest sim/tests
+python3 design/gen_netlists.py --config design/example_config.json --check
+python3 layout/gen_layouts.py --config layout/example_config.json --check
+R=flow/records/20261104-df96543
+flow/check-evidence.sh flow/request-par.json $R/place-and-route.json $R/lvs.json $R/erc.json   # must exit 0
+flow/check-evidence.sh flow/request-par.json $R/negative-control-nopower.place-and-route.json $R/lvs.json $R/erc.json   # must exit non-zero
+```
+
+T1 item 10 inventory: README present (this file), license present
+([LICENSE](LICENSE)), CI present (`.github/workflows/ci.yml`).
+
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).

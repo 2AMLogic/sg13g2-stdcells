@@ -1,0 +1,47 @@
+# Tool-free CI: stdlib Python + pytest + jq only. No klt, ngspice or PDK.
+# Every command below is listed in README.md ("Continuous integration").
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pytest
+        run: pip install pytest
+      - name: design unit tests
+        run: python3 -m unittest discover -s design/tests
+      - name: layout unit tests
+        run: python3 -m unittest discover -s layout/tests
+      - name: characterize unit tests
+        run: python3 -m unittest discover -s sim/characterize/tests
+      - name: sim harness tests
+        run: python3 -m pytest sim/tests
+      - name: netlists are fresh
+        run: python3 design/gen_netlists.py --config design/example_config.json --check
+      - name: layouts are fresh
+        run: python3 layout/gen_layouts.py --config layout/example_config.json --check
+      - name: evidence check accepts the committed record
+        run: |
+          R=flow/records/20261104-df96543
+          flow/check-evidence.sh flow/request-par.json \
+            "$R/place-and-route.json" "$R/lvs.json" "$R/erc.json"
+      - name: evidence check rejects the negative control
+        run: |
+          R=flow/records/20261104-df96543
+          if flow/check-evidence.sh flow/request-par.json \
+            "$R/negative-control-nopower.place-and-route.json" "$R/lvs.json" "$R/erc.json"; then
+            echo "negative control was accepted; expected non-zero exit" >&2
+            exit 1
+          fi
