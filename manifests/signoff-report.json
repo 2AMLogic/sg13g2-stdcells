@@ -9,13 +9,13 @@
   "tier": null,
   "t1_item_count": 22,
   "build_t1_item_count": 22,
-  "t1_met_count": 5,
+  "t1_met_count": 7,
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:9ffa0fef19d2c61eb00731e6d6833787be1c5506973082961eb7a72e066cc46c",
   "build": {
-    "version": "0.9.2.dev244+g92e2b15a66f2",
-    "package_version": "0.9.2.dev244+g92e2b15a66f2",
-    "git_commit": "92e2b15a66f2b9d6ae69ed1b6cf6ec2e99a1e0e6",
+    "version": "0.9.2.dev251+g956636a1d27d",
+    "package_version": "0.9.2.dev251+g956636a1d27d",
+    "git_commit": "956636a1d27d1038b6f0e0d24d9f37243bc8ac7f",
     "git_tag": null,
     "dirty": false,
     "is_release": false,
@@ -38,13 +38,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:94c4ce9742c7d86dc8035514b9454f3d0a87b2fecf4988e0e1569162d9761dda",
+        "content_hash": "sha256:cc97397cf52d3226a1f903782da21309ac654981d1998ddb744319e822e0ff93",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 1,
           "path": null,
-          "content_hash": "sha256:94c4ce9742c7d86dc8035514b9454f3d0a87b2fecf4988e0e1569162d9761dda",
+          "content_hash": "sha256:cc97397cf52d3226a1f903782da21309ac654981d1998ddb744319e822e0ff93",
           "input_verified": true,
           "members": [
             {
@@ -52,7 +52,7 @@
                 "path": "design/gen_netlists.py",
                 "scope": "repo"
               },
-              "content_hash": "sha256:c43d54d3eab74174ecd97131431a613841bec9f840e6271be9661f7f6f4ae50c",
+              "content_hash": "sha256:9d8398922c378ef602748ce24b24d4dd83f38b1fcd1cfe3bc2807b7cfe7d1e95",
               "status": "verified"
             },
             {
@@ -213,10 +213,40 @@
       "partition_boundary": "add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline",
       "text": "committed routed GDS/OASIS from place-and-route, reproducibly generated from the gate-level netlist (P&R script/flow committed, not a one-off hand edit). For the same full-custom sub-case, this item is satisfied instead by the Analog column's artifact: committed GDS/OASIS, reproducibly generated or with documented provenance \u2014 hand-drawn layout, not P&R output.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "flow/records/20261107-a1a4ec6/layout-attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:3a3336d6ce0bf0383fad65c3ad885f68a3cbbd83fde0971721a5daea61f2f1fd",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 2,
+          "path": {
+            "path": "flow/records/20261107-a1a4ec6/add8.routed.gds",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:3a3336d6ce0bf0383fad65c3ad885f68a3cbbd83fde0971721a5daea61f2f1fd",
+          "input_verified": true,
+          "summary": "T1 item 2 (Layout): 3/3 attestation checks passed (klt signoff --attest)",
+          "source": "flow/records/20261107-a1a4ec6/add8.routed.gds",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": null,
+            "check_count": 3,
+            "passed_count": 3
+          },
+          "regeneration": {
+            "generator": "PDK_ROOT=<pdk> RECORD_ID=<id> flow/run.sh",
+            "regenerated_hash": "sha256:3a3336d6ce0bf0383fad65c3ad885f68a3cbbd83fde0971721a5daea61f2f1fd",
+            "executed_by_klt": false
+          }
+        }
+      }
     },
     {
       "tier": "T1",
@@ -309,10 +339,62 @@
       "partition_boundary": "add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline",
       "text": "latest `klt drc` JSON report: `status: clean`, fresh, with the deck identified (content hash). Known deck coverage gaps (rule-free layers, skipped rules) must be enumerated in the claim, not hidden behind \"clean\" \u2014 a clean verdict from a deck with undisclosed holes is a false claim. The report already states its own gaps, so the disclosure is those fields quoted from the cited envelope's `coverage` block (`docs/cli/drc.md`), not prose written from memory: `coverage.layers_in_stream_without_rules` (layers drawn in this stream that the deck has no rule for), `coverage.rules_skipped` (rules the deck carries but this run did not evaluate), and `coverage.deck_scope` (which chapters of the foundry DRM the deck transcribes at all). A claim that leaves a non-empty `layers_in_stream_without_rules` or `rules_skipped` unstated, or that never states the `deck_scope` its \"clean\" was measured inside, has not satisfied this item however clean the `status` is. **This disclosure is claimant-enforced, not tool-enforced**: `klt signoff` grades item 3 on `status: \"clean\"` alone \u2014 a deck with rule-free drawn layers or skipped rules grades `met` exactly like a fully-covering one. Since #2002 it does *report* all three fields (item 3's citation carries a `coverage` block quoting them verbatim, `docs/cli/signoff.md` \u2192 \"DRC coverage is reported, not graded\"), so a reviewer no longer has to re-open the DRC envelope to find them \u2014 but reporting is not enforcing: nothing compares them against what the claim actually disclosed, so a `met` verdict from `klt signoff` is still not evidence that the gaps were disclosed. A reviewer must read the reported `coverage` against the claim themselves. **Disclosed exception for unmodified foundry cells** (operator ruling 2026-10-28): DRC violations inside an unmodified foundry-library cell (a stock I/O pad, a foundry SRAM macro) do not block `met`, provided all three of these hold: (1) the same violations \u2014 same rules, same counts \u2014 reproduce when the unmodified PDK cell is checked alone, with none of the block's own geometry; (2) the exception is pinned to the stock cell by content hash and names its rules and counts, and lapses if the cell or the counts change; (3) the T1 claim lists every such exception, and says nothing about the internals of those cells. `klt signoff` grades this from a `foundry_cell_exceptions` list on the item 3 evidence entry (`docs/cli/signoff.md` \u2192 \"Foundry-cell DRC exceptions\") and lists each applied exception in item 3's citation.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "flow/records/20261107-a1a4ec6/drc.json",
+        "command": null,
+        "kind": "drc",
+        "check_status": "clean",
+        "content_hash": "sha256:3a3336d6ce0bf0383fad65c3ad885f68a3cbbd83fde0971721a5daea61f2f1fd",
+        "input_verified": null,
+        "exit_status": 0,
+        "coverage": {
+          "layers_in_stream_without_rules": [
+            "8/2",
+            "8/25",
+            "10/2",
+            "10/25",
+            "30/2",
+            "30/25",
+            "134/2",
+            "134/25",
+            "189/4"
+          ],
+          "rules_skipped": [
+            "metal5.enclosing.mim.1",
+            "mim.enclosing.topvia1.1",
+            "nwell.enclosing.nactiv.1",
+            "nwell.enclosing.nactiv.dig.1",
+            "nwell.enclosing.nactiv.hv.1",
+            "nwell.space.nactiv.1",
+            "nwell.space.nactiv.dig.1",
+            "nwell.space.nactiv.hv.1"
+          ],
+          "deck_scope": [
+            "Act",
+            "Cnt",
+            "Gat",
+            "M1",
+            "M2",
+            "M3",
+            "M4",
+            "M5",
+            "MIM",
+            "NW",
+            "TM1",
+            "TM2",
+            "TV1",
+            "TV2",
+            "V1",
+            "V2",
+            "V3",
+            "V4",
+            "pSD"
+          ]
+        }
+      }
     },
     {
       "tier": "T1",

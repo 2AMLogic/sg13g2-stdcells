@@ -346,21 +346,52 @@ def generate(config, config_name="config"):
     return {f"{c['name']}.spice": render(c, config["process"], config_name) for c in config["cells"]}
 
 
-def check(files, outdir):
+def describe_text_diff(name, path, text):
+    """Stale-file message for text outputs: a unified diff, committed vs regenerated."""
+    diff = difflib.unified_diff(
+        path.read_text().splitlines(), text.splitlines(), f"{name} (committed)", f"{name} (regenerated)", lineterm="", n=0
+    )
+    return f"stale: {path}\n" + "\n".join(diff)
+
+
+def sync_outputs(files, outdir, glob, *, check, tool, script, plural, out_of_date, describe_stale=None):
+    """Shared tail of every generator CLI: write ``files`` ({name: str | bytes})
+    into ``outdir`` and prune strays matching ``glob``, or with ``check`` report
+    missing / stale / stray files without touching disk. Returns the exit code
+    (0 ok, 1 out of date). ``describe_stale(name, path, data)`` customizes the
+    stale message; default is a size comparison."""
+    if not check:
+        outdir.mkdir(parents=True, exist_ok=True)
+        for stale in outdir.glob(glob):
+            if stale.name not in files:
+                stale.unlink()
+        for name, data in files.items():
+            path = outdir / name
+            path.write_text(data) if isinstance(data, str) else path.write_bytes(data)
+        print(f"{tool}: wrote {len(files)} {plural} to {outdir}")
+        return 0
     errs = []
-    on_disk = {p.name for p in outdir.glob("*.spice")} if outdir.is_dir() else set()
-    for name, text in sorted(files.items()):
+    on_disk = {p.name for p in outdir.glob(glob)} if outdir.is_dir() else set()
+    for name, data in sorted(files.items()):
         path = outdir / name
         if name not in on_disk:
             errs.append(f"missing: {path}")
-        elif path.read_text() != text:
-            diff = difflib.unified_diff(
-                path.read_text().splitlines(), text.splitlines(), f"{name} (committed)", f"{name} (regenerated)", lineterm="", n=0
-            )
-            errs.append(f"stale: {path}\n" + "\n".join(diff))
+            continue
+        committed = path.read_text() if isinstance(data, str) else path.read_bytes()
+        if committed != data:
+            if describe_stale:
+                errs.append(describe_stale(name, path, data))
+            else:
+                errs.append(f"stale: {path} (committed {path.stat().st_size} B differs from regenerated {len(data)} B)")
     for name in sorted(on_disk - set(files)):
         errs.append(f"stray: {outdir / name} is not in the config")
-    return errs
+    for e in errs:
+        print(e, file=sys.stderr)
+    if errs:
+        print(f"{tool}: {len(errs)} {out_of_date} out of date; run {script}", file=sys.stderr)
+        return 1
+    print(f"{tool}: {len(files)} {plural} fresh")
+    return 0
 
 
 def main(argv=None):
@@ -376,23 +407,10 @@ def main(argv=None):
         print(f"gen_netlists: invalid config {cfg_path}: {e}", file=sys.stderr)
         return 2
     outdir = pathlib.Path(a.out) if a.out else cfg_path.resolve().parent / "netlists"
-    if a.check:
-        errs = check(files, outdir)
-        for e in errs:
-            print(e, file=sys.stderr)
-        if errs:
-            print(f"gen_netlists: {len(errs)} netlist(s) out of date; run design/gen_netlists.py", file=sys.stderr)
-            return 1
-        print(f"gen_netlists: {len(files)} netlists fresh")
-        return 0
-    outdir.mkdir(parents=True, exist_ok=True)
-    for stale in outdir.glob("*.spice"):
-        if stale.name not in files:
-            stale.unlink()
-    for name, text in files.items():
-        (outdir / name).write_text(text)
-    print(f"gen_netlists: wrote {len(files)} netlists to {outdir}")
-    return 0
+    return sync_outputs(
+        files, outdir, "*.spice", check=a.check, tool="gen_netlists", script="design/gen_netlists.py",
+        plural="netlists", out_of_date="netlist(s)", describe_stale=describe_text_diff,
+    )
 
 
 if __name__ == "__main__":

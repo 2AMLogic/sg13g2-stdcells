@@ -157,7 +157,7 @@ inventory `manifests/inventories/item1.analog.json`: generator, config and
 generated netlists, each netlist freshness-checked), 2 (attested over the four
 GDS streams) and 4 (the four LVS reports). `manifests/envelopes/*.json` are
 `klt signoff --attest` output. `manifests/signoff-report.*` were regenerated
-with `klt signoff --manifest` (T1 3/22 -> 5/22 met); analog item 4 grades
+with `klt signoff --manifest` (T1 5/22 on main -> 7/22 met with analog items 1 and 2); analog item 4 grades
 `unmet` / `check_failed`, as it should. Item 2 carries no regeneration claim
 (`--generator`/`--regenerated-hash`): for a multi-stream attestation there is
 no stated single hash to compare, so it binds the committed bytes only.

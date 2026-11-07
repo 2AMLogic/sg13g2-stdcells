@@ -6,7 +6,8 @@ from pathlib import Path
 from sim.characterize import runner
 from sim.harness.corners import CHAR_CORNER_PVT
 from sim.harness.evidence import CharacterizationExtensions
-from sim.characterize.request import DEFAULT_CORNER, SG13G2_INV_1, RequestError, build_request
+from sim.characterize.request import (DEFAULT_CORNER, SG13G2_INV_1, RequestError, build_library_request,
+                                      build_request, cells_from_config)
 
 
 class RequestTests(unittest.TestCase):
@@ -82,3 +83,60 @@ class RecordTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+REPO = Path(__file__).resolve().parents[3]
+CONFIG = REPO / "layout" / "example_config.json"
+
+
+class LibraryRequestTests(unittest.TestCase):
+    def setUp(self):
+        self.cfg = json.loads(CONFIG.read_text())
+        self.cells = cells_from_config(CONFIG, "/nl")
+        self.req = build_library_request(self.cells, DEFAULT_CORNER, "/pdk")
+
+    def test_cells_exactly_the_config_and_not_demo(self):
+        names = [c["name"] for c in self.req["cells"]]
+        self.assertEqual(names, [c["name"] for c in self.cfg["cells"]])
+        self.assertNotIn("cell", self.req)
+        for c in self.req["cells"]:
+            self.assertEqual(Path(c["netlist"]).parent, Path("/nl"))
+            self.assertNotIn("demo", c["name"])
+
+    def test_pins_and_functions_come_from_config(self):
+        by = {c["name"]: c for c in self.req["cells"]}
+        for cfg_cell in self.cfg["cells"]:
+            pins = by[cfg_cell["name"]]["pins"]
+            self.assertEqual([p["name"] for p in pins if p["direction"] == "input"], cfg_cell["inputs"])
+            self.assertEqual({p["name"]: p["function"] for p in pins if p["direction"] == "output"},
+                             cfg_cell["outputs"])
+        nand = by["sg13g2_nand2_1"]["pins"]
+        self.assertEqual([p["name"] for p in nand if p["direction"] == "input"], ["A", "B"])
+        inv = by["sg13g2_inv_1"]["pins"]
+        self.assertEqual([p["name"] for p in inv if p["direction"] == "input"], ["A"])
+
+    def test_corner_models_and_library_name(self):
+        self.assertEqual(self.req["corner"]["supply_v"], 1.2)
+        self.assertEqual(self.req["corner"]["temperature_c"], 25.0)
+        self.assertEqual(self.req["corner"]["process"], "mos_tt")
+        self.assertTrue(self.req["models"]["lib"].endswith("cornerMOSlv.lib"))
+        self.assertEqual(self.req["library"]["name"], "sg13g2_stdcells_tt_1p20v_25c")
+        self.assertEqual(self.req["cells"][0]["power_pins"], {"vdd": "VDD", "gnd": "VSS"})
+        json.dumps(self.req)
+
+    def test_rejects_empty_and_duplicate(self):
+        with self.assertRaises(RequestError):
+            build_library_request([], DEFAULT_CORNER, "/pdk")
+        with self.assertRaises(RequestError):
+            build_library_request(self.cells[:1] * 2, DEFAULT_CORNER, "/pdk")
+
+
+class LibraryRecordTests(unittest.TestCase):
+    def test_multi_cell_record_validates_and_picks_each_cells_leakage(self):
+        a = runner.build_record_data(fake_response("sg13g2_inv_1"), SG13G2_INV_1, "local")
+        resp = fake_response("sg13g2_inv_1")
+        resp["cells"].append({**fake_response("other")["cells"][0], "leakage": "x"})
+        self.assertIsNone(runner.build_record_data(resp, SG13G2_INV_1, "local")["leakage"])
+        with tempfile.TemporaryDirectory() as d:
+            path = runner.record({**a, "cells": [a, a]}, records_dir=Path(d))
+            self.assertIn('"cells"', path.read_text())
