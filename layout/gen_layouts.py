@@ -178,7 +178,7 @@ def layout_cell(cell, proc, lay):
     # Fingers per gate net: a poly column crosses both strips, so the NMOS and
     # PMOS device on one gate net are drawn with the same finger count, the larger
     # of the two. A device with fewer netlist fingers is folded (same total W).
-    grid = proc.get("grid_nm", gn.DEFAULT_GRID_NM)
+    grid = gn.grid_nm(proc)
     fingers = {}
     for d in devs:
         fingers[d[3]] = max(fingers.get(d[3], 1), d[6])
@@ -448,20 +448,6 @@ def generate(config, config_name="config"):
     return files
 
 
-def check(files, outdir):
-    errs = []
-    on_disk = {p.name for p in outdir.glob("*.gds")} if outdir.is_dir() else set()
-    for name, data in sorted(files.items()):
-        path = outdir / name
-        if name not in on_disk:
-            errs.append(f"missing: {path}")
-        elif path.read_bytes() != data:
-            errs.append(f"stale: {path} (committed {path.stat().st_size} B differs from regenerated {len(data)} B)")
-    for name in sorted(on_disk - set(files)):
-        errs.append(f"stray: {outdir / name} is not in the config")
-    return errs
-
-
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--config", required=True, help="cell/process/layout config JSON (see layout/README.md)")
@@ -478,23 +464,10 @@ def main(argv=None):
         print(f"gen_layouts: cannot place: {e}", file=sys.stderr)
         return 3
     outdir = pathlib.Path(a.out) if a.out else cfg_path.resolve().parent / "gds"
-    if a.check:
-        errs = check(files, outdir)
-        for e in errs:
-            print(e, file=sys.stderr)
-        if errs:
-            print(f"gen_layouts: {len(errs)} GDS file(s) out of date; run layout/gen_layouts.py", file=sys.stderr)
-            return 1
-        print(f"gen_layouts: {len(files)} GDS fresh")
-        return 0
-    outdir.mkdir(parents=True, exist_ok=True)
-    for stale in outdir.glob("*.gds"):
-        if stale.name not in files:
-            stale.unlink()
-    for name, data in files.items():
-        (outdir / name).write_bytes(data)
-    print(f"gen_layouts: wrote {len(files)} GDS to {outdir}")
-    return 0
+    return gn.sync_outputs(
+        files, outdir, "*.gds", check=a.check, tool="gen_layouts", script="layout/gen_layouts.py",
+        plural="GDS", out_of_date="GDS file(s)",
+    )
 
 
 if __name__ == "__main__":
