@@ -29,7 +29,10 @@ class CharacterizeFailed(RuntimeError):
 
 
 def klt_version() -> str:
-    out = subprocess.run(["klt", "--version"], capture_output=True, text=True, check=False)
+    try:
+        out = subprocess.run(["klt", "--version"], capture_output=True, text=True, check=False)
+    except FileNotFoundError:  # tool-free environments (CI) have no klt
+        return "unavailable"
     return (out.stdout or out.stderr).strip() or "unknown"
 
 
