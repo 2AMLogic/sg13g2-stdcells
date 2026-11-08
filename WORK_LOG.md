@@ -2,6 +2,20 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-07
+
+- **PR #46**: feat(layout): LVS runner, recorded LVS reports and analog T1 citations
+- **PR #48**: refactor(gen): share check/write/prune logic between generators
+- **PR #43**: ci: add tool-free CI workflow and README reproduction commands
+- **PR #45**: feat(views): characterize generated cells to a committed TT Liberty view
+- **PR #44**: feat(flow): record routed add8 GDS and klt drc evidence for T1 digital items 2, 3
+- **Issue #42** (closed): Analog T1 evidence: LVS on generated cells and manifest citations for items 1, 2, 4
+- **Issue #47** (closed): Dedupe check/main sync logic shared by gen_netlists.py and gen_layouts.py
+- **Issue #38** (closed): No open work toward T1 after #27, and no CI workflow on main
+- **Issue #39** (closed): CI workflow on main and T1 item 10 inventory
+- **Issue #40** (closed): Characterize generated cells to a committed Liberty view in views/ (spec row 9)
+- **Issue #41** (closed): Digital T1 evidence: routed add8 GDS and klt drc report (items 2, 3)
+
 ### 2026-11-06
 
 - **PR #36**: feat(layout): place multi-finger devices as adjacent poly columns
