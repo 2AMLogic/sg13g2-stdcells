@@ -2,6 +2,11 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-10
+
+- **PR #50**: refactor(sim): remove unused constants from sim/harness/__init__.py
+- **Issue #34** (closed): Remove unused harness constants and test-only corner-set layer in sim/harness
+
 ### 2026-11-07
 
 - **PR #46**: feat(layout): LVS runner, recorded LVS reports and analog T1 citations

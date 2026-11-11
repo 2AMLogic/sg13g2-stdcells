@@ -53,7 +53,7 @@ Issues carrying `loom:curated`.
 
 ## Proposed (Architect / Hermit)
 
-- **#34**: Remove unused harness constants and test-only corner-set layer in sim/harness *(hermit)*
+- **#51**: Remove unused corner-set registry and PvtPoint grid from sim/harness/corners.py *(hermit)*
 
 ## Epics
 
