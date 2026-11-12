@@ -52,8 +52,9 @@ Two siblings, because this canary has two halves and no single sibling has both.
   canary with a real transistor-level `sim/` tree, so it supplies the PDK
   resolution, corner sweep, and evidence-recording patterns for per-cell
   SPICE characterization. Same process, same device models, same `klt` DRC/LVS
-  path. Only its corner, evidence-schema and record-id patterns were kept
-  (`sim/harness/`); the local-ngspice runner half was removed (#21) —
+  path. Only its corner definitions, evidence-schema and record-id patterns
+  were kept (`sim/harness/`); the local-ngspice runner half was removed (#21)
+  and the unused corner-set registry and PVT grid were removed (#51) —
   simulation goes through `klt sim` / `klt characterize`.
 - **Digital/flow half — copy `sky130-modexp`.** It is the program's first
   digital canary, so it supplies the `rtl/` + `flow/` + `verification/` shape:
