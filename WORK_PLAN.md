@@ -53,7 +53,7 @@ Issues carrying `loom:curated`.
 
 ## Proposed (Architect / Hermit)
 
-- **#51**: Remove unused corner-set registry and PvtPoint grid from sim/harness/corners.py *(hermit)*
+- **#54**: Remove unused from_manifest and MANIFEST_KEYS from sim/harness/evidence.py *(hermit)*
 
 ## Epics
 

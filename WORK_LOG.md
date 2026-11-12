@@ -2,6 +2,11 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-12
+
+- **PR #53**: refactor(sim): remove unused corner-set registry and PVT grid
+- **Issue #51** (closed): Remove unused corner-set registry and PvtPoint grid from sim/harness/corners.py
+
 ### 2026-11-10
 
 - **PR #50**: refactor(sim): remove unused constants from sim/harness/__init__.py
