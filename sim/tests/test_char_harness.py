@@ -24,25 +24,19 @@ GOOD = dict(
 )
 
 
-def test_corner_set_resolves_to_tt_ff_ss():
-    names = [c.name for c in corners.resolve_corners([corners.CHAR_CORNER_SET])]
-    assert names == ["tt", "ff", "ss"]
-
-
-def test_characterization_points_are_paired_not_factorial():
-    # Edge case from the issue: FF is simulated ONLY at 1.32 V / -40 C etc.
-    # The 3x3x3 full factorial (27 points) is deliberately not what this is.
-    pts = corners.characterization_points()
-    assert [(p.corner.name, p.vdd, p.temp_c) for p in pts] == [
-        ("tt", 1.20, 25.0),
-        ("ff", 1.32, -40.0),
-        ("ss", 1.08, 125.0),
-    ]
+def test_characterization_corners_are_paired_not_factorial():
+    # FF is simulated ONLY at 1.32 V / -40 C etc.; the 3x3x3 full factorial
+    # (27 points) is deliberately not what this is.
+    assert corners.CHAR_CORNER_PVT == {
+        "tt": (1.20, 25.0),
+        "ff": (1.32, -40.0),
+        "ss": (1.08, 125.0),
+    }
+    assert set(corners.CHAR_CORNER_PVT) <= set(corners.CORNERS)
 
 
 def test_builtin_corners_untouched():
-    assert set(corners.CORNER_SETS) >= {"tt", "mos", corners.CHAR_CORNER_SET}
-    assert corners.CORNER_SETS["mos"] == ("tt", "ff", "ss", "fs", "sf")
+    assert tuple(corners.CORNERS) == ("tt", "ff", "ss", "fs", "sf")
 
 
 def test_valid_record_passes_and_renders():
