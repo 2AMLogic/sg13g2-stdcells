@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install pytest
-        run: pip install pytest
+        run: pip install pytest==9.2.0
       - name: unit tests
         run: python3 -m pytest design/tests layout/tests sim
       - name: netlists are fresh
