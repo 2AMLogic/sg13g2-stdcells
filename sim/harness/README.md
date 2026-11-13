@@ -7,7 +7,7 @@ through `klt` — see `sim/characterize/`.
 | Module | Covers |
 |---|---|
 | `corners.py` | The five MOS process corners (`tt`/`ff`/`ss`/`fs`/`sf`), `Corner`, and this library's characterization corner pairings (`CHAR_CORNER_PVT`). |
-| `evidence.py` | `BaseExtensions` (open `extra` + `notes` slot) and `CharacterizationExtensions`: a validated per-arc cell-characterization record. `from_manifest` returns it; fields are required on `record_kind=characterization` and rejected on other kinds. |
+| `evidence.py` | `BaseExtensions` (open `extra` + `notes` slot) and `CharacterizationExtensions`: a validated per-arc cell-characterization record; fields are required on `record_kind=characterization` and rejected on other kinds. |
 | `report.py` | `git_provenance` and `allocate_record_id` (`<YYYYMMDD>-<HHMMSS>-<short-sha>`, append-only: never returns an id whose record exists). |
 
 No third-party dependencies. Tests: `python -m pytest sim/tests`.

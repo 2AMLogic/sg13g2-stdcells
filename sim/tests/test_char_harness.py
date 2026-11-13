@@ -67,10 +67,3 @@ def test_bad_sense_and_corner_rejected():
 def test_char_fields_rejected_on_other_record_kind():
     with pytest.raises(evidence.EvidenceFormatError):
         evidence.CharacterizationExtensions(record_kind="corner-matrix", cell="x").validate()
-
-
-def test_from_manifest_roundtrip_and_unknown_key():
-    ext = evidence.from_manifest(GOOD)
-    ext.validate()
-    with pytest.raises(evidence.EvidenceFormatError):
-        evidence.from_manifest({"bogus": 1})
