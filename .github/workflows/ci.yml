@@ -20,14 +20,8 @@ jobs:
           python-version: "3.12"
       - name: Install pytest
         run: pip install pytest
-      - name: design unit tests
-        run: python3 -m unittest discover -s design/tests
-      - name: layout unit tests
-        run: python3 -m unittest discover -s layout/tests
-      - name: characterize unit tests
-        run: python3 -m unittest discover -s sim/characterize/tests
-      - name: sim harness tests
-        run: python3 -m pytest sim/tests
+      - name: unit tests
+        run: python3 -m pytest design/tests layout/tests sim
       - name: netlists are fresh
         run: python3 design/gen_netlists.py --config layout/example_config.json --out layout/lvs/netlists --check
       - name: layouts are fresh
