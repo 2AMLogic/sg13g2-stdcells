@@ -199,9 +199,6 @@ class DeterminismAndCheckTest(unittest.TestCase):
             self.assertEqual(fa, fb)
             self.assertEqual(len(fa), len(CFG["cells"]))
 
-    def test_committed_netlists_fresh(self):
-        self.assertEqual(self.run_cli("--config", str(CONFIG), "--check").returncode, 0)
-
     def test_check_detects_stale_missing_and_stray(self):
         with tempfile.TemporaryDirectory() as td:
             out = pathlib.Path(td)

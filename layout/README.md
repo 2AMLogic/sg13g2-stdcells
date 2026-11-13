@@ -114,8 +114,7 @@ is the 4-finger inverter, not a multi-input cell.
 `layout/run_lvs.py` runs `klt lvs` (inline extraction, deck `sg13g2`, reference
 form `subckt-call`) on every cell in the config against the netlist
 `design/gen_netlists.py` generates from the **same** config
-(`layout/example_config.json`; not the `design/netlists/demo_*.spice` files,
-which use a different L and supply). It writes `layout/lvs/<cell>.json` and the
+(`layout/example_config.json`). It writes `layout/lvs/<cell>.json` and the
 reference netlists it compared against, `layout/lvs/netlists/<cell>.spice`.
 
 ```
