@@ -10,9 +10,11 @@ engine contains no PDK constants; everything PDK-specific is injected through
 the config. stdlib only.
 
 ```
-python3 design/gen_netlists.py --config design/example_config.json            # write
-python3 design/gen_netlists.py --config design/example_config.json --check    # freshness
-python3 -m unittest discover -s design/tests                                  # tests
+# write / check the committed SG13G2 netlists (what CI gates)
+python3 design/gen_netlists.py --config layout/example_config.json --out layout/lvs/netlists
+python3 design/gen_netlists.py --config layout/example_config.json --out layout/lvs/netlists --check
+
+python3 -m unittest discover -s design/tests   # tests (they use design/example_config.json)
 ```
 
 `--out` defaults to `<config dir>/netlists`. Exit codes: `0` ok/fresh, `1`
@@ -69,7 +71,13 @@ device line per transistor: `<prefix><i> d g s bulk model <device_params>`.
 
 ### Scope
 
-`example_config.json` and `netlists/` are a placeholder demo (`demo_nmos` /
-`demo_pmos`, made-up sizes), used only by the tests. They are not an SG13G2
-catalog or sizing; that waits for a ratified spec. Nothing here states an area
-or energy result.
+`example_config.json` is a test fixture, not a catalog: `design/tests/` loads
+it to exercise every topology the engine supports, against a made-up process
+(`demo_nmos` / `demo_pmos`, 100 nm / 1.0 V) chosen to be obviously not SG13G2.
+The tests parse generator output in memory, so nothing is committed under the
+default `--out` for it and no `design/netlists/` directory exists.
+
+This repo's SG13G2 cell config is `layout/example_config.json`. Its generated
+netlists are the ones committed, at `layout/lvs/netlists/` — the reference
+netlists LVS compared against — and those are what CI gates for freshness.
+Nothing here states an area or energy result.

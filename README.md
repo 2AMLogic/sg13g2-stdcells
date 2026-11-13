@@ -118,7 +118,7 @@ commands individually:
 
 ```
 python3 -m pytest design/tests layout/tests sim
-python3 design/gen_netlists.py --config design/example_config.json --check
+python3 design/gen_netlists.py --config layout/example_config.json --out layout/lvs/netlists --check
 python3 layout/gen_layouts.py --config layout/example_config.json --check
 R=flow/records/20261104-df96543
 flow/check-evidence.sh flow/request-par.json $R/place-and-route.json $R/lvs.json $R/erc.json   # must exit 0
