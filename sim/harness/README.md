@@ -10,7 +10,8 @@ through `klt` — see `sim/characterize/`.
 | `evidence.py` | `BaseExtensions` (open `extra` + `notes` slot) and `CharacterizationExtensions`: a validated per-arc cell-characterization record; fields are required on `record_kind=characterization` and rejected on other kinds. |
 | `report.py` | `git_provenance` and `allocate_record_id` (`<YYYYMMDD>-<HHMMSS>-<short-sha>`, append-only: never returns an id whose record exists). |
 
-No third-party dependencies. Tests: `python -m pytest sim/tests`.
+The harness modules import only the standard library. Their tests need
+pytest: `python3 -m pytest sim/tests` from the repo root.
 
 ## This library's characterization corners (DRAFT, pending #1)
 
