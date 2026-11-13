@@ -64,7 +64,9 @@ class CellSpec:
     extra: dict = field(default_factory=dict)
 
 
-#: Baseline leg: the existing sg13g2_stdcell inverter (this repo has no cells).
+#: Baseline leg: the PDK's own ``sg13g2_stdcell`` inverter -- the benchmark
+#: denominator of ``spec/0001-target-specification.md`` ("Baseline Liberty"), not
+#: one of this repo's generated cells (those go through :func:`cells_from_config`).
 SG13G2_INV_1 = CellSpec("sg13g2_inv_1", inputs=("A",), outputs={"Y": "!A"})
 
 
@@ -77,6 +79,44 @@ def _axis(values, label: str) -> list[float]:
     if any(b <= a for a, b in zip(vals, vals[1:])):
         raise RequestError(f"{label} axis must be strictly ascending")
     return vals
+
+
+def _cell_entry(cell: CellSpec, pdk: Path) -> dict:
+    """The klt block describing one cell: the only place a cell is described.
+
+    Both request forms use this, so a new pin attribute or power-pin convention is
+    changed once (the ``cell`` block of :func:`build_request` and each entry of
+    :func:`build_library_request`'s ``cells`` list are the same shape).
+    """
+    if not cell.inputs or not cell.outputs:
+        raise RequestError(f"cell {cell.name!r} needs at least one input and one output")
+    netlist = Path(cell.netlist)
+    if not netlist.is_absolute():
+        netlist = pdk / netlist
+    pins = [{"name": n, "direction": "input"} for n in cell.inputs]
+    pins += [{"name": n, "direction": "output", "function": f} for n, f in cell.outputs.items()]
+    return {
+        "name": cell.name,
+        "netlist": str(netlist),
+        "pins": pins,
+        "power_pins": {"vdd": cell.vdd, "gnd": cell.gnd},
+    }
+
+
+def _run_blocks(corner: str, pdk: Path, slews_ns, loads_pf, keep_artifacts: bool) -> dict:
+    """The corner/grid/models/options blocks, identical in both request forms."""
+    return {
+        "corner": corner_block(corner),
+        "grid": {
+            "input_transition_ns": _axis(slews_ns, "slew"),
+            "output_load_pf": _axis(loads_pf, "load"),
+        },
+        "models": {"lib": str(pdk / MODEL_LIB)},
+        "options": {
+            "osdi_preload": [str(pdk / p) for p in OSDI_PRELOAD],
+            "keep_artifacts": keep_artifacts,
+        },
+    }
 
 
 def build_request(
@@ -92,30 +132,9 @@ def build_request(
     All paths are absolute so the request means the same wherever it is written.
     """
     pdk = Path(pdk_dir)
-    if not cell.inputs or not cell.outputs:
-        raise RequestError(f"cell {cell.name!r} needs at least one input and one output")
-    netlist = Path(cell.netlist)
-    if not netlist.is_absolute():
-        netlist = pdk / netlist
-    pins = [{"name": n, "direction": "input"} for n in cell.inputs]
-    pins += [{"name": n, "direction": "output", "function": f} for n, f in cell.outputs.items()]
     return {
-        "cell": {
-            "name": cell.name,
-            "netlist": str(netlist),
-            "pins": pins,
-            "power_pins": {"vdd": cell.vdd, "gnd": cell.gnd},
-        },
-        "corner": corner_block(corner),
-        "grid": {
-            "input_transition_ns": _axis(slews_ns, "slew"),
-            "output_load_pf": _axis(loads_pf, "load"),
-        },
-        "models": {"lib": str(pdk / MODEL_LIB)},
-        "options": {
-            "osdi_preload": [str(pdk / p) for p in OSDI_PRELOAD],
-            "keep_artifacts": keep_artifacts,
-        },
+        "cell": _cell_entry(cell, pdk),
+        **_run_blocks(corner, pdk, slews_ns, loads_pf, keep_artifacts),
     }
 
 
@@ -149,22 +168,6 @@ def cells_from_config(config_path: str | Path, netlist_dir: str | Path) -> list[
     ]
 
 
-def _cell_entry(cell: CellSpec, pdk: Path) -> dict:
-    if not cell.inputs or not cell.outputs:
-        raise RequestError(f"cell {cell.name!r} needs at least one input and one output")
-    netlist = Path(cell.netlist)
-    if not netlist.is_absolute():
-        netlist = pdk / netlist
-    pins = [{"name": n, "direction": "input"} for n in cell.inputs]
-    pins += [{"name": n, "direction": "output", "function": f} for n, f in cell.outputs.items()]
-    return {
-        "name": cell.name,
-        "netlist": str(netlist),
-        "pins": pins,
-        "power_pins": {"vdd": cell.vdd, "gnd": cell.gnd},
-    }
-
-
 def build_library_request(
     cells: list[CellSpec],
     corner: str,
@@ -184,8 +187,8 @@ def build_library_request(
     if len(set(names)) != len(names):
         raise RequestError("duplicate cell names in library request")
     pdk = Path(pdk_dir)
-    req = build_request(cells[0], corner, pdk, slews_ns, loads_pf, keep_artifacts)
-    del req["cell"]
-    req["library"] = {"name": library_name}
-    req["cells"] = [_cell_entry(c, pdk) for c in cells]
-    return req
+    return {
+        **_run_blocks(corner, pdk, slews_ns, loads_pf, keep_artifacts),
+        "library": {"name": library_name},
+        "cells": [_cell_entry(c, pdk) for c in cells],
+    }

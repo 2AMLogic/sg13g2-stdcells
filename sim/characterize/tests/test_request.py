@@ -130,6 +130,20 @@ class LibraryRequestTests(unittest.TestCase):
         with self.assertRaises(RequestError):
             build_library_request(self.cells[:1] * 2, DEFAULT_CORNER, "/pdk")
 
+    def test_both_forms_describe_a_cell_identically(self):
+        # One cell-entry builder serves both request forms, so a new pin attribute
+        # or power-pin convention cannot land in one and be forgotten in the other.
+        for cell in [SG13G2_INV_1, *self.cells]:
+            single = build_request(cell, DEFAULT_CORNER, "/pdk")["cell"]
+            library = build_library_request([cell], DEFAULT_CORNER, "/pdk")["cells"][0]
+            self.assertEqual(single, library, cell.name)
+
+    def test_both_forms_share_the_corner_grid_models_options_blocks(self):
+        single = build_request(SG13G2_INV_1, DEFAULT_CORNER, "/pdk")
+        library = build_library_request(self.cells, DEFAULT_CORNER, "/pdk")
+        for block in ("corner", "grid", "models", "options"):
+            self.assertEqual(single[block], library[block], block)
+
 
 class LibraryRecordTests(unittest.TestCase):
     def test_multi_cell_record_validates_and_picks_each_cells_leakage(self):
