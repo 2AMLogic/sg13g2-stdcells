@@ -113,13 +113,11 @@ ratification/  the two reviewer-key skills a spec ratification needs
 `.github/workflows/ci.yml` runs on every pull request and on push to `main`. It
 needs only Python 3, `pytest` and `jq` — no klt, ngspice or PDK, so
 tool-dependent runs (SPICE, DRC, LVS, place-and-route) are not covered by CI.
-To reproduce locally, from the repo root:
+To reproduce locally, run `npm run check:ci` from the repo root, or the same
+commands individually:
 
 ```
-python3 -m unittest discover -s design/tests
-python3 -m unittest discover -s layout/tests
-python3 -m unittest discover -s sim/characterize/tests
-python3 -m pytest sim/tests
+python3 -m pytest design/tests layout/tests sim
 python3 design/gen_netlists.py --config design/example_config.json --check
 python3 layout/gen_layouts.py --config layout/example_config.json --check
 R=flow/records/20261104-df96543
