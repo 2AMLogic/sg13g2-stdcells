@@ -6,11 +6,10 @@ sweep checked against a pass/fail spec, or a ``characterization`` record
 that states a measured value plus how it was obtained), and
 :class:`BaseExtensions` -- an open, append-only-safe bag for whatever
 record-level fields a block's own evidence convention needs beyond the base
-fields a record carries (claim, netlist_provenance, measure, checks, ...). ``extra`` and ``notes`` round-trip
-through a ``tb.json`` manifest's ``evidence`` block untouched, and render as
-plain bullet lines in the Markdown record -- so a fresh block gets a working
-evidence path with zero schema fields of its own before it has decided what
-those fields are.
+fields a record carries (claim, netlist_provenance, measure, checks, ...).
+``extra`` and ``notes`` render as plain bullet lines in the Markdown record --
+so a fresh block gets a working evidence path with zero schema fields of its
+own before it has decided what those fields are.
 
 EXTENSION POINT -- once a block has ratified its own evidence convention
 (the kind of methodology fields a spec doc names, e.g. "every FFT-derived
@@ -186,35 +185,3 @@ class CharacterizationExtensions(BaseExtensions):
             f"- **Netlist provenance**: {self.netlist_provenance}",
         ]
         return lines
-
-
-#: Manifest (``tb.json``) key -> :class:`CharacterizationExtensions` attribute.
-MANIFEST_KEYS: dict[str, str] = {
-    "record_kind": "record_kind",
-    "data_provenance": "data_provenance",
-    "extra": "extra",
-    "notes": "notes",
-    **{
-        k: k
-        for k in (
-            "cell", "arc_related_pin", "arc_when", "arc_sense", "input_slew_ns",
-            "output_load_pf", "delay_ns", "transition_ns", "energy_pj", "corner",
-            "netlist_provenance",
-        )
-    },
-}
-
-
-def from_manifest(block: dict | None) -> CharacterizationExtensions:
-    """Build :class:`CharacterizationExtensions` from a ``tb.json`` ``evidence`` block."""
-    block = dict(block or {})
-    unknown = sorted(set(block) - set(MANIFEST_KEYS))
-    if unknown:
-        raise EvidenceFormatError(
-            f"unknown key(s) in the manifest's 'evidence' block: {', '.join(unknown)}; "
-            f"known: {', '.join(sorted(MANIFEST_KEYS))}"
-        )
-    kwargs = {MANIFEST_KEYS[key]: value for key, value in block.items()}
-    if "notes" in kwargs and isinstance(kwargs["notes"], str):
-        kwargs["notes"] = [kwargs["notes"]]
-    return CharacterizationExtensions(**kwargs)
