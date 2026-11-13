@@ -29,7 +29,7 @@ jobs:
       - name: sim harness tests
         run: python3 -m pytest sim/tests
       - name: netlists are fresh
-        run: python3 design/gen_netlists.py --config design/example_config.json --check
+        run: python3 design/gen_netlists.py --config layout/example_config.json --out layout/lvs/netlists --check
       - name: layouts are fresh
         run: python3 layout/gen_layouts.py --config layout/example_config.json --check
       - name: evidence check accepts the committed record

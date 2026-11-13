@@ -195,7 +195,7 @@ DEFAULT_LIB = REPO_ROOT / "views" / f"{LIBRARY_NAME}.lib"
 
 
 def generate_netlists(config: Path, out: Path) -> None:
-    """Emit the config's SPICE with the repo generator (not the committed ``demo_*``)."""
+    """Emit the config's SPICE with the repo generator."""
     proc = subprocess.run(
         ["python3", str(REPO_ROOT / "design" / "gen_netlists.py"), "--config", str(config),
          "--out", str(out)], capture_output=True, text=True, check=False)
