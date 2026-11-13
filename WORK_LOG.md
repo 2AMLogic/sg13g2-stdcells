@@ -2,6 +2,11 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-13
+
+- **PR #61**: refactor(sim/harness): drop the unused tb.json manifest adapter
+- **Issue #54** (closed): Remove unused from_manifest and MANIFEST_KEYS from sim/harness/evidence.py
+
 ### 2026-11-12
 
 - **PR #53**: refactor(sim): remove unused corner-set registry and PVT grid
