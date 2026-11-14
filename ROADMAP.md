@@ -15,6 +15,18 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
 - **Generators (rows 1-4).** `design/gen_netlists.py` (boolean function to
   static-CMOS netlist) and `layout/gen_layouts.py` (netlist plus process config
   to GDS) are on `main`, both with `--check` gated in CI (#5, #22, #35, #47).
+  The generator existing is not the same claim as the geometry rows being met,
+  so per row, for the cells it places: row 1 (3.36 um row height) is **met** —
+  `layout/example_config.json` sets `row_height_nm: 3360` and
+  `layout/tests/test_gen_layouts.py:113,127` assert the emitted cell height.
+  Row 2's horizontal pitch (0.42 um) is **met** — widths and gate columns are
+  multiples of `gate_pitch_nm: 420`
+  (`layout/tests/test_gen_layouts.py:129,133`); the vertical grid is not
+  separately checked. Row 3 (Metal1 only) is **met by construction** — the
+  `layout.layers` map in `layout/example_config.json` holds `metal1` and
+  `metal1_label` only, and no generator draws a second metal.
+  Row 4 (every pin on a grid point) is **not verified**: no check asserts that
+  the emitted pin labels land on grid points.
 - **Cells (row 5: target 40).** Four are generated from
   `layout/example_config.json`: `sg13g2_inv_1`, `_inv_2`, `_inv_4`,
   `sg13g2_nand2_1`. Sequential cells (row 6) are out of target scope.
@@ -51,11 +63,21 @@ derived from `layout/example_config.json` (same process and rules):
 | fails | `buf_1`, `nand2_2` | needs 2 channel tracks, config allows 1 |
 | fails | `nor4_1` | 500 nm device cannot be drawn as 4 fingers on the 10 nm grid |
 
-The placement model is what holds the cell count at 4 of 40.
+The placement model is what holds the generator to 6 of the 20 cells probed
+above (row 5 targets 40); `layout/example_config.json`, which lists four of
+those six, is what holds the committed count at 4.
 
 ## Now
 
-Each can start today; none has an issue yet.
+All four items have issues, filed 2026-11-14 by the same roadmap pass as this
+document and so after the date in its header: #73 (item 1), #74 (item 2), #75
+(item 3) and #76 (item 4). Pick the issue up rather than re-filing it. Also
+after this snapshot, #73 closed on 2026-11-14 — its taps-and-LVS work merged to
+`main` in PR #79, which supersedes item 1 and the row 8 "not met" above, with
+all four `layout/lvs/*.json` now `status: match`. As of 2026-11-14 #74 carries
+`loom:issue` and is ready for a builder, #75 is `loom:building`, and #76 is
+still `loom:triage`.
+
 1. **Draw well and substrate taps, then re-run LVS.** Done when
    `layout/gen_layouts.py` emits tap geometry from config, `layout/drc/` holds
    fresh clean reports for the regenerated cells, and new `layout/lvs/*.json`
@@ -115,7 +137,9 @@ Each can start today; none has an issue yet.
 
 ## Blocked and waiting
 
-- No open issue is ready for a builder today; the Now items need issues first.
+- Not the Now list: #73-#76 cover all four of its items (see Now), and as of
+  2026-11-14 #74 carries `loom:issue` — ready for a builder today. Nothing in
+  this roadmap is waiting on an issue being filed.
 - #59, #62 and #69 are simplification proposals awaiting maintainer approval:
   tidy-ups, not steps toward the spec. #3 stays open as the tracker and #56
   is an automated hold digest.
