@@ -164,17 +164,20 @@ ratification/  the two reviewer-key skills a spec ratification needs
 `.github/workflows/ci.yml` runs on every pull request and on push to `main`. It
 needs only Python 3, `pytest` and `jq` — no klt, ngspice or PDK, so
 tool-dependent runs (SPICE, DRC, LVS, place-and-route) are not covered by CI.
-To reproduce locally, run `npm run check:ci` from the repo root, or the same
-commands individually:
 
-```
-python3 -m pytest design/tests layout/tests sim
-python3 design/gen_netlists.py --config layout/example_config.json --out layout/lvs/netlists --check
-python3 layout/gen_layouts.py --config layout/example_config.json --check
-R=flow/records/20261104-df96543
-flow/check-evidence.sh flow/request-par.json $R/place-and-route.json $R/lvs.json $R/erc.json   # must exit 0
-flow/check-evidence.sh flow/request-par.json $R/negative-control-nopower.place-and-route.json $R/lvs.json $R/erc.json   # must exit non-zero
-```
+The command text lives in exactly one place, [`check-ci.sh`](check-ci.sh): the
+workflow runs one stage of it per step, and `npm run check:ci` and `npm test`
+call it too, so there is no second copy to drift. To reproduce CI locally, run
+`./check-ci.sh` from the repo root, or one stage at a time with
+`./check-ci.sh <stage>`:
+
+- `tests` — unit tests (`design/tests`, `layout/tests`, `sim`)
+- `netlists` — generated LVS netlists are fresh
+- `layouts` — generated layouts are fresh
+- `evidence-accept` — the evidence check accepts the committed flow record
+- `evidence-reject` — the evidence check rejects the negative control
+
+Which flow record CI gates on is the `FLOW_RECORD` line of that script.
 
 T1 item 10 inventory: README present (this file), license present
 ([LICENSE](LICENSE)), CI present (`.github/workflows/ci.yml`).
