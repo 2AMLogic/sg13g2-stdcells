@@ -5,10 +5,6 @@
 __pycache__/
 .DS_Store
 
-# sim/ harness: per-corner ngspice logs under corners/ are committed evidence
-# (append-only record trail), so they escape the *.log rule.
-!sim/*/corners/**/*.log
-sim/build/
 # synthesis / P&R scratch
 flow/build/
 # local klt install, created by the setup script
@@ -93,7 +89,6 @@ flow/build/
 .loom/gh-config-by-owner-*/
 /.loom-local/
 # <<< loom-managed <<<
-flow/build/
 flow/.klt/
 verification/sim_build/
 verification/results.xml
