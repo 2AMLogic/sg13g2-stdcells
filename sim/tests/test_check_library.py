@@ -8,7 +8,6 @@ reported.
 Run from the repo root:  python -m pytest sim/tests
 """
 
-import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -20,17 +19,17 @@ from sim.characterize import check_library
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 REAL_LIB = REPO_ROOT / "views" / "sg13g2_stdcells_tt_1p20v_25c.lib"
 REAL_SIDECAR = Path(str(REAL_LIB) + ".provenance")
-REAL_RECORD = REPO_ROOT / "sim" / "characterize" / "records" / "20261107-222836-6ee1577.md"
+REAL_RECORD = REPO_ROOT / "sim" / "characterize" / "records" / "20261114-222806-f1cf294.md"
 
 
 @pytest.fixture
 def tree(tmp_path):
-    """A miniature repo whose Liberty view, sidecar, config and record agree.
+    """A miniature repo copied from the committed artifacts, which are fresh.
 
-    Built from the committed artifacts, with the config replaced by one whose
-    SHA-256 the sidecar actually pins -- so the baseline is fresh and each test
-    below isolates a single mutation. (The committed tree itself is *not*
-    fresh; see test_committed_tree_config_pin_is_stale.)
+    The committed Liberty view, sidecar, config and record agree -- the view
+    was regenerated for issue #82, so the sidecar's pin matches the committed
+    config and no swap is needed. The baseline is fresh and each test below
+    isolates a single mutation.
     """
     root = tmp_path
     (root / "views").mkdir()
@@ -41,14 +40,9 @@ def tree(tmp_path):
     lib = root / "views" / REAL_LIB.name
     shutil.copy(REAL_LIB, lib)
     shutil.copy(REAL_RECORD, records / REAL_RECORD.name)
-
-    config = root / "layout" / "example_config.json"
-    config.write_bytes((REPO_ROOT / "layout" / "example_config.json").read_bytes())
-
-    prov = json.loads(REAL_SIDECAR.read_text())
-    prov["config"] = "layout/example_config.json"
-    prov["config_sha256"] = hashlib.sha256(config.read_bytes()).hexdigest()
-    Path(str(lib) + ".provenance").write_text(json.dumps(prov, indent=2, sort_keys=True) + "\n")
+    shutil.copy(REPO_ROOT / "layout" / "example_config.json",
+                root / "layout" / "example_config.json")
+    shutil.copy(REAL_SIDECAR, Path(str(lib) + ".provenance"))
 
     return root, lib, records
 
@@ -136,19 +130,16 @@ def test_truncated_sidecar_is_drift(tree):
     assert any("lacks" in p for p in run(tree))
 
 
-def test_committed_tree_config_pin_is_stale(tree):
-    """The committed tree is deliberately NOT fresh, and this records why.
+def test_committed_tree_config_pin_is_fresh(tree):
+    """The committed tree is fresh, and this records why.
 
-    `layout/example_config.json` gained two `layout.rules` keys for the well
-    and substrate taps (issue #73) after the Liberty view was characterized, so
-    the sidecar's whole-file `config_sha256` no longer matches. Nothing the
-    characterization consumes changed -- `process` and `cells` are byte
-    identical -- but the sidecar pins the whole file, so the pin is stale. This
-    is why T1 item 8 is not cited yet; see the PR for issue #75.
-
-    When the view is regenerated (or the pin narrowed), this test is the thing
-    that should fail, and the item 8 envelope can then be minted.
+    The Liberty view was regenerated for issue #82 after issue #73's two
+    `layout.rules` keys staled the sidecar's whole-file `config_sha256` pin:
+    `python3 -m sim.characterize --library --pdk-dir <ihp-sg13g2 dir>` re-
+    characterized the view against the current config and appended record
+    `20261114-222806-f1cf294`, which the sidecar now names. This is the test
+    that fails if the pin goes stale again -- a `layout.rules` edit will do
+    it, since the pin covers the whole config while characterization consumes
+    only `process` and `cells`.
     """
-    problems = check_library.check(REAL_LIB)
-    assert len(problems) == 1, problems
-    assert "example_config.json" in problems[0] and "sha256" in problems[0]
+    assert check_library.check(REAL_LIB) == []
