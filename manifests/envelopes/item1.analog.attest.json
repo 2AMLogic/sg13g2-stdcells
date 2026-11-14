@@ -24,7 +24,7 @@
         "role": "source",
         "path": "layout/example_config.json",
         "passed": true,
-        "content_hash": "sha256:1a02f3ccb5b49edc86ae1a82fa928c21b796adac72548066e773c47b0254b6f5"
+        "content_hash": "sha256:8e3608229a8291cf4109292d8c5d455b6680a69756111ecbc4e704f56d1749b6"
       },
       {
         "check": "present",
@@ -129,7 +129,7 @@
     ]
   },
   "provenance": {
-    "klt_version": "0.9.2.dev251+g956636a1d27d",
+    "klt_version": "0.9.2.dev1022+g2a9c52b27ce7",
     "klayout_version": null,
     "pdk": null,
     "deck": null,
@@ -147,7 +147,7 @@
             "path": "layout/example_config.json",
             "scope": "repo"
           },
-          "content_hash": "sha256:1a02f3ccb5b49edc86ae1a82fa928c21b796adac72548066e773c47b0254b6f5"
+          "content_hash": "sha256:8e3608229a8291cf4109292d8c5d455b6680a69756111ecbc4e704f56d1749b6"
         },
         {
           "path": {
@@ -185,7 +185,7 @@
           "content_hash": "sha256:00673dbd9027d70ad6567172545ac99a8c3d9b7cb1c302567bc0c57986922dc2"
         }
       ],
-      "content_hash": "sha256:cc97397cf52d3226a1f903782da21309ac654981d1998ddb744319e822e0ff93"
+      "content_hash": "sha256:e1e8354a3f01d1eededc121290786e5229ecaf89e97f87d13d2e90f03aa44253"
     }
   }
 }

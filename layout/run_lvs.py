@@ -8,7 +8,9 @@ For each cell in CONFIG the runner
      SAME config (written to <out>/netlists/<cell>.spice, committed so the
      reports stay re-checkable),
   2. runs `klt lvs` (inline extraction with the sg13g2 deck, reference form
-     `subckt-call`) on <gds>/<cell>.gds, writing <out>/<cell>.json.
+     `subckt-call`, `options.combine_devices` on because the generator folds a
+     device into F parallel fingers) on <gds>/<cell>.gds, writing
+     <out>/<cell>.json.
 
 Defaults: --gds <config dir>/gds, --out <config dir>/lvs. Paths are given to
 klt relative to the current directory, so run from the repo root.
@@ -58,6 +60,12 @@ def build_request(cell, gds_dir, netlist_dir):
             "form": "subckt-call",
             "deck": DECK,
         },
+        # layout/gen_layouts.py folds a device into F parallel fingers, so
+        # extraction sees F transistors on one gate net where the reference
+        # netlist carries a single device with ng=F. Combining parallel devices
+        # makes the comparison see the same device the netlist declares; it does
+        # not loosen what is compared (the nets are already 1:1 without it).
+        "options": {"combine_devices": True},
     }
 
 

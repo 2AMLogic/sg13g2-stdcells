@@ -28,7 +28,11 @@ Placement model (deliberately small; anything outside it is a named failure):
     each poly column crosses both strips;
   * Metal1 only: VSS/VDD rails on the row edges, vertical stubs from diffusion
     contacts, at most `channel_tracks` horizontal tracks between the strips
-    for nets that need joining, one gate contact pad per input.
+    for nets that need joining, one gate contact pad per input;
+  * one well tap (n-well tie to VDD, under the VDD rail) and one substrate tap
+    (p-substrate tie to VSS, under the VSS rail) per cell, so the extracted
+    device bodies land on VDD/VSS instead of a synthesized well/substrate net.
+    The n-well is extended above the row to enclose the well tie.
 """
 import argparse
 import json
@@ -44,7 +48,8 @@ OPTIONAL_LAYERS = ("nsd",)
 RULE_KEYS = (
     "poly_width_nm", "poly_space_nm", "poly_endcap_nm", "poly_to_activ_nm", "cont_nm", "cont_space_nm",
     "activ_enc_cont_nm", "poly_enc_cont_nm", "m1_width_nm", "m1_space_nm",
-    "rail_width_nm", "nwell_enc_pactiv_nm", "sd_enc_activ_nm",
+    "rail_width_nm", "nwell_enc_pactiv_nm", "nwell_enc_nactiv_nm", "activ_space_nm",
+    "sd_enc_activ_nm",
 )
 LAYOUT_INT_KEYS = ("row_height_nm", "gate_pitch_nm", "channel_tracks", "n_diff_y0_nm", "p_diff_top_margin_nm")
 
@@ -226,17 +231,8 @@ def layout_cell(cell, proc, lay):
 
     nn, pn = nodes(nord, ndevs), nodes(pord, pdevs)
 
-    # Diffusion, implants, well. Strip drawn as one rectangle per device row.
-    ax0, ax1 = node_x[0] - act_hang, node_x[-1] + act_hang
-    S.box("activ", ax0, n_y0, ax1, n_y1)
-    S.box("activ", ax0, p_y0, ax1, p_y1)
-    sd = R["sd_enc_activ_nm"]
-    S.box("psd", ax0 - sd, p_y0 - sd, ax1 + sd, p_y1 + sd)
-    if "nsd" in lay["layers"]:
-        S.box("nsd", ax0 - sd, n_y0 - sd, ax1 + sd, n_y1 + sd)
-    S.box("nwell", ax0 - R["nwell_enc_pactiv_nm"], p_y0 - R["nwell_enc_pactiv_nm"], ax1 + R["nwell_enc_pactiv_nm"], H + rail // 2)
-
-    # Poly columns: one stripe per gate, crossing both strips.
+    # Poly extents, needed before the well box because the well tap sits poly-clear
+    # above the PMOS strip and the n-well has to enclose it.
     pw = R["poly_width_nm"]
     ext = R["poly_endcap_nm"]
     # Fingers of one device are joined by a poly bridge below the NMOS diffusion,
@@ -246,12 +242,71 @@ def layout_cell(cell, proc, lay):
     dev_cols = {}  # position in order -> [column indices]
     for c, (pos, _) in enumerate(cols):
         dev_cols.setdefault(pos, []).append(c)
+    multi = any(len(cs) > 1 for cs in dev_cols.values())
+    poly_y0 = min(n_y0 - ext, bridge_y0) if multi else n_y0 - ext
+    poly_y1 = p_y1 + ext
+
+    # Well/substrate tap bands, one per rail. Without them extraction puts the
+    # NMOS body on the deck-synthesized substrate net and the PMOS body on an
+    # anonymous n-well net, so every device body is unverified against the
+    # reference netlist's VSS/VDD (issue #73). The band is one contact tall plus
+    # the diffusion enclosure on each side, pushed as close to its rail as the
+    # diffusion spacing and the field-poly clearance allow -- for a multi-finger
+    # cell the poly bridge, not the NMOS diffusion, is what binds on the VSS side.
+    if "nsd" not in lay["layers"]:
+        raise PlaceError("layout.layers.nsd is missing, so the n-well tap cannot be drawn as a well tie "
+                         "(the deck derives the tie as activ & nsd); give the config an nsd layer")
+    sd = R["sd_enc_activ_nm"]
+    tap_h = R["cont_nm"] + 2 * R["activ_enc_cont_nm"]
+    sub_y1 = min(n_y0 - R["activ_space_nm"], poly_y0 - R["poly_to_activ_nm"])
+    sub_y0 = sub_y1 - tap_h
+    well_y0 = max(p_y1 + R["activ_space_nm"], poly_y1 + R["poly_to_activ_nm"])
+    well_y1 = well_y0 + tap_h
+    # The tap implant abuts the device implant of the opposite type instead of
+    # overlapping it: psd over nsd is not a mask either tool can resolve.
+    if n_y0 - sd <= sub_y1 or p_y1 + sd >= well_y0:
+        raise PlaceError(f"sd_enc_activ {sd} nm reaches past the tap bands "
+                         f"(substrate {sub_y0}..{sub_y1} nm, well {well_y0}..{well_y1} nm); "
+                         "the tap implant cannot abut the device implant")
+
+    # Diffusion, implants, well. Strip drawn as one rectangle per device row.
+    ax0, ax1 = node_x[0] - act_hang, node_x[-1] + act_hang
+    S.box("activ", ax0, n_y0, ax1, n_y1)
+    S.box("activ", ax0, p_y0, ax1, p_y1)
+    S.box("psd", ax0 - sd, p_y0 - sd, ax1 + sd, p_y1 + sd)
+    S.box("nsd", ax0 - sd, n_y0 - sd, ax1 + sd, n_y1 + sd)
+    nwe = R["nwell_enc_pactiv_nm"]
+    S.box("nwell", ax0 - nwe, p_y0 - nwe, ax1 + nwe, well_y1 + R["nwell_enc_nactiv_nm"])
+
+    # Poly columns: one stripe per gate, crossing both strips.
     for c in range(N):
-        multi = len(dev_cols[cols[c][0]]) > 1
-        S.box("gatpoly", gate_x[c] - pw // 2, min(n_y0 - ext, bridge_y0) if multi else n_y0 - ext, gate_x[c] + pw // 2, p_y1 + ext)
+        bridged = len(dev_cols[cols[c][0]]) > 1
+        S.box("gatpoly", gate_x[c] - pw // 2, min(n_y0 - ext, bridge_y0) if bridged else n_y0 - ext, gate_x[c] + pw // 2, poly_y1)
     for cs in dev_cols.values():
         if len(cs) > 1:
             S.box("gatpoly", gate_x[cs[0]] - pw // 2, bridge_y0, gate_x[cs[-1]] + pw // 2, bridge_y1)
+
+    # Tap bands: activ + the tie implant + one contact per node column. The
+    # contact is centred in the band, which puts it on the rail for a cell whose
+    # band is not pushed off-centre; the Metal1 patch below closes the rest.
+    taps = []  # (net, contact y0, contact y1)
+    for ty0, ty1, implant, imp_y0, imp_y1, net in (
+            (sub_y0, sub_y1, "psd", sub_y0 - sd, n_y0 - sd, vss),
+            (well_y0, well_y1, "nsd", p_y1 + sd, well_y1 + sd, vdd)):
+        S.box("activ", ax0, ty0, ax1, ty1)
+        S.box(implant, ax0 - sd, imp_y0, ax1 + sd, imp_y1)
+        cy = (ty0 + ty1) // 2 - half_c
+        for x in node_x:
+            S.box("cont", x - half_c, cy, x + half_c, cy + R["cont_nm"])
+        taps.append((net, cy, cy + R["cont_nm"]))
+        # The band was derived from the extreme edges of the device shapes; check
+        # it against every shape actually drawn rather than trusting that sum.
+        band = (ax0, ty0, ax1, ty1)
+        for layer, gap in (("activ", R["activ_space_nm"]), ("gatpoly", R["poly_to_activ_nm"])):
+            for b in S.boxes:
+                if b[0] == layer and b[1:] != band and _overlap_or_close(band, b[1:], gap):
+                    raise PlaceError(f"{net} tap band {ty0}..{ty1} nm is not {gap} nm clear of "
+                                     f"{layer} at {b[1:]}")
 
     # Contacts per node (stacked inside the diffusion) and the M1 stub on them.
     mw = R["m1_width_nm"]
@@ -365,6 +420,17 @@ def layout_cell(cell, proc, lay):
     # Rails and output/rail labels.
     S.box("metal1", 0, -rail // 2, W, rail // 2)
     S.box("metal1", 0, H - rail // 2, W, H + rail // 2)
+    # Tap Metal1: one patch per tap, covering its contacts and merged with its
+    # rail, so a band pushed off the rail centre is still tied to the rail.
+    for net, cy0, cy1 in taps:
+        ry0, ry1 = (-rail // 2, rail // 2) if net == vss else (H - rail // 2, H + rail // 2)
+        hang = max(mw // 2, half_c)  # cover the contacts even if M1 is narrower
+        patch = (node_x[0] - hang, min(cy0, ry0), node_x[-1] + hang, max(cy1, ry1))
+        for n2, r in m1:
+            if n2 != net and _overlap_or_close(patch, r, R["m1_space_nm"]):
+                raise PlaceError(f"{net} tap Metal1 is not {R['m1_space_nm']} nm clear of {n2}")
+        S.box("metal1", *patch)
+        m1.append((net, patch))
     S.labels.append(("metal1_label", W // 2, 0, vss))
     S.labels.append(("metal1_label", W // 2, H, vdd))
     for pin in sorted(cell["outputs"]):
