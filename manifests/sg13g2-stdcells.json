@@ -28,6 +28,10 @@
       "layout/lvs/sg13g2_nand2_1.json"
     ],
     "4.digital": "flow/records/20261104-df96543/lvs.json",
+    "8.analog": {
+      "file": "manifests/envelopes/item8.analog.attest.json",
+      "content_hash": "sha256:6fc619d3cd7932f7589e62e128a81b72b11ac11f4017ef684bcccf92f27c8408"
+    },
     "9.digital": {
       "file": "manifests/envelopes/item9.digital.attest.json",
       "content_hash": "sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85"

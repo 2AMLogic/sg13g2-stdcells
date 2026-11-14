@@ -2,8 +2,8 @@
   "schema_version": 1,
   "kind": "t1-attestation-inventory",
   "t1_item": 8,
-  "description": "Analog partition characterization report: the append-only klt characterize record behind the committed TT/1.20 V/25 C Liberty view, cited for spec row 9 (Liberty corners). The freshness command re-derives every claim the view's provenance sidecar makes -- library name, cell set, the SHA-256 of the config it was characterized from, and the record it names -- so a config edit or a hand-edited view fails the attestation instead of being reported as current. NOT YET ATTESTABLE: the freshness command fails because the sidecar pins layout/example_config.json at a SHA-256 the committed config no longer has (issue #73 edited the config after the view was characterized). Tracked in issue #82; mint and cite the envelope once that is resolved. The check is deliberately not weakened to pass.",
-  "report": "sim/characterize/records/20261107-222836-6ee1577.md",
+  "description": "Analog partition characterization report: the append-only klt characterize record behind the committed TT/1.20 V/25 C Liberty view, cited for spec row 9 (Liberty corners). The freshness command re-derives every claim the view's provenance sidecar makes -- library name, cell set, the SHA-256 of the config it was characterized from, and the record it names -- so a config edit or a hand-edited view fails the attestation instead of being reported as current. The check is deliberately not weakened to pass.",
+  "report": "sim/characterize/records/20261114-222806-f1cf294.md",
   "spec_rows": [
     "spec-row-9-liberty-corners-tt"
   ],
