@@ -15,27 +15,76 @@ power tables (`.lib`) that every downstream tool reads.
 
 ```
 Area (measured, post-layout): not yet measured
-Design stage: spec
+Design stage: layout-DRC-LVS-clean
 ```
 
-<!-- The two fields above are correct as they stand for a repo where nothing is
-     built yet, so there is nothing to fill in here — only to keep current. They
-     are a fixed-location summary a chip-level integrator reads without parsing
-     the prose below, so the keys, their spelling, and their order do not change.
+<!-- The two fields above are a fixed-location summary a chip-level integrator
+     reads without parsing the prose below, so the keys, their spelling, and
+     their order do not change — only their values, which are kept current with
+     what this repo has produced and recorded evidence for.
 
      Area (measured, post-layout): the as-built area of a DRC-clean,
      LVS-matched layout, as a number with units (e.g. 1.059 mm²), taken from
      this repo's own committed measurement. Never a target, a plan, or an
      estimate — the ratified bound is the AREA row of the target-specification
-     table below. Until a layout exists, the literal "not yet measured".
+     table below. Until such a measurement is committed, the literal
+     "not yet measured" — a DRC-clean, LVS-matched layout existing is not a
+     measured area.
 
      Design stage: exactly one token, from this ladder, in order —
      spec | schematic-sim | layout-DRC-LVS-clean | extracted-verified | silicon
      — describing what this repo has produced and recorded evidence for, never
      what it is aiming at. One token; not a range, not a hedge, not prose. -->
 
-**Just opened, specification phase.** Nothing is designed yet, nothing has been
-taped out, and nothing has been measured.
+**Four combinational cells are generated, DRC-clean and LVS-matched.** Nothing
+has been taped out, and nothing has been measured in silicon. Every claim below
+names the tracked file that records it; counts are as of `2546575`, 2026-11-14,
+and are re-derived from those files rather than restated here where they move.
+
+- **Two generators**, which are the unit of work here — not hand-drawn cells.
+  `design/gen_netlists.py` emits transistor-level SPICE from a cell config and
+  `layout/gen_layouts.py` emits GDS from the same config
+  (`layout/example_config.json`); both re-derive and compare their committed
+  outputs under `--check`.
+- **Four cells** — `sg13g2_inv_1`, `sg13g2_inv_2`, `sg13g2_inv_4`,
+  `sg13g2_nand2_1` — with GDS in `layout/gds/`.
+- **DRC clean**, `klt drc`: every report in `layout/drc/` reads
+  `status: "clean"`, `violation_count: 0`.
+- **LVS matched**, `klt lvs`: every report in `layout/lvs/` reads
+  `status: "match"`, `error_count: 0`, `body_verification.status: "verified"`.
+- **Pre-layout SPICE characterization**:
+  `sim/characterize/records/20261107-222836-6ee1577.md`, raw per-arc delay,
+  transition and energy tables from `klt characterize`, recorded as
+  `Data provenance: simulated`.
+- **One Liberty view**: `views/sg13g2_stdcells_tt_1p20v_25c.lib`, real
+  `klt characterize` output covering all four cells at TT / 1.20 V / 25 C (spec
+  row 9) — a single corner, combinational arcs only. It is not a characterization
+  report in the signoff sense (T1 item #8 is `[UNMET]`), and its `.provenance`
+  sidecar pins a config revision that no longer matches the tree (#82).
+- **Digital half**: the `add8` synthesis and place-and-route flow runs on the
+  stock `sg13g2_stdcell` baseline, not yet on this library's cells —
+  `flow/records/20261107-a1a4ec6/drc.json` (`clean`) and
+  `flow/records/20261104-df96543/lvs.json` (`match`).
+- **A graded signoff verdict**: `manifests/signoff-report.txt`, produced by
+  `klt signoff` against klayout-tools' own `docs/design-evidence-tiers.md`. It
+  reads `tier: none`; the current per-item T1 count is in that file rather than
+  restated here, because open work moves it. Both halves of T1 #7 (post-layout
+  verification) and T1 #8 (characterization report) are
+  `[UNMET] reason: no_evidence`.
+
+`Design stage: layout-DRC-LVS-clean` is that evidence read against the ladder in
+the comment above: DRC clean and LVS matched on all four cells is recorded, and
+the rung above it is not — T1 #7 is `[UNMET] reason: no_evidence` and
+`environment.extracted_netlist` is `null` in every LVS report, so no extracted
+view has been verified.
+
+Caveats the reports record themselves, rather than suppress: the DRC and LVS
+runs both carry `provenance.klayout_version_mismatch: true` and
+`provenance.deck.released: false`, and the DRC coverage block on `sg13g2_inv_1`
+reports `rules_skipped=34` and `layers_in_stream_without_rules=1 (8/25)` against
+a `deck_scope` of 20. That is genuine tool output, and `klt signoff` grades the
+DRC and LVS items `[MET]` on it — but it is not a signoff against a released
+deck, and this block does not claim to be one.
 
 Deliberately not being built yet, and what each waits on:
 
@@ -43,12 +92,13 @@ Deliberately not being built yet, and what each waits on:
   search, which is strictly harder than a combinational arc sweep. The
   combinational set comes first; sequential cells wait on that machinery
   working.
-- **Liberty characterization of any cell.** `klt characterize` emits Liberty
-  (klayout-tools#2528), but there is no cell yet to characterize, so no `.lib`
-  is committed and `views/` stays empty.
-- **The synthesis benchmark.** The area/timing/energy comparison in the table
-  below cannot be run until there is a `.lib` to run it with. It waits on
-  cells and a generator, and on the benchmark basis in the decision record.
+- **Liberty at the FF and SS corners.** The committed `.lib` is TT only (spec
+  row 9's target); the two-corner stretch goal waits on a multi-corner
+  `klt characterize` run and the evidence record for it.
+- **The synthesis benchmark on this library.** The area/timing/energy comparison
+  in the table below needs a `.lib` spanning enough of the cell set to synthesize
+  against; four cells is not that set. It waits on the combinational cell count
+  reaching target scope, and on the benchmark basis in the decision record.
 - **Any claim about beating `sg13g2_stdcell`.** The reference numbers in this
   repo are ETH Zurich's, measured with commercial tools on their own library.
   Nothing here restates them as ours, and nothing will until this repo has
@@ -96,15 +146,16 @@ record for why and for what that means for comparison with ETH Zurich's figures.
 ## Repo layout
 
 ```
-design/        schematics (xschem)
+design/        cell-family netlist generator (transistor-level SPICE)
 flow/          synthesis + place-and-route (Yosys, OpenROAD)
-layout/        GDS + DRC/LVS reports (klayout-tools driven)
+layout/        layout generator, GDS + DRC/LVS reports (klayout-tools driven)
+manifests/     signoff manifest, evidence envelopes + the klt signoff report
 measurements/  silicon characterization (empty until tape-out)
 rtl/           Verilog sources
-sim/           analog testbenches + PVT corner results
+sim/           analog characterization harness + recorded results
 spec/          ratified spec + decision records
 verification/  cocotb testbenches
-views/         generated LEF/Liberty views
+views/         generated Liberty views
 ratification/  the two reviewer-key skills a spec ratification needs
 ```
 
