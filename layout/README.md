@@ -367,6 +367,29 @@ characterization actually consumes) before item 8 can be cited; that needs a
 check was deliberately not weakened to pass: a freshness command that cannot
 fail is not evidence. Tracked in issue #82.
 
+**Resolution (2026-11-14, issue #82): the view was regenerated.** Of the two
+ways out recorded above, regenerating was taken and narrowing the pin was
+rejected — narrowing makes a claim about what provenance must cover (that a
+digest over `process` + `cells` is adequate), which belongs in a `spec/`
+decision record of its own, deferred until the coarse pin goes stale again;
+this regeneration is the first data point on what that recurrence costs. The
+regeneration (`python3 -m sim.characterize --library --pdk-dir
+/home/ubuntu/share/pdk/ihp-sg13g2`) ran on a clean worktree and appended
+record `sim/characterize/records/20261114-222806-f1cf294.md`; the superseded
+record `20261107-222836-6ee1577.md` is kept, append-only. It re-measured under
+a newer toolchain — klt 0.9.2.dev247 → 0.9.2.dev1029, ngspice-46 → ngspice-47 —
+so any numeric difference between the two records is attributable to that; in
+the event the committed `.lib` is byte-identical. Two side findings are
+recorded with it: the first regeneration attempt surfaced that the runner
+stamped the sidecar's `repo_commit` `(dirty)` from its own outputs (the
+`.lib` and record are written before the sidecar is stamped), fixed by
+snapshotting git provenance once before the run so the record and its sidecar
+always name the same tree state; and regenerating the signoff report exposed a
+pre-existing item-10 staleness on `main` — `README.md` was edited (commit
+`df690f0`, the Status-block correction) after that envelope was minted —
+re-attested here, unchanged checks, so the report reads T1 12/22 with item 8
+[analog] `[MET]`.
+
 The friction this surfaced is filed as 2AMLogic/klayout-tools#5688: `klt
 signoff --attest 8` documents its `citations` as evidence-envelope paths but
 checks only that each file exists, delegating all content verification to the

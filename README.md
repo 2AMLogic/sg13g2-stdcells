@@ -53,14 +53,17 @@ and are re-derived from those files rather than restated here where they move.
 - **LVS matched**, `klt lvs`: every report in `layout/lvs/` reads
   `status: "match"`, `error_count: 0`, `body_verification.status: "verified"`.
 - **Pre-layout SPICE characterization**:
-  `sim/characterize/records/20261107-222836-6ee1577.md`, raw per-arc delay,
+  `sim/characterize/records/20261114-222806-f1cf294.md`, raw per-arc delay,
   transition and energy tables from `klt characterize`, recorded as
-  `Data provenance: simulated`.
+  `Data provenance: simulated` (supersedes, append-only, record
+  `20261107-222836-6ee1577.md` after #73's config edit staled the view's
+  provenance pin — see #82).
 - **One Liberty view**: `views/sg13g2_stdcells_tt_1p20v_25c.lib`, real
   `klt characterize` output covering all four cells at TT / 1.20 V / 25 C (spec
-  row 9) — a single corner, combinational arcs only. It is not a characterization
-  report in the signoff sense (T1 item #8 is `[UNMET]`), and its `.provenance`
-  sidecar pins a config revision that no longer matches the tree (#82).
+  row 9) — a single corner, combinational arcs only. It is not itself the
+  characterization report cited for T1 item #8 — the record behind it is —
+  and its `.provenance` sidecar pins the committed config's SHA-256, fresh as
+  of that record.
 - **Digital half**: the `add8` synthesis and place-and-route flow runs on the
   stock `sg13g2_stdcell` baseline, not yet on this library's cells —
   `flow/records/20261107-a1a4ec6/drc.json` (`clean`) and
@@ -69,8 +72,9 @@ and are re-derived from those files rather than restated here where they move.
   `klt signoff` against klayout-tools' own `docs/design-evidence-tiers.md`. It
   reads `tier: none`; the current per-item T1 count is in that file rather than
   restated here, because open work moves it. Both halves of T1 #7 (post-layout
-  verification) and T1 #8 (characterization report) are
-  `[UNMET] reason: no_evidence`.
+  verification) and the digital half of T1 #8 (characterization report) are
+  `[UNMET] reason: no_evidence`; the analog half of #8 is `[MET]`, cited via a
+  freshness-checked envelope.
 
 `Design stage: layout-DRC-LVS-clean` is that evidence read against the ladder in
 the comment above: DRC clean and LVS matched on all four cells is recorded, and

@@ -36,16 +36,25 @@ python3 -m sim.characterize --library --pdk-dir <ihp-sg13g2 dir>
 One corner per invocation (TT/1.20 V/25 C by default). FF/SS are one
 invocation per corner with `--backend batch`, never a local loop.
 
-**Status**: two records, one per mode.
+**Status**: three records; the library-view record is the one the committed
+view cites.
 
 - **Baseline leg** (first real record):
   `sim/characterize/records/20261105-042154-1376b8f.md` — `sg13g2_inv_1` from
   the PDK's `sg13g2_stdcell`, TT/1.20 V/25 C, 5x5 slew x load grid, one arc,
   local backend, klt 0.9.0.dev1379, ngspice-46.
-- **Library view**: `sim/characterize/records/20261107-222836-6ee1577.md` — the
-  four cells of `layout/example_config.json` (`sg13g2_inv_1`, `sg13g2_inv_2`,
-  `sg13g2_inv_4`, `sg13g2_nand2_1`), TT/1.20 V/25 C, 5x5 grid, five arcs, local
-  backend, klt 0.9.2.dev247. This is the record id cited by
+- **Library view, superseded**:
+  `sim/characterize/records/20261107-222836-6ee1577.md` — the four cells of
+  `layout/example_config.json` (`sg13g2_inv_1`, `sg13g2_inv_2`, `sg13g2_inv_4`,
+  `sg13g2_nand2_1`), TT/1.20 V/25 C, 5x5 grid, five arcs, local backend,
+  klt 0.9.2.dev247, ngspice-46. Superseded as the record the view's sidecar
+  names (kept, append-only) when issue #73's two `layout.rules` keys staled
+  the sidecar's config pin; re-characterized as the record below.
+- **Library view, current**:
+  `sim/characterize/records/20261114-222806-f1cf294.md` — same four cells,
+  corner and grid, local backend, klt 0.9.2.dev1029, ngspice-47 (a newer
+  toolchain than the superseded record; the measured tables are byte-identical
+  in the committed `.lib`). This is the record id cited by
   `views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`.
 
 The local run needs ngspice >= 44 for the OSDI v0.4 PSP103 models. The request
