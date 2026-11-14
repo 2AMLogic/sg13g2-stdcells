@@ -2,6 +2,15 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-14
+
+- **PR #84**: docs: state the recorded cell evidence in the README Status block
+- **PR #83**: feat: cite the cocotb testbench and hygiene inventory for T1 items 9 and 10
+- **PR #79**: feat: generate well and substrate taps, closing analog LVS on all four cells
+- **Issue #76** (closed): README: bring the Status section and repo-layout tree in line with what is on main
+- **Issue #75** (closed): manifests: cite the committed Liberty view, cocotb testbench and hygiene inventory for T1 items 8, 9, 10 and regrade
+- **Issue #73** (closed): layout: draw well and substrate taps in gen_layouts.py and re-run LVS on the four cells
+
 ### 2026-11-13
 
 - **PR #71**: ci: pin pytest to 9.2.0 and split the harness README's dependency claim
