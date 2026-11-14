@@ -165,13 +165,17 @@ def render(record_id: str, git: dict, data: dict, exts: list[CharacterizationExt
     return "\n".join(lines)
 
 
-def record(data: dict, records_dir: Path = RECORDS_DIR, repo_root: Path = REPO_ROOT) -> Path:
+def record(data: dict, records_dir: Path = RECORDS_DIR, repo_root: Path = REPO_ROOT,
+           git: dict | None = None) -> Path:
     """Append one record. Never overwrites: exclusive-create, new id on collision.
 
     ``data`` is one cell's data, or a library ``{"cells": [...]}`` (one record per run).
+    ``git`` is a pre-captured :func:`git_provenance` snapshot; callers that write
+    other tracked artifacts around the record pass the snapshot taken before any
+    write so the record's stamp describes the tree the measurement ran on.
     """
     records_dir.mkdir(parents=True, exist_ok=True)
-    git = git_provenance(repo_root)
+    git = git or git_provenance(repo_root)
     exts = [e for d in data.get("cells", [data]) for e in evidence_for(d)]
     while True:
         record_id = allocate_record_id(repo_root, records_dir, git=git)
@@ -203,8 +207,8 @@ def generate_netlists(config: Path, out: Path) -> None:
         raise CharacterizeFailed(f"gen_netlists failed: {(proc.stdout + proc.stderr).strip()[:2000]}")
 
 
-def provenance_for(config: Path, corner: dict, data: dict) -> dict:
-    git = git_provenance(REPO_ROOT)
+def provenance_for(config: Path, corner: dict, data: dict, git: dict | None = None) -> dict:
+    git = git or git_provenance(REPO_ROOT)
     rel = os.path.relpath(config, REPO_ROOT)
     return {
         "library": LIBRARY_NAME,
@@ -221,6 +225,7 @@ def provenance_for(config: Path, corner: dict, data: dict) -> dict:
 def characterize_library(config: Path, corner: str, pdk_dir, lib_path: Path = DEFAULT_LIB,
                          backend: str = "local", records_dir: Path = RECORDS_DIR) -> Path:
     """Characterize every cell of ``config`` into one committed ``.lib`` + sidecar + record."""
+    git = git_provenance(REPO_ROOT)
     with tempfile.TemporaryDirectory(prefix="sg13g2-lib-") as tmp:
         tmp = Path(tmp)
         generate_netlists(config, tmp / "netlists")
@@ -230,9 +235,9 @@ def characterize_library(config: Path, corner: str, pdk_dir, lib_path: Path = DE
     per_cell = [build_record_data(response, c, backend) for c in cells]
     data = {**per_cell[0], "cells": per_cell,
             "netlist_provenance": f"design/gen_netlists.py --config {os.path.relpath(config, REPO_ROOT)}"}
-    path = record(data, records_dir=records_dir)
+    path = record(data, records_dir=records_dir, git=git)
     data["record_id"] = path.stem
-    prov = provenance_for(config, response["corner"], data)
+    prov = provenance_for(config, response["corner"], data, git=git)
     Path(str(lib_path) + ".provenance").write_text(json.dumps(prov, indent=2, sort_keys=True) + "\n")
     return path
 
