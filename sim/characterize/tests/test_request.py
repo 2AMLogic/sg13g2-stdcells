@@ -18,6 +18,7 @@ class RequestTests(unittest.TestCase):
         self.assertEqual(r["corner"]["process"], "mos_tt")
         self.assertTrue(r["cell"]["netlist"].startswith("/pdk/libs.ref"))
         self.assertTrue(r["options"]["osdi_preload"][0].startswith("/pdk/"))
+        self.assertIs(r["options"]["keep_artifacts"], False)
         json.dumps(r)
 
     def test_osdi_preload_is_the_module_the_models_declare(self):
@@ -143,6 +144,8 @@ class LibraryRequestTests(unittest.TestCase):
         library = build_library_request(self.cells, DEFAULT_CORNER, "/pdk")
         for block in ("corner", "grid", "models", "options"):
             self.assertEqual(single[block], library[block], block)
+        self.assertIs(single["options"]["keep_artifacts"], False)
+        self.assertIs(library["options"]["keep_artifacts"], False)
 
 
 class LibraryRecordTests(unittest.TestCase):
