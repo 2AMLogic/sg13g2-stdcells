@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
+  "t1_item": 10,
+  "description": "Repo hygiene: the three repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions.",
+  "hygiene": [
+    "README.md",
+    "LICENSE",
+    ".github/workflows/ci.yml"
+  ],
+  "checks": [
+    {
+      "name": "netlists-fresh",
+      "argv": ["python3", "design/gen_netlists.py", "--config", "layout/example_config.json", "--out", "layout/lvs/netlists", "--check"]
+    },
+    {
+      "name": "layouts-fresh",
+      "argv": ["python3", "layout/gen_layouts.py", "--config", "layout/example_config.json", "--check"]
+    },
+    {
+      "name": "flow-evidence-accepts-committed-record",
+      "argv": ["flow/check-evidence.sh", "flow/request-par.json", "flow/records/20261104-df96543/place-and-route.json", "flow/records/20261104-df96543/lvs.json", "flow/records/20261104-df96543/erc.json"]
+    }
+  ]
+}

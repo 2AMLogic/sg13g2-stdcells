@@ -28,6 +28,18 @@
       "layout/lvs/sg13g2_nand2_1.json"
     ],
     "4.digital": "flow/records/20261104-df96543/lvs.json",
+    "9.digital": {
+      "file": "manifests/envelopes/item9.digital.attest.json",
+      "content_hash": "sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85"
+    },
+    "10.analog": {
+      "file": "manifests/envelopes/item10.attest.json",
+      "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16"
+    },
+    "10.digital": {
+      "file": "manifests/envelopes/item10.attest.json",
+      "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16"
+    },
     "11.digital": [
       "flow/records/20261104-df96543/erc.json",
       "flow/records/20261104-df96543/lvs.json",

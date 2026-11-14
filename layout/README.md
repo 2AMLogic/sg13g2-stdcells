@@ -266,3 +266,46 @@ four DRC reports remains open. `klt signoff --manifest --check
 manifests/signoff-report.json` reports `status: match` against the committed
 report; the generating run exits `3` because the block has not reached T1 as a
 whole, not because a cited check failed.
+
+**T1 is now 11/22 met, up from 8/22 (issue #75).** Three items the repo had
+already recorded but never cited are now cited, each by a `klt signoff
+--attest` envelope under `manifests/envelopes/`: `T1 #9 [digital] Testbenches
+shipped` (inventory `manifests/inventories/item9.digital.json` — the exhaustive
+cocotb check of `rtl/add8.v`, its Makefile and `verification/cold_start.sh`,
+whose cold start is *run* by the attestation, not merely declared), and `T1 #10
+Repo hygiene` on **both** partitions from the single envelope
+`manifests/envelopes/item10.attest.json` (inventory
+`manifests/inventories/item10.json` — the three files `README.md` names as its
+item 10 inventory, backed by the three dependency-free gates of
+`.github/workflows/ci.yml`). No new evidence was produced for any of them; only
+the citations were missing. `klt signoff --manifest --check
+manifests/signoff-report.json` reports `status: match` with `doc_drift: false`,
+and both new envelopes re-attest (`klt signoff --attest <n> --inventory <inv>
+--check <envelope>`, exit 0).
+
+`T1 #8 [analog] Characterization report` is **not** cited, and stays
+`no_evidence` — deliberately, with the attestation committed as it graded. Its
+inventory (`manifests/inventories/item8.analog.json`) is committed and names
+the report `sim/characterize/records/20261107-222836-6ee1577.md` and, for spec
+row 9, the Liberty view and its provenance sidecar; its freshness command
+(`python3 -m sim.characterize.check_library`, new) re-derives every claim the
+sidecar makes, and it **fails**: the sidecar pins
+`layout/example_config.json` at `sha256:1a02f3cc…`, and the committed config
+hashes `sha256:8e360822…`. Issue #73 added two `layout.rules` keys
+(`activ_space_nm`, `nwell_enc_nactiv_nm`) for the well and substrate taps
+*after* the view was characterized. Nothing the characterization consumes
+changed — the config's `process` and `cells` blocks are byte-identical at both
+hashes, and `design/gen_netlists.py` never reads the `layout` block — but the
+sidecar pins the whole file, so the recorded provenance no longer matches the
+tree. The view has to be regenerated (or the pin narrowed to what
+characterization actually consumes) before item 8 can be cited; that needs a
+`klt characterize` run against the PDK, which issue #75 put out of scope. The
+check was deliberately not weakened to pass: a freshness command that cannot
+fail is not evidence. Tracked in issue #82.
+
+The friction this surfaced is filed as 2AMLogic/klayout-tools#5688: `klt
+signoff --attest 8` documents its `citations` as evidence-envelope paths but
+checks only that each file exists, delegating all content verification to the
+caller's `envelope_checks` command — which it accepts unconstrained, `true`
+included. That is precisely why the command behind this repo's item 8 citation
+was written to be falsifiable rather than merely present.

@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 9,
+  "summary": "T1 item 9 (Testbenches shipped): 6/6 attestation checks passed (klt signoff --attest)",
+  "source": "manifests/inventories/item9.digital.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 6,
+    "passed_count": 6,
+    "checks": [
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/Makefile",
+        "passed": true,
+        "content_hash": "sha256:a279a8646b47ece36bd4930868d110001efe37432594314fb88d919a68213ebd"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/cold_start.sh",
+        "passed": true,
+        "content_hash": "sha256:7bf48dc164e2f6fc655f7f7c5f331c72468ac623960e9150738f8090ffc7a463"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "verification/test_add8.py",
+        "passed": true,
+        "content_hash": "sha256:095bf6541170ee425659bf40944df9579af4c3d628d620578bf0662fd7a62b37"
+      },
+      {
+        "check": "command",
+        "role": "cold_start",
+        "argv": [
+          "sh",
+          "verification/cold_start.sh"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "pin",
+        "role": "pdk",
+        "passed": true,
+        "value": {
+          "none": true,
+          "reason": "behavioral RTL regression: test_add8.py drives rtl/add8.v through Icarus with no cell library, no SDF and no parasitics, so the cold start consumes no PDK"
+        }
+      },
+      {
+        "check": "pin",
+        "role": "tools",
+        "passed": true,
+        "value": {
+          "cocotb": "2.0.0",
+          "iverilog": "13.0"
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.9.2.dev1024+g8da9718f0cb6",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "manifests/inventories/item9.digital.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85"
+    }
+  }
+}
