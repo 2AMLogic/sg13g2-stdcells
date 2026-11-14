@@ -174,8 +174,131 @@ class MultiFinger(unittest.TestCase):
         self.assertEqual(CFG["layout"]["rules"], {
             "poly_width_nm": 130, "poly_space_nm": 180, "poly_endcap_nm": 180, "poly_to_activ_nm": 70, "cont_nm": 160,
             "cont_space_nm": 180, "activ_enc_cont_nm": 70, "poly_enc_cont_nm": 70, "m1_width_nm": 160, "m1_space_nm": 180,
-            "rail_width_nm": 160, "nwell_enc_pactiv_nm": 310, "sd_enc_activ_nm": 180})
+            "rail_width_nm": 160, "nwell_enc_pactiv_nm": 310, "nwell_enc_nactiv_nm": 240, "activ_space_nm": 210,
+            "sd_enc_activ_nm": 180})
         self.assertEqual(CFG["layout"]["channel_tracks"], 1)
+
+
+def tap_bands(S, H):
+    """The two tap `activ` rectangles: the only ones outside the row's strips."""
+    return sorted((b for b in S.boxes if b[0] == "activ" and (b[2] < 0 or b[4] > H)), key=lambda b: b[2])
+
+
+class Taps(unittest.TestCase):
+    """Well/substrate taps (issue #73): without them extraction puts the device
+    bodies on a synthesized substrate net and an anonymous well net."""
+
+    def bands(self, name, cfg=CFG):
+        S, W, H = layout_of(cell_named(name), cfg)
+        bands = tap_bands(S, H)
+        self.assertEqual(len(bands), 2, f"{name}: expected one tap band per rail")
+        return S, W, H, bands[0], bands[1]
+
+    def test_every_cell_gets_both_taps(self):
+        for cell in CFG["cells"]:
+            S, W, H, sub, well = self.bands(cell["name"])
+            R = CFG["layout"]["rules"]
+            tap_h = R["cont_nm"] + 2 * R["activ_enc_cont_nm"]
+            self.assertEqual(sub[4] - sub[2], tap_h, cell["name"])   # derived, not a config key
+            self.assertEqual(well[4] - well[2], tap_h, cell["name"])
+            self.assertLess(sub[2], 0, cell["name"])                 # the VSS band straddles y=0
+            self.assertGreater(well[4], H, cell["name"])             # the VDD band straddles y=H
+
+    def test_tap_implants_are_the_tie_type_and_do_not_overlap(self):
+        for cell in CFG["cells"]:
+            S, W, H, sub, well = self.bands(cell["name"])
+            # well tie is activ & nsd, substrate tie is activ & psd (sg13g2 deck)
+            for band, layer in ((sub, "psd"), (well, "nsd")):
+                cover = [b for b in S.boxes if b[0] == layer
+                         and b[1] <= band[1] and b[2] <= band[2] and b[3] >= band[3] and b[4] >= band[4]]
+                self.assertTrue(cover, f"{cell['name']}: {layer} does not cover its tie band")
+            psd = [b for b in S.boxes if b[0] == "psd"]
+            nsd = [b for b in S.boxes if b[0] == "nsd"]
+            for a in psd:  # opposite implants over one area is not a real mask
+                for b in nsd:
+                    self.assertFalse(a[1] < b[3] and b[1] < a[3] and a[2] < b[4] and b[2] < a[4],
+                                     f"{cell['name']}: psd {a[1:]} overlaps nsd {b[1:]}")
+
+    def test_tap_has_one_contact_per_node_column_on_its_rail(self):
+        R = CFG["layout"]["rules"]
+        rail = R["rail_width_nm"]
+        for cell in CFG["cells"]:
+            S, W, H, sub, well = self.bands(cell["name"])
+            for band, ry in ((sub, 0), (well, H)):
+                conts = [b for b in S.boxes if b[0] == "cont" and band[2] <= b[2] and b[4] <= band[4]]
+                self.assertEqual(len(conts), W // CFG["layout"]["gate_pitch_nm"], cell["name"])
+                for c in conts:  # enclosed by the band diffusion
+                    self.assertGreaterEqual(c[2] - band[2], R["activ_enc_cont_nm"], cell["name"])
+                    self.assertGreaterEqual(band[4] - c[4], R["activ_enc_cont_nm"], cell["name"])
+                # a Metal1 shape merged with the rail covers the contacts
+                patch = [b for b in S.boxes if b[0] == "metal1" and b[1] <= conts[0][1] and b[3] >= conts[-1][3]
+                         and b[2] <= min(c[2] for c in conts) and b[4] >= max(c[4] for c in conts)]
+                self.assertTrue(patch, f"{cell['name']}: tap contacts at y={ry} are not covered by Metal1")
+                self.assertTrue(any(b[2] <= ry - rail // 2 and b[4] >= ry + rail // 2 for b in patch),
+                                f"{cell['name']}: tap Metal1 at y={ry} is not merged with its rail")
+
+    def test_vss_band_is_poly_bound_not_diffusion_bound(self):
+        """The poly caps the VSS band on every cell -- its endcap below the NMOS
+        strip on a single-finger cell, and the lower finger bridge on a folded
+        one. Reading the NMOS diffusion alone would place the band too high."""
+        R, lay = CFG["layout"]["rules"], CFG["layout"]
+        diffusion_bound = lay["n_diff_y0_nm"] - R["activ_space_nm"]
+        for name in ("sg13g2_inv_1", "sg13g2_inv_2", "sg13g2_inv_4", "sg13g2_nand2_1"):
+            S, _, _, sub, _ = self.bands(name)
+            poly_y0 = min(b[2] for b in S.boxes if b[0] == "gatpoly")
+            self.assertEqual(sub[4], poly_y0 - R["poly_to_activ_nm"], name)
+            self.assertLess(sub[4], diffusion_bound, name)
+        # and the folded cells sit lower still, because the bridge is below the endcap
+        single = self.bands("sg13g2_inv_1")[3][4]
+        for name in ("sg13g2_inv_2", "sg13g2_inv_4"):
+            self.assertLess(self.bands(name)[3][4], single, name)
+
+    def test_nwell_extends_to_enclose_the_well_tie(self):
+        R = CFG["layout"]["rules"]
+        for cell in CFG["cells"]:
+            S, W, H, sub, well = self.bands(cell["name"])
+            nwell = [b for b in S.boxes if b[0] == "nwell"]
+            self.assertEqual(len(nwell), 1, cell["name"])
+            nw = nwell[0]
+            self.assertEqual(nw[4], well[4] + R["nwell_enc_nactiv_nm"], cell["name"])
+            self.assertGreater(nw[4], H + R["rail_width_nm"] // 2, cell["name"])  # above the row, as the rule needs
+            for lo, hi in ((nw[1], well[1]), (well[3], nw[3])):  # and on both sides
+                self.assertGreaterEqual(abs(hi - lo), R["nwell_enc_nactiv_nm"], cell["name"])
+
+    def test_missing_nsd_layer_names_nsd(self):
+        cfg = copy.deepcopy(CFG)
+        cfg["layout"]["layers"].pop("nsd")
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(cfg)
+        self.assertIn("nsd", str(cm.exception))
+        self.assertIn("sg13g2_inv_1", str(cm.exception))
+
+    def test_implant_reaching_past_the_band_is_a_named_failure(self):
+        cfg = copy.deepcopy(CFG)
+        cfg["layout"]["rules"]["sd_enc_activ_nm"] = 260  # > activ_space_nm, so psd would swallow the band
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(cfg)
+        self.assertIn("sd_enc_activ", str(cm.exception))
+
+    def test_taps_follow_the_second_process(self):
+        """FakeProcess geometry: taps come from the config, with no engine change."""
+        cfg = copy.deepcopy(CFG)
+        cfg["process"].update(nmos_model="fake_n", pmos_model="fake_p", vdd_net="PWR", vss_net="GND", l_nm=200)
+        lay = cfg["layout"]
+        lay["row_height_nm"] = 4800
+        lay["gate_pitch_nm"] = 600
+        lay["rules"].update(m1_width_nm=200, m1_space_nm=220, rail_width_nm=200, poly_width_nm=200)
+        R = lay["rules"]
+        for name in ("sg13g2_inv_1", "sg13g2_inv_4"):
+            S, W, H, sub, well = self.bands(name, cfg)
+            self.assertEqual((sub[4] - sub[2], well[4] - well[2]),
+                             (R["cont_nm"] + 2 * R["activ_enc_cont_nm"],) * 2, name)
+            self.assertEqual(well[2], lay["row_height_nm"] - lay["p_diff_top_margin_nm"]
+                             + R["poly_endcap_nm"] + R["poly_to_activ_nm"], name)
+            nw = next(b for b in S.boxes if b[0] == "nwell")
+            self.assertEqual(nw[4], well[4] + R["nwell_enc_nactiv_nm"], name)
+            self.assertEqual(len([b for b in S.boxes if b[0] == "cont" and sub[2] <= b[2] <= sub[4]]),
+                             W // lay["gate_pitch_nm"], name)
 
 
 class Failures(unittest.TestCase):
