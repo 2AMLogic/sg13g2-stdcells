@@ -46,6 +46,8 @@
    "m1_space_nm": 180,
    "rail_width_nm": 160,
    "nwell_enc_pactiv_nm": 310,
+   "nwell_enc_nactiv_nm": 240,
+   "activ_space_nm": 210,
    "sd_enc_activ_nm": 180
   }
  },
