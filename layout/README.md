@@ -120,7 +120,7 @@ rather than shrinking a clearance.
 Sequential cells, multi-row cells, dedicated tap cells, and Metal2 routing are
 out of scope for this slice. The generator never relaxes a rule to place a cell;
 `channel_tracks` and every `rules` value carried over from the first slice are
-unchanged, and `test_gen_layouts.py::Geometry::test_no_rule_value_loosened`
+unchanged, and `test_gen_layouts.py::MultiFinger::test_no_rule_value_loosened`
 asserts the whole `rules` dict by exact equality, so a relaxation cannot pass
 unnoticed.
 
