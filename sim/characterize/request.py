@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from ..harness.corners import CHAR_CORNER_PVT, CORNERS, FAMILIES
@@ -61,7 +61,6 @@ class CellSpec:
     vdd: str = "VDD"
     gnd: str = "VSS"
     netlist: str = CELL_NETLIST  # relative to the PDK dir unless absolute
-    extra: dict = field(default_factory=dict)
 
 
 #: Baseline leg: the PDK's own ``sg13g2_stdcell`` inverter -- the benchmark
@@ -103,7 +102,7 @@ def _cell_entry(cell: CellSpec, pdk: Path) -> dict:
     }
 
 
-def _run_blocks(corner: str, pdk: Path, slews_ns, loads_pf, keep_artifacts: bool) -> dict:
+def _run_blocks(corner: str, pdk: Path, slews_ns, loads_pf) -> dict:
     """The corner/grid/models/options blocks, identical in both request forms."""
     return {
         "corner": corner_block(corner),
@@ -114,7 +113,7 @@ def _run_blocks(corner: str, pdk: Path, slews_ns, loads_pf, keep_artifacts: bool
         "models": {"lib": str(pdk / MODEL_LIB)},
         "options": {
             "osdi_preload": [str(pdk / p) for p in OSDI_PRELOAD],
-            "keep_artifacts": keep_artifacts,
+            "keep_artifacts": False,
         },
     }
 
@@ -125,7 +124,6 @@ def build_request(
     pdk_dir: str | Path,
     slews_ns=DEFAULT_SLEWS_NS,
     loads_pf=DEFAULT_LOADS_PF,
-    keep_artifacts: bool = False,
 ) -> dict:
     """Return a single-cell, single-corner ``klt characterize`` request dict.
 
@@ -134,7 +132,7 @@ def build_request(
     pdk = Path(pdk_dir)
     return {
         "cell": _cell_entry(cell, pdk),
-        **_run_blocks(corner, pdk, slews_ns, loads_pf, keep_artifacts),
+        **_run_blocks(corner, pdk, slews_ns, loads_pf),
     }
 
 
@@ -175,7 +173,6 @@ def build_library_request(
     library_name: str = LIBRARY_NAME,
     slews_ns=DEFAULT_SLEWS_NS,
     loads_pf=DEFAULT_LOADS_PF,
-    keep_artifacts: bool = False,
 ) -> dict:
     """Return a multi-cell, single-corner ``klt characterize`` request (``cells`` form).
 
@@ -188,7 +185,7 @@ def build_library_request(
         raise RequestError("duplicate cell names in library request")
     pdk = Path(pdk_dir)
     return {
-        **_run_blocks(corner, pdk, slews_ns, loads_pf, keep_artifacts),
+        **_run_blocks(corner, pdk, slews_ns, loads_pf),
         "library": {"name": library_name},
         "cells": [_cell_entry(c, pdk) for c in cells],
     }
