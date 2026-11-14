@@ -6,15 +6,15 @@
     "sg13g2_nand2_1"
   ],
   "config": "layout/example_config.json",
-  "config_sha256": "1a02f3ccb5b49edc86ae1a82fa928c21b796adac72548066e773c47b0254b6f5",
+  "config_sha256": "8e3608229a8291cf4109292d8c5d455b6680a69756111ecbc4e704f56d1749b6",
   "corner": {
     "name": "tt",
     "process": "mos_tt",
     "supply_v": 1.2,
     "temperature_c": 25.0
   },
-  "evidence_record": "20261107-222836-6ee1577",
-  "klt_version": "klt 0.9.2.dev247+g6c8de4e4f36a",
+  "evidence_record": "20261114-222806-f1cf294",
+  "klt_version": "klt 0.9.2.dev1029+g76f47afa48f1",
   "library": "sg13g2_stdcells_tt_1p20v_25c",
-  "repo_commit": "6ee1577d987531bf073075f031b20471240295f7 (dirty)"
+  "repo_commit": "f1cf294f4b95c33c6d857271766790e639c2f46a"
 }
