@@ -79,8 +79,42 @@ device on one gate net get the same finger count, the larger of the two; the oth
 is folded into that many fingers (same total width, which must divide evenly on
 `process.grid_nm`, default 10, else exit `3`). Cell width is `(columns + 1) *
 gate_pitch_nm`, counting fingers. Each strip must be a single chain of devices
-sharing source/drain nets, both chains must have the same gate-net sequence, and all
-devices in a strip must have the same finger width.
+sharing source/drain nets, and both chains must have the same gate-net sequence.
+
+A strip may hold devices of **different drawn finger widths** (issue #74). Each
+strip keeps a fixed outer edge -- the NMOS strip grows up from `n_diff_y0_nm`,
+the PMOS strip grows down from `row_height_nm - p_diff_top_margin_nm` -- and its
+channel-facing edge steps at the device boundary. The strip is drawn as one
+rectangle per run of equal-height columns, each reaching `cont_nm / 2 +
+activ_enc_cont_nm` past the node column it shares with its neighbour, so the
+runs overlap there and merge into a single stepped polygon. `psd`, `nsd` and the
+n-well follow the same step rather than being drawn once over the tallest run,
+which would over-enclose the short runs and can break the implant space rule
+against a neighbouring cell. Every channel-facing value -- the channel check,
+`track_base`, the gate-pad height -- is taken from the **tallest** run, so a
+short device cannot loosen a clearance by accident, and each node's contact
+stack is sized from the **shorter** of its two columns.
+
+Two limits the step brings with it:
+
+* **The height profile may not have a valley.** `activ.space.1` and
+  `psd.space.1` are minimum space *or notch* rules, so a tall-short-tall run
+  leaves a re-entrant notch in the merged polygon whose facing edges can sit
+  under the minimum (120 nm for a one-column short device at the shipped
+  `gate_pitch_nm`). A monotone step is a single concave corner and is fine. The
+  generator **refuses** a notched profile with a named exit `3`; it does not
+  reorder the strip to avoid one. Refusal is the conservative half of that
+  choice: a width-aware `order_strips` would place a few more cells, but on its
+  own it would silently draw a notch for any cell with no monotone ordering, and
+  this generator never draws a shape a rule forbids. So a cell that has a
+  monotone ordering which `order_strips` does not happen to pick is refused
+  today -- making the ordering width-aware *in addition to* the refusal is
+  deliberately left as separate work. No cell reachable through
+  `design/gen_netlists.py` produces a notched profile at present.
+* **A contact needs `2 * activ_enc_cont_nm + cont_nm` of diffusion height
+  (300 nm as shipped), per device.** A device folded below it is refused even
+  when the strip's tallest run is far above it, because the contact has to fit
+  inside that device's own run.
 
 Outside that model the generator exits `3` naming the cell and the reason:
 * a diffusion break is needed (XOR, mux) -- including any series stack of
@@ -90,8 +124,38 @@ Outside that model the generator exits `3` naming the cell and the reason:
 * more nets to join than `channel_tracks` -- every extra finger boundary re-attaches
   its net, so a series stack that is folded (`nand2_2`: `Y` and `n1`) needs two
   tracks where the config allows one;
-* devices of different finger widths in one strip (`a21oi_1`);
+* a strip whose height profile is tall-short-tall, or a device drawn too short
+  for a contact (both above);
+* a channel narrower than the two implant enclosures (`2 * sd_enc_activ_nm`),
+  where `psd` over the PMOS strip would overlap `nsd` over the NMOS strip;
 * a row/channel too short, or no Metal1-clean place for a gate contact.
+
+A failure message names the **netlist** finger width and the **drawn**
+(post-fold) one separately, because the fold divides a width that can be uniform
+in the netlist: `nor2_1`'s netlist is a uniform 500 nm and it is drawn as
+`2 x 250 nm`, so a message quoting only the drawn number sends the reader
+hunting for a width the netlist does not contain.
+
+#### What still blocks the AND/OR and AOI/OAI families
+
+Lifting the one-height-per-strip limit does not by itself add a cell: each of
+the four cells issue #74 originally named is blocked by a *further* limit, and
+three of them by one this generator has never had. Measured on `2546575` by
+building a one-cell config per cell and reading the reported failure:
+
+| cell | drawn NMOS / PMOS finger widths | next limit |
+|---|---|---|
+| `and2_1` | `[1000, 1000, 500]` / `[800]` | needs 2 channel tracks (`X`, `X_i`), config allows 1 |
+| `or2_1` | `[250, 500]` / `[800]` | PMOS needs a diffusion break |
+| `a21oi_1` | `[250, 500]` / `[800]` | NMOS needs a diffusion break |
+| `o21ai_1` | `[500, 1000]` / `[800]` | no shared gate-net sequence (gate nets cannot align in columns) |
+| `xor2_1` | `[250, 500]` / `[400, 800]` | NMOS needs a diffusion break |
+
+So the capability is exercised in `test_gen_layouts.py::MixedFingerWidths` on
+synthetic configs, the way `FakeProcess` exercises a second process -- `and2_1`
+places with a stepped NMOS strip once the synthetic row gives it two channel
+tracks and a wider pitch. The committed config's `channel_tracks` and `rules`
+are unchanged.
 
 ### Well and substrate taps
 

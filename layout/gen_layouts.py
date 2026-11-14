@@ -23,6 +23,12 @@ Placement model (deliberately small; anything outside it is a named failure):
     poly bridge below the NMOS diffusion and given one gate contact. The NMOS
     and PMOS device on one gate net are drawn with the same finger count (the
     larger; a device with fewer netlist fingers is folded, same total width);
+  * a strip may hold devices of different drawn finger widths: it is one merged
+    polygon whose outer edge is fixed (the NMOS strip grows up, the PMOS strip
+    grows down) and whose channel-facing edge steps at the device boundary. A
+    tall-short-tall height profile would leave a re-entrant notch in that
+    polygon, which the diffusion/implant space-or-notch rules forbid, so it is
+    a named failure rather than a drawn shape;
   * the strips are ordered so each is a single chain of devices sharing a
     source/drain net, and both orderings have the same gate-net sequence, so
     each poly column crosses both strips;
@@ -171,6 +177,49 @@ def _overlap_or_close(a, b, gap):
     return not (a[2] + gap <= b[0] or b[2] + gap <= a[0] or a[3] + gap <= b[1] or b[3] + gap <= a[1])
 
 
+def _dev_at(order, devs_, cols_, c):
+    """The (folded) device drawn in column `c` of a strip."""
+    return devs_[order[cols_[c][0]][0]]
+
+
+def _dev_desc(d):
+    """A folded device's netlist geometry and its drawn geometry, both named.
+
+    The fold step can divide a width that is uniform in the netlist into fingers
+    that appear nowhere in it (a 500 nm 1-finger device folded to 2 fingers is
+    drawn as 2 x 250 nm), so a message quoting only one of the two sends the
+    reader looking for a number the netlist does not contain."""
+    return (f"{d[1].upper()}MOS on gate {d[3]} (netlist {d[5]} nm / {d[7]} "
+            f"finger{'' if d[7] == 1 else 's'} -> drawn {d[6]} x {d[5] // d[6]} nm)")
+
+
+def _strip_profile(order, devs_, cols_):
+    """Drawn finger width per column: the strip's height profile."""
+    return [d[5] // d[6] for d in (_dev_at(order, devs_, cols_, c) for c in range(len(cols_)))]
+
+
+def _runs(prof):
+    """Maximal spans of equal-height columns as [first column, last column, height]."""
+    out = []
+    for c, h in enumerate(prof):
+        if out and out[-1][2] == h:
+            out[-1][1] = c
+        else:
+            out.append([c, c, h])
+    return out
+
+
+def _notch_column(prof):
+    """First column that sits in a valley of `prof` (taller columns on both
+    sides), or None. Such a column is a re-entrant notch in the merged strip
+    polygon; a profile without one is unimodal, so every step is a single
+    concave corner, which the space-or-notch rules allow."""
+    for c in range(1, len(prof) - 1):
+        if max(prof[:c]) > prof[c] < max(prof[c + 1:]):
+            return c
+    return None
+
+
 def layout_cell(cell, proc, lay):
     """Return (Shapes, width_nm, height_nm) for one config cell, or raise PlaceError."""
     R, P = lay["rules"], lay["gate_pitch_nm"]
@@ -192,28 +241,40 @@ def layout_cell(cell, proc, lay):
         k = fingers[d[3]]
         if d[5] % (k * grid):
             raise PlaceError(f"{d[1]}MOS device of {d[5]} nm on gate {d[3]} cannot be drawn as {k} fingers on the {grid} nm grid")
-        return d[:6] + (k,)
+        return d[:6] + (k, d[6])  # drawn finger count, then the netlist one (for messages)
 
     ndevs, pdevs = [fold(d) for d in ndevs], [fold(d) for d in pdevs]
-    for kind, ds in (("N", ndevs), ("P", pdevs)):
-        if len({d[5] // d[6] for d in ds}) > 1:
-            raise PlaceError(f"{kind}MOS devices have different finger widths {sorted({d[5] // d[6] for d in ds})} nm; one diffusion strip has one height")
     nord, pord = order_strips(ndevs, pdevs)
     cols = [(j, k) for j, (i, _, _) in enumerate(nord) for k in range(ndevs[i][6])]  # column -> (position in order, finger)
+    pcols = [(j, k) for j, (i, _, _) in enumerate(pord) for k in range(pdevs[i][6])]
     N = len(cols)
-    if N != sum(pdevs[i][6] for i, _, _ in pord):
+    if N != len(pcols):
         raise PlaceError("NMOS and PMOS strips have different column counts")
+    # Height profile: devices of different drawn finger widths share a strip, so
+    # the strip's channel-facing edge steps from column to column. Refuse a
+    # profile with a valley in it -- that is a re-entrant notch in the merged
+    # activ/psd/nsd polygon, and those are space-*or-notch* rules.
+    nprof = _strip_profile(nord, ndevs, cols)
+    pprof = _strip_profile(pord, pdevs, pcols)
+    for kind, order, devs_, cols_, prof in (("N", nord, ndevs, cols, nprof), ("P", pord, pdevs, pcols, pprof)):
+        c = _notch_column(prof)
+        if c is not None:
+            raise PlaceError(
+                f"{kind}MOS strip height profile {prof} nm is tall-short-tall at column {c}, so the "
+                f"merged diffusion and implant would leave a re-entrant notch (activ.space / psd.space "
+                f"are space-or-notch rules); the short device is {_dev_desc(_dev_at(order, devs_, cols_, c))}")
     W = (N + 1) * P
     rail = R["rail_width_nm"]
     vdd, vss = proc["vdd_net"], proc["vss_net"]
     node_x = [P // 2 + j * P for j in range(N + 1)]
     gate_x = [(j + 1) * P for j in range(N)]
-    wn = ndevs[nord[0][0]][5] // ndevs[nord[0][0]][6]  # finger width (uniform, checked above)
-    wp = pdevs[pord[0][0]][5] // pdevs[pord[0][0]][6]
     n_y0 = lay["n_diff_y0_nm"]
-    n_y1 = n_y0 + wn
     p_y1 = H - lay["p_diff_top_margin_nm"]
-    p_y0 = p_y1 - wp
+    # Each strip's outer edge is fixed; the channel-facing one steps. Every
+    # channel check below reads the *tallest* run, so a short device in the strip
+    # cannot loosen a clearance by accident.
+    n_y1 = n_y0 + max(nprof)
+    p_y0 = p_y1 - max(pprof)
     if p_y0 <= n_y1:
         raise PlaceError(f"row height {H} nm leaves no channel between the NMOS and PMOS strips")
     half_c = R["cont_nm"] // 2
@@ -257,6 +318,10 @@ def layout_cell(cell, proc, lay):
         raise PlaceError("layout.layers.nsd is missing, so the n-well tap cannot be drawn as a well tie "
                          "(the deck derives the tie as activ & nsd); give the config an nsd layer")
     sd = R["sd_enc_activ_nm"]
+    if p_y0 - n_y1 <= 2 * sd:
+        raise PlaceError(f"channel {p_y0 - n_y1} nm is narrower than the two implant enclosures "
+                         f"(2 x sd_enc_activ {sd} nm): psd over the PMOS strip would overlap nsd "
+                         "over the NMOS strip, which is not a mask either tool can resolve")
     tap_h = R["cont_nm"] + 2 * R["activ_enc_cont_nm"]
     sub_y1 = min(n_y0 - R["activ_space_nm"], poly_y0 - R["poly_to_activ_nm"])
     sub_y0 = sub_y1 - tap_h
@@ -269,14 +334,24 @@ def layout_cell(cell, proc, lay):
                          f"(substrate {sub_y0}..{sub_y1} nm, well {well_y0}..{well_y1} nm); "
                          "the tap implant cannot abut the device implant")
 
-    # Diffusion, implants, well. Strip drawn as one rectangle per device row.
+    # Diffusion, implants, well: one rectangle per run of equal-height columns.
+    # Neighbouring runs each reach `act_hang` past the node column they share, so
+    # they overlap there and merge into one stepped polygon. The implants and the
+    # n-well follow the same step; one rectangle over the tallest run would
+    # over-enclose the short ones and can break the implant space rule against a
+    # neighbouring cell.
     ax0, ax1 = node_x[0] - act_hang, node_x[-1] + act_hang
-    S.box("activ", ax0, n_y0, ax1, n_y1)
-    S.box("activ", ax0, p_y0, ax1, p_y1)
-    S.box("psd", ax0 - sd, p_y0 - sd, ax1 + sd, p_y1 + sd)
-    S.box("nsd", ax0 - sd, n_y0 - sd, ax1 + sd, n_y1 + sd)
     nwe = R["nwell_enc_pactiv_nm"]
-    S.box("nwell", ax0 - nwe, p_y0 - nwe, ax1 + nwe, well_y1 + R["nwell_enc_nactiv_nm"])
+    for strip, prof in (("n", nprof), ("p", pprof)):
+        for c0, c1, h in _runs(prof):
+            x0, x1 = node_x[c0] - act_hang, node_x[c1 + 1] + act_hang
+            if strip == "n":
+                S.box("activ", x0, n_y0, x1, n_y0 + h)
+                S.box("nsd", x0 - sd, n_y0 - sd, x1 + sd, n_y0 + h + sd)
+            else:
+                S.box("activ", x0, p_y1 - h, x1, p_y1)
+                S.box("psd", x0 - sd, p_y1 - h - sd, x1 + sd, p_y1 + sd)
+                S.box("nwell", x0 - nwe, p_y1 - h - nwe, x1 + nwe, well_y1 + R["nwell_enc_nactiv_nm"])
 
     # Poly columns: one stripe per gate, crossing both strips.
     for c in range(N):
@@ -312,19 +387,29 @@ def layout_cell(cell, proc, lay):
     mw = R["m1_width_nm"]
     pitch_c = R["cont_nm"] + R["cont_space_nm"]
 
-    def contact_ys(y0, y1):
+    def contact_ys(y0, y1, what):
         room = y1 - y0 - 2 * R["activ_enc_cont_nm"] - R["cont_nm"]
         if room < 0:
-            raise PlaceError(f"diffusion {y1 - y0} nm tall is too short for a contact")
+            raise PlaceError(f"diffusion {y1 - y0} nm tall is too short for a contact: {what}")
         k = room // pitch_c + 1
         span = (k - 1) * pitch_c
         base = (y0 + y1) // 2 - span // 2 - half_c
         return [base + t * pitch_c for t in range(k)]
 
     net_m1 = {}  # net -> list of (rect, kind, x, side)
-    for strip, nets, y0, y1, side in (("n", nn, n_y0, n_y1, "below"), ("p", pn, p_y0, p_y1, "above")):
-        cys = contact_ys(y0, y1)
+    for strip, nets, order, devs_, cols_, prof, side in (
+            ("n", nn, nord, ndevs, cols, nprof, "below"),
+            ("p", pn, pord, pdevs, pcols, pprof, "above")):
         for j, net in enumerate(nets):
+            # Node j sits between columns j-1 and j, and its contact stack has to
+            # fit inside both, so the contact floor is a per-device limit: a
+            # device folded short cannot hold a contact even where its taller
+            # neighbour could. Sizing from the shorter column also names that
+            # device in the failure.
+            c = min((cc for cc in (j - 1, j) if 0 <= cc < N), key=lambda cc: prof[cc])
+            h = prof[c]
+            y0, y1 = (n_y0, n_y0 + h) if strip == "n" else (p_y1 - h, p_y1)
+            cys = contact_ys(y0, y1, _dev_desc(_dev_at(order, devs_, cols_, c)))
             x = node_x[j]
             for cy in cys:
                 S.box("cont", x - half_c, cy, x + half_c, cy + R["cont_nm"])
