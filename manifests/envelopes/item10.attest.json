@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 10,
+  "summary": "T1 item 10 (Repo hygiene): 6/6 attestation checks passed (klt signoff --attest)",
+  "source": "manifests/inventories/item10.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 6,
+    "passed_count": 6,
+    "checks": [
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": ".github/workflows/ci.yml",
+        "passed": true,
+        "content_hash": "sha256:5380224dcd734c2225a3cc2ef7d9233149f0669375bffef032bbd84a9f311dc3"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "LICENSE",
+        "passed": true,
+        "content_hash": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "README.md",
+        "passed": true,
+        "content_hash": "sha256:cdf3a8bb25d771eb5562957daf4cc4165f19da93adb3180fafd9074db54a9821"
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "netlists-fresh",
+        "argv": [
+          "python3",
+          "design/gen_netlists.py",
+          "--config",
+          "layout/example_config.json",
+          "--out",
+          "layout/lvs/netlists",
+          "--check"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "layouts-fresh",
+        "argv": [
+          "python3",
+          "layout/gen_layouts.py",
+          "--config",
+          "layout/example_config.json",
+          "--check"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "audit",
+        "name": "flow-evidence-accepts-committed-record",
+        "argv": [
+          "flow/check-evidence.sh",
+          "flow/request-par.json",
+          "flow/records/20261104-df96543/place-and-route.json",
+          "flow/records/20261104-df96543/lvs.json",
+          "flow/records/20261104-df96543/erc.json"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.9.2.dev1024+g8da9718f0cb6",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "manifests/inventories/item10.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16"
+    }
+  }
+}

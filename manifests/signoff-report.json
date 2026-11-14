@@ -9,13 +9,13 @@
   "tier": null,
   "t1_item_count": 22,
   "build_t1_item_count": 22,
-  "t1_met_count": 8,
+  "t1_met_count": 11,
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:d9287ec9dc6107e560e00b1a8b7a670f757722713b5c651dee3d2cbde058490a",
   "build": {
-    "version": "0.9.2.dev1022+g2a9c52b27ce7",
-    "package_version": "0.9.2.dev1022+g2a9c52b27ce7",
-    "git_commit": "2a9c52b27ce7986b4372ae5d73129dac4773e02c",
+    "version": "0.9.2.dev1024+g8da9718f0cb6",
+    "package_version": "0.9.2.dev1024+g8da9718f0cb6",
+    "git_commit": "8da9718f0cb6140607431017e6573c531a2b1d92",
     "git_tag": null,
     "dirty": false,
     "is_release": false,
@@ -640,10 +640,35 @@
       "partition_boundary": "add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline",
       "text": "every claimed measurement's testbench committed, with a documented cold-start invocation a third party can run; pinned PDK revision.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/envelopes/item9.digital.attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 9,
+          "path": {
+            "path": "manifests/inventories/item9.digital.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85",
+          "input_verified": true,
+          "summary": "T1 item 9 (Testbenches shipped): 6/6 attestation checks passed (klt signoff --attest)",
+          "source": "manifests/inventories/item9.digital.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 6,
+            "passed_count": 6
+          }
+        }
+      }
     },
     {
       "tier": "T1",
@@ -653,10 +678,35 @@
       "partition_boundary": "transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS",
       "text": "a README stating what the block is, its spec table, and how to reproduce every result; a license; CI that at minimum keeps the harness and evidence formats valid.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/envelopes/item10.attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 10,
+          "path": {
+            "path": "manifests/inventories/item10.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16",
+          "input_verified": true,
+          "summary": "T1 item 10 (Repo hygiene): 6/6 attestation checks passed (klt signoff --attest)",
+          "source": "manifests/inventories/item10.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 6,
+            "passed_count": 6
+          }
+        }
+      }
     },
     {
       "tier": "T1",
@@ -666,10 +716,35 @@
       "partition_boundary": "add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline",
       "text": "a README stating what the block is, its spec table, and how to reproduce every result; a license; CI that at minimum keeps the harness and evidence formats valid.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/envelopes/item10.attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 10,
+          "path": {
+            "path": "manifests/inventories/item10.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16",
+          "input_verified": true,
+          "summary": "T1 item 10 (Repo hygiene): 6/6 attestation checks passed (klt signoff --attest)",
+          "source": "manifests/inventories/item10.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 6,
+            "passed_count": 6
+          }
+        }
+      }
     },
     {
       "tier": "T1",

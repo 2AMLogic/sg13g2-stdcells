@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
+  "t1_item": 9,
+  "description": "Digital partition testbenches: the exhaustive cocotb check of rtl/add8.v (all 2^17 a/b/cin cases) together with the Makefile that drives it and the cold-start script that provisions cocotb and runs it from a clean checkout. The cold start is run, not merely declared: cocotb's Makefile fails on a failing test, so a passing attestation means the exhaustive check really passed on this tree.",
+  "testbenches": [
+    "verification/test_add8.py",
+    "verification/Makefile",
+    "verification/cold_start.sh"
+  ],
+  "cold_start": {
+    "argv": ["sh", "verification/cold_start.sh"],
+    "timeout_s": 1800
+  },
+  "pins": {
+    "pdk": {
+      "none": true,
+      "reason": "behavioral RTL regression: test_add8.py drives rtl/add8.v through Icarus with no cell library, no SDF and no parasitics, so the cold start consumes no PDK"
+    },
+    "tools": {
+      "iverilog": "13.0",
+      "cocotb": "2.0.0"
+    }
+  }
+}
