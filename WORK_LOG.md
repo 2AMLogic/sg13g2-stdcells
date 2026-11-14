@@ -4,6 +4,14 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-13
 
+- **PR #71**: ci: pin pytest to 9.2.0 and split the harness README's dependency claim
+- **PR #68**: build: point check:ci and test at the real CI commands, collapse four test runs into one
+- **PR #67**: chore: gate the committed SG13G2 netlists in CI, drop the demo placeholders
+- **PR #63**: refactor(characterize): one cell-entry builder, and docs that match the committed .lib
+- **Issue #70** (closed): Pin the pytest version CI installs and fix the 'no third-party dependencies' contradiction in sim/harness/README.md
+- **Issue #66** (closed): Wire package.json check scripts to the real CI commands: they print 'No checks configured' and exit 0
+- **Issue #65** (closed): Remove committed demo_* placeholder netlists from design/netlists and gate the real cell netlists in CI instead
+- **Issue #58** (closed): Deduplicate cell-entry building in sim/characterize/request.py and fix stale 'no cells / writes no Liberty' docs
 - **PR #61**: refactor(sim/harness): drop the unused tb.json manifest adapter
 - **Issue #54** (closed): Remove unused from_manifest and MANIFEST_KEYS from sim/harness/evidence.py
 
