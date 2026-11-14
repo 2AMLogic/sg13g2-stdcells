@@ -13,19 +13,21 @@ _None._
 
 `loom:very-important` (one counts per workspace); every stage takes these first.
 
-_None._
+- **#73**: layout: draw well and substrate taps in gen_layouts.py and re-run LVS on the four cells
 
 ## Important
 
 `loom:important`; taken before unlabelled work.
 
-_None._
+- **#74**: layout: place devices of different finger widths in one diffusion strip (and2, or2, a21oi, o21ai)
+- **#75**: manifests: cite the committed Liberty view, cocotb testbench and hygiene inventory for T1 items 8, 9, 10 and regrade
+- **#76**: README: bring the Status section and repo-layout tree in line with what is on main
 
 ## Ready
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#54**: Remove unused from_manifest and MANIFEST_KEYS from sim/harness/evidence.py
+- **#73**: layout: draw well and substrate taps in gen_layouts.py and re-run LVS on the four cells
 
 ## In Progress
 
@@ -50,11 +52,14 @@ _None._
 Issues carrying `loom:curated`.
 
 - **#3**: Gap-to-T1 tracker: sg13g2-stdcells artifact-presence survey *(curated)*
+- **#73**: layout: draw well and substrate taps in gen_layouts.py and re-run LVS on the four cells *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-- **#58**: Deduplicate cell-entry building in sim/characterize/request.py and fix stale 'no cells / writes no Liberty' docs *(hermit)*
 - **#59**: Collapse sim/harness/evidence.py to the one record kind in use and drop stale DRAFT corner markers *(hermit)*
+- **#62**: Trim layout/toolchain.json to the fields toolchain_pin.py enforces: drop unread pin fields and stale bootstrap comment *(hermit)*
+- **#69**: Write characterization records in one shape: drop the first-cell copy and per-cell run-level repeats in sim/characterize/runner.py *(hermit)*
+- **#77**: Remove never-read locals, a dead CellSpec field and the keep_artifacts knob in layout/gen_layouts.py and sim/characterize/request.py *(hermit)*
 
 ## Epics
 
@@ -65,13 +70,13 @@ _None._
 | Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 0 |
-| Very important | 0 |
-| Important | 0 |
+| Very important | 1 |
+| Important | 3 |
 | Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 1 |
-| Architect / Hermit proposals | 2 |
+| Curated | 2 |
+| Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
