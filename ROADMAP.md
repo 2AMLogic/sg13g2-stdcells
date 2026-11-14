@@ -23,8 +23,10 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   multiples of `gate_pitch_nm: 420`
   (`layout/tests/test_gen_layouts.py:129,133`); the vertical grid is not
   separately checked. Row 3 (Metal1 only) is **met by construction** — the
-  `layout.layers` map in `layout/example_config.json` holds `metal1` and
-  `metal1_label` only, and no generator draws a second metal.
+  only metal entries in the `layout.layers` map in
+  `layout/example_config.json` are `metal1` and `metal1_label` (its other six
+  are well, diffusion, poly, implant and contact layers), and no generator
+  draws a second metal.
   Row 4 (every pin on a grid point) is **not verified**: no check asserts that
   the emitted pin labels land on grid points.
 - **Cells (row 5: target 40).** Four are generated from
@@ -76,7 +78,8 @@ after this snapshot, #73 closed on 2026-11-14 — its taps-and-LVS work merged t
 `main` in PR #79, which supersedes item 1 and the row 8 "not met" above, with
 all four `layout/lvs/*.json` now `status: match`. As of 2026-11-14 #74 carries
 `loom:issue` and is ready for a builder, #75 is `loom:building`, and #76 is
-still `loom:triage`.
+`loom:curated` but not yet promoted. Label state moves daily; read the tracker,
+not this line.
 
 1. **Draw well and substrate taps, then re-run LVS.** Done when
    `layout/gen_layouts.py` emits tap geometry from config, `layout/drc/` holds
