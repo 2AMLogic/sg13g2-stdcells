@@ -301,6 +301,141 @@ class Taps(unittest.TestCase):
                              W // lay["gate_pitch_nm"], name)
 
 
+class MixedFingerWidths(unittest.TestCase):
+    """One diffusion strip, devices of different drawn finger widths (issue #74).
+
+    No cell in `example_config.json` has a mixed-width strip -- every candidate
+    that does is still blocked by a limit this slice does not lift (a diffusion
+    break, a second channel track, gate-net realignment), so the capability is
+    exercised on synthetic configs, the way `FakeProcess` exercises a second
+    process. `channel_tracks` and every `rules` value in the committed config are
+    untouched; see `test_no_rule_value_loosened`."""
+
+    # and2_1's NMOS strip is the series pair (1000 nm fingers) plus the output
+    # inverter (500 nm). It needs two channel tracks and a wider pitch to place
+    # at all -- both out of scope here, hence the synthetic row.
+    AND2 = {"name": "x_and2_1", "family": "and2", "drive": 1,
+            "inputs": ["A", "B"], "outputs": {"X": "(A*B)"}}
+
+    def mixed_cfg(self, cell=None):
+        cfg = copy.deepcopy(CFG)
+        cfg["layout"].update(row_height_nm=4200, gate_pitch_nm=840, channel_tracks=2)
+        cfg["cells"] = [copy.deepcopy(cell or self.AND2)]
+        return cfg
+
+    def strip_runs(self, S, lay, strip):
+        """The strip's `activ` rectangles, left to right (the tap bands sit on
+        neither strip edge, so matching an edge selects the device runs)."""
+        edge = lay["n_diff_y0_nm"] if strip == "n" else lay["row_height_nm"] - lay["p_diff_top_margin_nm"]
+        i = 1 if strip == "n" else 3
+        return sorted((b for b in S.boxes if b[0] == "activ" and b[i + 1] == edge), key=lambda b: b[1])
+
+    def test_mixed_width_strip_places(self):
+        cfg = self.mixed_cfg()
+        S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        self.assertEqual((W, H), (4 * 840, 4200))
+
+    def test_activ_really_steps(self):
+        cfg = self.mixed_cfg()
+        lay = cfg["layout"]
+        S, _, _ = gl.layout_cell(cfg["cells"][0], cfg["process"], lay)
+        runs = self.strip_runs(S, lay, "n")
+        self.assertEqual([b[4] - b[2] for b in runs], [1000, 500])  # two heights, not one
+        self.assertEqual(len({b[4] - b[2] for b in self.strip_runs(S, lay, "p")}), 1)  # PMOS is uniform
+        # Consecutive runs overlap in x, so the two rectangles merge into one
+        # stepped polygon instead of leaving a gap at the shared node column.
+        act_hang = CFG["layout"]["rules"]["cont_nm"] // 2 + CFG["layout"]["rules"]["activ_enc_cont_nm"]
+        for a, b in zip(runs, runs[1:]):
+            self.assertEqual(a[3] - b[1], 2 * act_hang, "runs must overlap at the shared node")
+
+    def test_implants_and_well_follow_the_step(self):
+        """One rectangle over the tallest run would over-enclose the short one."""
+        cfg = self.mixed_cfg()
+        lay, R = cfg["layout"], cfg["layout"]["rules"]
+        sd = R["sd_enc_activ_nm"]
+        S, _, _ = gl.layout_cell(cfg["cells"][0], cfg["process"], lay)
+        for strip, implant in (("n", "nsd"), ("p", "psd")):
+            for run in self.strip_runs(S, lay, strip):
+                cover = [b for b in S.boxes if b[0] == implant
+                         and b[1] <= run[1] - sd and b[2] <= run[2] - sd
+                         and b[3] >= run[3] + sd and b[4] >= run[4] + sd]
+                self.assertTrue(cover, f"{implant} does not enclose the run at {run[1:]}")
+                self.assertTrue(any(b[4] - b[2] == (run[4] - run[2]) + 2 * sd for b in cover),
+                                f"{implant} over {run[1:]} is not sized to that run")
+        nwell = [b for b in S.boxes if b[0] == "nwell"]
+        for run in self.strip_runs(S, lay, "p"):
+            self.assertTrue(any(b[2] <= run[2] - R["nwell_enc_pactiv_nm"] for b in nwell), run[1:])
+
+    def test_mixed_width_output_is_byte_deterministic(self):
+        cfg = self.mixed_cfg()
+        a = gl.generate(cfg)
+        self.assertEqual(a, gl.generate(self.mixed_cfg()))
+        self.assertEqual(set(a), {"x_and2_1.gds"})
+        self.assertTrue(read_gds_boxes(a["x_and2_1.gds"]))
+
+    def test_committed_cells_still_draw_one_run_per_strip(self):
+        """The uniform-width cells must not pick up a spurious step."""
+        for cell in CFG["cells"]:
+            S, _, _ = layout_of(cell_named(cell["name"]))
+            for strip in ("n", "p"):
+                self.assertEqual(len(self.strip_runs(S, CFG["layout"], strip)), 1, cell["name"])
+
+    def test_device_folded_below_the_contact_floor_is_named(self):
+        """nor2's NMOS folds to 250 nm fingers, under the 300 nm a contact needs
+        (2 * activ_enc_cont + cont). The floor is per device, so it fires even
+        though the strip's tallest run is 800 nm."""
+        cell = {"name": "x_nor2_1", "family": "nor2", "drive": 1,
+                "inputs": ["A", "B"], "outputs": {"Y": "!(A+B)"}}
+        cfg = self.mixed_cfg(cell)
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(cfg)
+        msg = str(cm.exception)
+        self.assertIn("x_nor2_1", msg)
+        self.assertIn("too short for a contact", msg)
+        self.assertIn("250", msg)
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d) / "c.json"
+            p.write_text(json.dumps(cfg))
+            r = run("--config", str(p))
+            self.assertEqual(r.returncode, 3)
+            self.assertIn("x_nor2_1", r.stderr)
+            self.assertFalse((pathlib.Path(d) / "gds").exists())
+
+    def test_failure_message_separates_netlist_and_drawn_width(self):
+        """The fold can divide a width that is uniform in the netlist, so a
+        message quoting one number sends the reader hunting for a width the
+        netlist does not contain (nor2's netlist is a uniform 500 nm)."""
+        cell = {"name": "x_nor2_1", "family": "nor2", "drive": 1,
+                "inputs": ["A", "B"], "outputs": {"Y": "!(A+B)"}}
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(self.mixed_cfg(cell))
+        msg = str(cm.exception)
+        self.assertIn("netlist 500 nm", msg)
+        self.assertIn("drawn 2 x 250 nm", msg)
+
+    def test_notch_profile_is_rejected(self):
+        """A tall-short-tall profile is a re-entrant notch in the merged strip,
+        and activ.space.1 / psd.space.1 are space-*or-notch* rules. No cell
+        reachable through design/gen_netlists.py produces one today, so the
+        predicate that refuses it is asserted directly."""
+        self.assertIsNone(gl._notch_column([500]))
+        self.assertIsNone(gl._notch_column([500, 1000, 1000]))   # monotone up
+        self.assertIsNone(gl._notch_column([1000, 1000, 500]))   # monotone down
+        self.assertIsNone(gl._notch_column([500, 1000, 500]))    # a peak, not a notch
+        self.assertEqual(gl._notch_column([1000, 500, 1000]), 1)
+        self.assertEqual(gl._notch_column([1000, 1000, 250, 500, 1000]), 2)
+        self.assertEqual(gl._notch_column([500, 1000, 250, 1000]), 2)
+
+    def test_implants_may_not_meet_in_the_channel(self):
+        """Both implants grow `sd_enc_activ` into the channel, so a channel that
+        clears the strips can still leave psd over nsd -- not a real mask."""
+        cfg = self.mixed_cfg()
+        cfg["layout"]["rules"] = dict(cfg["layout"]["rules"], sd_enc_activ_nm=900)
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(cfg)
+        self.assertIn("sd_enc_activ", str(cm.exception))
+
+
 class Failures(unittest.TestCase):
     def test_unplaceable_cell_named_and_nothing_written(self):
         cfg = copy.deepcopy(CFG)
