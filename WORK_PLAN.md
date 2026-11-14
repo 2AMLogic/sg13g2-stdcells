@@ -13,46 +13,49 @@ _None._
 
 `loom:very-important` (one counts per workspace); every stage takes these first.
 
-- **#73**: layout: draw well and substrate taps in gen_layouts.py and re-run LVS on the four cells
+_None._
 
 ## Important
 
 `loom:important`; taken before unlabelled work.
 
 - **#74**: layout: place devices of different finger widths in one diffusion strip (and2, or2, a21oi, o21ai)
-- **#75**: manifests: cite the committed Liberty view, cocotb testbench and hygiene inventory for T1 items 8, 9, 10 and regrade
-- **#76**: README: bring the Status section and repo-layout tree in line with what is on main
 
 ## Ready
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#73**: layout: draw well and substrate taps in gen_layouts.py and re-run LVS on the four cells
+- **#88**: sim/characterize: derive the Liberty view and records paths in check_library.py instead of retyping them
+- **#89**: verification: the documented RTL_DIR override is read by nothing, so a gate-level run silently tests the behavioral RTL
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#74**: layout: place devices of different finger widths in one diffusion strip (and2, or2, a21oi, o21ai)
+- **#81**: Hold the CI check list in one place: ci.yml, package.json and README.md each carry their own copy
+- **#91**: Remove .gitignore rules left over from the removed local-ngspice harness half, and the duplicate flow scratch-dir entry
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#90**: build: hold the CI check list once in check-ci.sh and call it from all three places
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#72**: docs: roadmap as of 2026-11-13
+- **#85**: feat: step the diffusion outline so one strip can hold mixed finger widths
 
 ## Proposed
 
 Issues carrying `loom:curated`.
 
 - **#3**: Gap-to-T1 tracker: sg13g2-stdcells artifact-presence survey *(curated)*
-- **#73**: layout: draw well and substrate taps in gen_layouts.py and re-run LVS on the four cells *(curated)*
+- **#74**: layout: place devices of different finger widths in one diffusion strip (and2, or2, a21oi, o21ai) *(curated)*
+- **#80**: gen_layouts: nsd is in OPTIONAL_LAYERS but the tap code requires it, so a missing nsd exits 3 instead of 2 *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -70,13 +73,13 @@ _None._
 | Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 0 |
-| Very important | 1 |
-| Important | 3 |
-| Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 0 |
-| PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 2 |
+| Very important | 0 |
+| Important | 1 |
+| Ready (`loom:issue`) | 2 |
+| In Progress (`loom:building`) | 3 |
+| PRs awaiting review | 1 |
+| Approved PRs awaiting merge | 2 |
+| Curated | 3 |
 | Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
