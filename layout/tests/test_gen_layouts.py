@@ -64,6 +64,11 @@ class Validation(unittest.TestCase):
     def test_netlist_side_validation_still_applies(self):
         self.bad(lambda c: c["process"].pop("l_nm"))
 
+    def test_schema_version_must_be_1(self):
+        self.bad(lambda c: c.update(schema_version=99))
+        self.bad(lambda c: c.pop("schema_version"))
+        self.bad(lambda c: c.update(schema_version=True))
+
     def test_cli_exit_2(self):
         with tempfile.TemporaryDirectory() as d:
             p = pathlib.Path(d) / "c.json"

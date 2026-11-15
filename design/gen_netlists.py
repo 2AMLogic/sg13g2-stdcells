@@ -264,6 +264,9 @@ def _check_pins(cell, proc):
 
 def validate(config):
     """Raise ValueError on a malformed config; return it unchanged."""
+    version = config.get("schema_version")
+    if version != 1 or isinstance(version, bool):
+        raise ValueError(f"config.schema_version must be 1, got {version!r}")
     proc = config.get("process")
     if not isinstance(proc, dict):
         raise ValueError("config needs a 'process' object")
