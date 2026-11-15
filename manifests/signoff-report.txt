@@ -52,7 +52,7 @@ T1: 11/22 items met
 [UNMET] T1 #7 [digital] Post-layout verification
         reason: no_evidence
 [MET  ] T1 #8 [analog] Characterization report
-        cite: manifests/envelopes/item8.analog.attest.json (kind=generic, status=pass, content_hash=sha256:6876f5467135f013fa5f0a79883a76e5bcef3dc4579ff37d5d1534125c636ec9, exit_status=0)
+        cite: manifests/envelopes/item8.analog.attest.json (kind=generic, status=pass, content_hash=sha256:53f4ba2cc2fc06c3a286a33365b8ce82f3ad7118c18a6b6daf704678d85d712d, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
 [UNMET] T1 #8 [digital] Characterization report
         reason: no_evidence

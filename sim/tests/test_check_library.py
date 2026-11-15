@@ -92,6 +92,52 @@ def test_renamed_library_is_drift(tree):
     assert any("some_other_library" in p for p in run(tree))
 
 
+def test_hand_edited_lib_voltage_is_drift(tree):
+    # An attribute tampered in the view itself, library name and cell set
+    # untouched: the corner comparison is what catches it (issue #119).
+    _, lib, _ = tree
+    text = lib.read_text().replace("nom_voltage : 1.2;", "nom_voltage : 3.3;")
+    lib.write_text(text)
+    problems = run(tree)
+    assert any("nom_voltage" in p and "3.3" in p for p in problems), problems
+
+
+def test_hand_edited_lib_temperature_is_drift(tree):
+    _, lib, _ = tree
+    text = lib.read_text().replace("nom_temperature : 25;", "nom_temperature : 125;")
+    lib.write_text(text)
+    assert any("125" in p for p in run(tree))
+
+
+def test_hand_edited_lib_operating_conditions_name_is_drift(tree):
+    _, lib, _ = tree
+    text = lib.read_text().replace("operating_conditions (tt) {",
+                                   "operating_conditions (ff) {")
+    lib.write_text(text)
+    assert any("ff" in p for p in run(tree))
+
+
+def test_hand_edited_lib_operating_conditions_voltage_is_drift(tree):
+    # The group's voltage is compared as well as the nom_* attribute, so a
+    # tamper that touches only the group is still caught.
+    _, lib, _ = tree
+    text = lib.read_text().replace("\n    voltage : 1.2;", "\n    voltage : 3.3;")
+    lib.write_text(text)
+    problems = run(tree)
+    assert any("operating_conditions(tt) voltage" in p and "3.3" in p
+               for p in problems), problems
+
+
+def test_view_process_factor_is_deliberately_unchecked(tree):
+    # The sidecar's corner.process is a process-corner *name* (mos_tt) while
+    # the view's process attributes are numeric process factors -- not
+    # comparable, so process is deliberately not pinned (issue #119).
+    _, lib, _ = tree
+    text = lib.read_text().replace("nom_process : 1;", "nom_process : 0.9;")
+    lib.write_text(text)
+    assert run(tree) == []
+
+
 def test_missing_evidence_record_is_drift(tree):
     _, _, records = tree
     (records / REAL_RECORD.name).unlink()

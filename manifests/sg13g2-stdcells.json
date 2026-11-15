@@ -30,7 +30,7 @@
     "4.digital": "flow/records/20261104-df96543/lvs.json",
     "8.analog": {
       "file": "manifests/envelopes/item8.analog.attest.json",
-      "content_hash": "sha256:6876f5467135f013fa5f0a79883a76e5bcef3dc4579ff37d5d1534125c636ec9"
+      "content_hash": "sha256:53f4ba2cc2fc06c3a286a33365b8ce82f3ad7118c18a6b6daf704678d85d712d"
     },
     "9.digital": {
       "file": "manifests/envelopes/item9.digital.attest.json",
