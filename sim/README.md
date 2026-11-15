@@ -36,7 +36,7 @@ python3 -m sim.characterize --library --pdk-dir <ihp-sg13g2 dir>
 One corner per invocation (TT/1.20 V/25 C by default). FF/SS are one
 invocation per corner with `--backend batch`, never a local loop.
 
-**Status**: two records, one per mode.
+**Status**: three records (one per mode; the library view was refreshed twice).
 
 - **Baseline leg** (first real record):
   `sim/characterize/records/20261105-042154-1376b8f.md` — `sg13g2_inv_1` from
@@ -45,8 +45,14 @@ invocation per corner with `--backend batch`, never a local loop.
 - **Library view**: `sim/characterize/records/20261107-222836-6ee1577.md` — the
   four cells of `layout/example_config.json` (`sg13g2_inv_1`, `sg13g2_inv_2`,
   `sg13g2_inv_4`, `sg13g2_nand2_1`), TT/1.20 V/25 C, 5x5 grid, five arcs, local
-  backend, klt 0.9.2.dev247. This is the record id cited by
-  `views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`.
+  backend, klt 0.9.2.dev247.
+- **Library view refresh**: `sim/characterize/records/20261115-171205-3462cc8.md`
+  — same mode and grid as the record above, newer klt. This record and the
+  sidecar it mints (`views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`) are
+  the first to carry the simulator version in the artifact itself
+  (`simulator ngspice-47` in the record's Notes line, a `simulator` field in
+  the sidecar), so this list's klt/ngspice prose is a summary, not the only
+  source of the toolchain.
 
 The local run needs ngspice >= 44 for the OSDI v0.4 PSP103 models. The request
 preloads `psp103.osdi` (the module the PDK's `psp103va` model cards bind to),

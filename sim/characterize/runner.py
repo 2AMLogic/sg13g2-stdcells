@@ -86,6 +86,26 @@ def extract_arcs(response: dict, cell: CellSpec) -> list[dict]:
     return arcs
 
 
+def simulator_of(response: dict, cell: CellSpec) -> dict:
+    """Simulator identity for ``cell`` from the response's per-cell ``simulation`` block.
+
+    The library/batch response deliberately nulls the top-level ``simulation``
+    key, so the per-cell entry (the same lookup ``extract_arcs`` uses) is the
+    only reliable source.
+    """
+    sim = next((e.get("simulation") for e in response.get("cells") or []
+                if e["cell"]["name"] == cell.name), None) or {}
+    return {"engine": sim.get("engine"), "version": sim.get("engine_version")}
+
+
+def simulator_str(data: dict) -> str:
+    """``engine-version`` as klt reports it (e.g. ``ngspice-47``); ``unknown`` if absent."""
+    sim = data.get("simulator") or {}
+    if not sim.get("engine") or not sim.get("version"):
+        return "unknown"
+    return f"{sim['engine']}-{sim['version']}"
+
+
 def build_record_data(response: dict, cell: CellSpec, backend: str) -> dict:
     prov = response.get("provenance") or {}
     return {
@@ -95,6 +115,7 @@ def build_record_data(response: dict, cell: CellSpec, backend: str) -> dict:
         "backend": backend,
         "klt": {"version": klt_version(), "provenance_version": prov.get("klt_version"),
                 "provenance": prov},
+        "simulator": simulator_of(response, cell),
         "axes": {
             "input_transition_ns": response["grid"]["input_transition_ns"],
             "output_load_pf": response["grid"]["output_load_pf"],
@@ -156,7 +177,8 @@ def render(record_id: str, git: dict, data: dict, exts: list[CharacterizationExt
         data = {**data, **{k: v for k, v in data["cells"][0].items() if k not in data}}
     lines = [f"# {record_id}", "", "**Kind**: characterization (raw klt characterize measurements)",
              f"**Repo commit**: {git['commit']}{' (dirty)' if git['dirty'] else ''}", ""]
-    lines += [f"**Notes**: klt {data['klt']['version']}, backend {data['backend']}; "
+    lines += [f"**Notes**: klt {data['klt']['version']}, backend {data['backend']}, "
+              f"simulator {simulator_str(data)}; "
               "delay/transition = worse of rise/fall, energy = rise + fall internal energy.", ""]
     for ext in exts:
         lines += [f"### {ext.cell} {ext.arc_related_pin} slew {ext.input_slew_ns} ns, load {ext.output_load_pf} pF",
@@ -209,6 +231,7 @@ def provenance_for(config: Path, corner: dict, data: dict) -> dict:
     return {
         "library": LIBRARY_NAME,
         "klt_version": data["klt"]["version"],
+        "simulator": simulator_str(data),
         "repo_commit": git["commit"] + (" (dirty)" if git["dirty"] else ""),
         "corner": corner,
         "config": rel,
