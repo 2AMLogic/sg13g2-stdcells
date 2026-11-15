@@ -56,8 +56,10 @@ status: drifted                                            (exit 3; read-only)
 the same tree reads 10, with item 1 (`Design sources`) flipping `met -> unmet`,
 reason `stale_evidence`. The cause is the report↔evidence binding, not an
 envelope↔tree pin: item 1's envelope was re-minted in `5e419cc` after the last
-report regeneration (`fdedc4c`), and #105's edits to `design/gen_netlists.py`
-and `layout/example_config.json` moved two members of its input set. Regenerating
+report regeneration (`fdedc4c`), and two of its input-set members moved in
+that window via two separate PRs — `design/gen_netlists.py` through #105
+(`1976faa`) and `layout/example_config.json` through #104 (`9a82f9b`, the
+strip-notch refusal pitch/layer/strip change). Regenerating
 the report follows whoever re-mints and is out of scope for this record's issue
 (#110); it is recorded here because it is a third instance of the same shape —
 the report pins the envelope's input digest, so *the re-mint itself is churn
@@ -132,21 +134,64 @@ attestation), not by the byte pin; the pin's extra assertion is the formatting.
 
 ## Policy
 
-**Recommended: (b) — pin only content-bearing paths; record predicate-bearing
+**Recommended: (b) — pin content-bearing paths; record predicate-bearing
 inputs without a hash** (name plus the check that verifies them). This is the
 only option that stops the churn instead of scheduling it: a predicate-bearing
 edit stops touching the envelope at all, and a re-mint is needed exactly when
 the evidence's bytes — the generated artifacts — actually moved, which is also
 when the checks themselves flag it. It needs a schema change in
 `klt signoff --attest` (the envelope is the tool's output, never hand-edited),
-filed as 2AMLogic/klayout-tools#5831.
+live as 2AMLogic/klayout-tools#5615.
+
+### Scope: what upstream will actually accept
+
+Upstream (2AMLogic/klayout-tools#5615) accepts a presence-only entry for the
+item 10 `hygiene` field only —
+"the motivating case and the only one where the property is meaningful" — and
+refuses item 1 `sources` and item 9 `testbenches` outright (an
+`AttestationError` naming the accepted set). This record's own filing of the
+gap, 2AMLogic/klayout-tools#5831, was closed as a duplicate of #5615, so
+#5615 is the live route and its scoping is upstream's measurement, not a
+position this record can argue away by re-stating its classification. Policy
+(b) is therefore implementable upstream for **3 of the 8 predicate-bearing
+pins** (`README.md`, `LICENSE`, `.github/workflows/ci.yml`) and refused for
+the 5 item 1 / item 9 pins. The two upstream reasons, which this record
+adopts rather than rebuts:
+
+- **Item 1 `sources` — the option would silently not work.** The manifest
+  input binding (`signoff_attest_input.py` `input_binding()`) is not
+  key-driven: it reads `normalized["sources"]` and hashes each path itself,
+  ignoring the check dict, so a presence-only source's bytes would still be
+  folded into the input-set digest the manifest pins — the same binding whose
+  re-mint/re-stale sequence is measured above. #5615 records this as a hard
+  constraint on any future extension.
+- **Item 9 `testbenches` — arguably the wrong semantics.** "The file *is* the
+  bench." The sharper version: under `klt signoff --check` a `local_only`
+  freshness command is **skipped** and its committed outcome carried
+  (`_skipped_check`, `--skip-local-only`), so for such a check the source
+  hashes are the only live binding, and dropping them would weaken the
+  attestation materially rather than remove a redundancy. The "the evidence
+  is behavioral, not the file's bytes" reading in the table above holds only
+  while the check actually re-runs.
+
+**Stated precisely, then: (b) means the 8 content-bearing paths keep byte
+pins, the 3 item 10 hygiene pins become presence-only once #5615 lands, and
+the 5 item 1 / item 9 predicate pins stay byte-pinned** — for them, (a) below
+is not an interim but the standing practice until #5615 is extended upstream
+(an item-1 extension belongs as a follow-up on top of #5615, since it needs
+the `input_binding()` change). Their churn is bounded in practice: item 1's
+inputs move only when the generator or its config change, and item 9's three
+files move rarely — and both move exactly when the evidence genuinely must be
+re-minted.
 
 Rejected alternatives, one line each:
 
 - **(a) keep byte pins everywhere and re-mint on churn** (the post-#112 status
-  quo) — rejected as the target policy: every re-mint re-runs predicates that
-  measurably still pass and changes nothing verified; `README.md` alone drifted
-  three times during this issue's lifetime.
+  quo) — rejected as the target policy for the hygiene pins: every re-mint
+  re-runs predicates that measurably still pass and changes nothing verified;
+  `README.md` alone drifted three times during this issue's lifetime. For the
+  item 1 / item 9 pins it remains the operative practice for want of an
+  upstream mechanism, per the scope above.
 - **(c) automate the re-mint on merge** — rejected: `.github/workflows/ci.yml`
   is tool-free by constraint (`ci.yml:1`), so the automaton must live off-CI and
   would mint evidence on a trigger with no one reviewing the re-run; it also
@@ -156,14 +201,20 @@ Rejected alternatives, one line each:
   README/workflow hygiene at all), which is worse than re-minting for them.
 - **hand-edit the committed envelopes to drop the hashes** — rejected: the
   envelope is `klt signoff --attest` output, generated never hand-edited, so the
-  change can only come from the inventory schema upstream (#5831).
+  change can only come from the inventory schema upstream (#5615).
+- **declare presence-only entries in the item 1 / item 9 inventories anyway** —
+  not a choice this record can make: #5615's schema accepts the key on
+  `hygiene` only and errors elsewhere, and no inventory form expresses it
+  today.
 
 ### Interim, until the upstream schema lands
 
-(a) remains the operative practice — a tool-gap hold, not an endorsement; this
-record changes no manifest and relaxes nothing. What #112 changed is that the
-churn is no longer *silent*: the gate names the stale envelope on every PR that
-touches a pinned path.
+(a) remains the operative practice everywhere — a tool-gap hold, not an
+endorsement; this record changes no manifest and relaxes nothing. What #112
+changed is that the churn is no longer *silent*: the gate names the stale
+envelope on every PR that touches a pinned path. #5615 ends this interim for
+the 3 item 10 hygiene pins only; for the 5 item 1 / item 9 pins, (a) is the
+standing practice until #5615 is extended upstream (see the policy's scope).
 
 ## CI consequence of the recommendation
 
@@ -185,10 +236,22 @@ compares recorded hashes to the tree. Under the interim (a):
   README typo keeps `main` red until then. No CI job can clear it — the runner
   has no `klt`.
 
-Under (b), once #5831 lands upstream and inventories are re-authored: predicate
-pins disappear from the gate's input entirely, so those triggers vanish;
-only edits to the generated artifacts require a re-mint, and those are edits the
-checks themselves would flag anyway.
+Under (b), once #5615 lands upstream and item 10's inventory is re-authored:
+the 3 hygiene pins disappear from the gate's and grader's input, so their
+triggers vanish; only edits to the generated artifacts require a re-mint, and
+those are edits the checks themselves would flag anyway. The 5 item 1 / item 9
+pins stay byte-pinned (policy scope above), so their triggers remain.
+
+A third consumer of the stamped hash, worth naming because the interim pays it
+today and (b) must disarm it too: at `--manifest` grading time,
+`signoff.py`'s `_attested_check_members()` / `_attested_checks_refusal()`
+(#4197 in klayout-tools) re-hashes every `present` check that recorded a
+`sha256:` hash — all items, item 10 included — and grades a drifted file
+`stale_evidence`. An ordinary README edit therefore does not merely turn the
+CI gate red on that PR; it leaves the committed manifest row red at the next
+grading even where `--check` is not run. #5615's fix (omit the
+`content_hash` key, stamp `"attest": "presence"`) disarms this consumer and
+the `--check` diff together, because both are key-driven.
 
 ## Related records and issues
 
@@ -199,8 +262,13 @@ checks themselves would flag anyway.
   scope here.
 - #82 / PR #98 — the same shape on item 8's Liberty-view config pin; cited as
   the second data point for the argument, a separate lane.
-- 2AMLogic/klayout-tools#5831 — the generic upstream gap (an attestation
-  inventory binds a content hash to a check whose predicate does not depend on
-  the file's bytes); the schema change (b) needs.
+- 2AMLogic/klayout-tools#5615 — the live upstream gap (an inventory can only
+  enumerate bare-path entries, so a presence-only input cannot be declared and
+  every entry is content-hashed and diffed); the schema change (b) needs, and
+  the item 10 `hygiene`-only scoping (b) adopts is its curatorial verdict.
+- 2AMLogic/klayout-tools#5831 — this record's original generic filing of the
+  same gap (an attestation inventory binds a content hash to a check whose
+  predicate does not depend on the file's bytes), closed as a duplicate of
+  #5615; kept named so the friction-protocol trail stays intact.
 - Format model: `spec/0001-target-specification.md` (this repo's
   decision-record shape, including its provenance caveat practice).
