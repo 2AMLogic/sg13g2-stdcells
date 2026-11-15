@@ -26,6 +26,8 @@ jobs:
         run: ./check-ci.sh tests
       - name: attestation envelopes match the committed files
         run: ./check-ci.sh attestations
+      - name: manifest evidence pins match the envelopes they name
+        run: ./check-ci.sh manifest-pins
       - name: netlists are fresh
         run: ./check-ci.sh netlists
       - name: layouts are fresh
