@@ -452,6 +452,16 @@ without re-attesting item 10, and a re-attestation of item 9 (its
 `verification/Makefile` changed in PR #108) went missing the same way. All
 three are re-attested here through `klt signoff --attest <n>` (item 10: 6/6
 checks pass; item 9: the cocotb cold start passes, 2.0.0/iverilog 13.0, 6/6).
+The merge of `main` during PR #112's own fix round brought #105's edit to
+`design/gen_netlists.py` — an attested path in item 1's envelope
+(`manifests/envelopes/item1.analog.attest.json`) — plus PR #104's edits to
+`layout/example_config.json` and the root `README.md` (`9a82f9b`, finalised
+in `3df01b7`), turning item 1's and item 10's envelopes red on the post-merge
+tree. Both were re-attested at `5e419cc` before the PR could land — item 1,
+whose envelope reads `status: pass` with 10/10 checks, and item 10 a second
+time (6/6, for the PR #104 `README.md` change) — so unlike the three skipped
+steps above, nothing went missing here: the step and its record happened
+together.
 To close the class, `manifests/check_attestations.py` — new, stdlib Python
 only — re-hashes every committed file named by every envelope under
 `manifests/envelopes/` (both provenance shapes klt emits) and fails on any
