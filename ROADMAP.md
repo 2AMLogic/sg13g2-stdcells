@@ -97,9 +97,10 @@ each item's own done-criterion, not against whether its issue closed.
    `reason: no_evidence`, which says nothing was cited, not why a citation
    cannot be made. Done when item 8 is cited through a `klt signoff
    --attest` envelope and the report is regenerated, or the report records
-   why the tool rejects the citation. Blocked by #82: the provenance sidecar
-   pins a config hash that no longer matches the tree, and citing stale
-   provenance would be evidence in name only.
+   why the tool rejects the citation. The provenance staleness #82 tracked is
+   resolved — the view was regenerated against the committed config and its
+   freshness command passes — leaving only the unminted envelope, which needs
+   a local `klt signoff --attest` run (CI has no klt); tracked in #82.
 
 ## Next
 
