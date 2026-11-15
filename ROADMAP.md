@@ -3,7 +3,7 @@
 sg13g2-stdcells is an 8-track standard-cell library for the IHP SG13G2 open PDK,
 built by generators and verified through klayout-tools (`klt`) and the open flow.
 
-Status as of 2026-11-13, `main` @ `8d411c0`.
+Status as of 2026-11-15, `main` @ `176f794`.
 
 `WORK_PLAN.md` (generated from label state) and `WORK_LOG.md` (merged-PR log)
 are separate files and are not replaced by this one.
@@ -34,9 +34,10 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   `sg13g2_nand2_1`. Sequential cells (row 6) are out of target scope.
 - **DRC (row 7).** `layout/drc/*.json`: 0 violations on all four cells under
   the curated `sg13g2` deck, whose coverage limits each report lists.
-- **LVS (row 8): not met.** `layout/lvs/*.json` are all `status: mismatch`
-  (12, 16, 20 and 18 errors). `layout/README.md` gives the likely cause, not
-  yet demonstrated: the layouts draw no well or substrate tap.
+- **LVS (row 8): met.** All four `layout/lvs/*.json` are `status: match` with
+  `error_count: 0`, closed by the well and substrate taps (#79). The rung
+  above is not reached: `environment.extracted_netlist` is `null` in all four
+  reports and T1 #7 is `[UNMET]`, so no extracted view has been verified.
 - **Liberty (row 9).** `views/sg13g2_stdcells_tt_1p20v_25c.lib` holds the four
   cells at TT / 1.20 V / 25 C, emitted by `klt characterize` (#40), with a
   provenance sidecar and the record `sim/characterize/records/20261107-222836-6ee1577.md`.
@@ -46,23 +47,25 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   place-and-route with all three power gates, gate-level LVS `match`, routed
   GDS and a clean `klt drc` (#9, #41).
 - **Evidence grade.** `manifests/signoff-report.txt` (`klt signoff --manifest`):
-  tier none, **T1 7/22 items met**. Met: items 1, 2, 3 on both partitions and
-  item 4 digital. Unmet: item 4 analog (`check_failed`, the LVS above), item 11
-  digital (`supply_spec_incomplete`), and items 5-10 and 11 analog
-  (`no_evidence`). Tracker: #3, whose body still quotes the earlier 3/22.
+  tier none, **T1 11/22 items met**. Met: items 1-4 on both partitions, item 9
+  digital and item 10 on both partitions. Unmet: items 5-8 and 11 on both
+  partitions and item 9 analog — all `no_evidence` except item 11 digital
+  (`supply_spec_incomplete`). Tracker: #3, whose body still quotes the earlier
+  3/22.
 
 ### What the layout generator can place today
 
-Probed on this commit by running `layout/gen_layouts.py` on one-cell configs
+Probed on `176f794` by running `layout/gen_layouts.py` on one-cell configs
 derived from `layout/example_config.json` (same process and rules):
 
 | Result | Cells | Reason reported (exit 3) |
 |---|---|---|
 | places | `inv_1/2/4/8/16`, `nand2_1` | |
 | fails | `nor2_1`, `nor2_2` | diffusion 250 nm tall is too short for a contact |
-| fails | `and2_1`, `or2_1`, `a21oi_1`, `o21ai_1`, `xor2_1` | devices of different finger widths in one strip |
-| fails | `nand3_1`, `nor3_1`, `nand4_1`, `a22oi_1` | needs a diffusion break |
-| fails | `buf_1`, `nand2_2` | needs 2 channel tracks, config allows 1 |
+| fails | `nand2_2`, `buf_1`, `and2_1` | needs 2 channel tracks, config allows 1 |
+| fails | `or2_1`, `nor3_1` | PMOS devices do not form a single diffusion chain (needs a diffusion break) |
+| fails | `nand3_1`, `nand4_1`, `a21oi_1`, `a22oi_1`, `xor2_1` | NMOS devices do not form a single diffusion chain (needs a diffusion break) |
+| fails | `o21ai_1` | no NMOS/PMOS strip orderings share one gate-net sequence |
 | fails | `nor4_1` | 500 nm device cannot be drawn as 4 fingers on the 10 nm grid |
 
 The placement model is what holds the generator to 6 of the 20 cells probed
@@ -71,52 +74,47 @@ those six, is what holds the committed count at 4.
 
 ## Now
 
-All four items have issues, filed 2026-11-14 by the same roadmap pass as this
-document and so after the date in its header: #73 (item 1), #74 (item 2), #75
-(item 3) and #76 (item 4). Pick the issue up rather than re-filing it. Also
-after this snapshot, #73 closed on 2026-11-14 — its taps-and-LVS work merged to
-`main` in PR #79, which supersedes item 1 and the row 8 "not met" above, with
-all four `layout/lvs/*.json` now `status: match`. As of 2026-11-14 #74 carries
-`loom:issue` and is ready for a builder, #75 is `loom:building`, and #76 is
-`loom:curated` but not yet promoted. Label state moves daily; read the tracker,
-not this line.
+#73-#76, filed 2026-11-14 against the previous edition of this list, all
+closed on 2026-11-14 through merged PRs #79/#83/#84/#85. Two of the four
+items (taps and LVS; README Status) were delivered in full and are dropped;
+the surviving remainder of the other two is the list below, judged against
+each item's own done-criterion, not against whether its issue closed.
 
-1. **Draw well and substrate taps, then re-run LVS.** Done when
-   `layout/gen_layouts.py` emits tap geometry from config, `layout/drc/` holds
-   fresh clean reports for the regenerated cells, and new `layout/lvs/*.json`
-   are recorded by `layout/run_lvs.py` with no `device.body_unverified`
-   warning. If a cell still mismatches, the PR records which signal nets
-   differ. The upstream diagnosis gap, klayout-tools#5125, closed on
-   2026-11-08, after these reports were written.
-2. **Place devices of different finger widths in one diffusion strip.** Done
-   when `and2_1`, `or2_1`, `a21oi_1` and `o21ai_1` are in
+1. **Add the AND/OR and AOI/OAI cells.** #74's generator half merged as
+   PR #85 — one strip may now hold devices of different finger widths — but
+   it added no cell. Each of the four is blocked by a further limit, named in
+   the placement table above and in `layout/README.md`: `and2_1` needs 2
+   channel tracks, `or2_1` a PMOS diffusion break, `a21oi_1` an NMOS
+   diffusion break, `o21ai_1` a shared gate-net sequence. Done when
+   `and2_1`, `or2_1`, `a21oi_1` and `o21ai_1` are in
    `layout/example_config.json` with committed GDS, netlists and clean
-   `klt drc` reports, and the unit tests cover the new case.
-3. **Cite the evidence already on `main` in the manifest and regrade.** The
-   Liberty view and its record (item 8), `verification/test_add8.py` (item 9
-   digital) and the README/LICENSE/CI inventory (item 10) exist but
-   `manifests/sg13g2-stdcells.json` cites none of them. Done when each is
-   cited through a `klt signoff --attest` envelope and
-   `manifests/signoff-report.*` is regenerated, or the report records why the
-   tool rejects a citation.
-4. **Bring the README Status section in line with `main`.** It still says
-   nothing is designed, that no `.lib` is committed and that `views/` is
-   empty; the repo-layout line for `design/` still says xschem schematics.
-   Done when the prose matches the files and the `Design stage` token is the
-   highest rung with recorded evidence, which the LVS mismatch caps.
+   `klt drc` reports, and the unit tests cover the new cases.
+2. **Cite the characterization evidence in the manifest and regrade.** Items
+   9 digital and 10 on both partitions are cited and met (PR #83). Item 8 is
+   not: the Liberty view and its record exist on `main`, but
+   `manifests/sg13g2-stdcells.json` has no `evidence.8.*` key and
+   `manifests/signoff-report.txt` records `[UNMET] T1 #8` with
+   `reason: no_evidence`, which says nothing was cited, not why a citation
+   cannot be made. Done when item 8 is cited through a `klt signoff
+   --attest` envelope and the report is regenerated, or the report records
+   why the tool rejects the citation. Blocked by #82: the provenance sidecar
+   pins a config hash that no longer matches the tree, and citing stale
+   provenance would be evidence in name only.
 
 ## Next
 
-- **Diffusion breaks** in `gen_layouts.py` (unlocks `nand3_1`, `nor3_1`,
-  `nand4_1`, `a22oi_1`, and the XOR and mux families). After Now 1 and 2,
-  which edit the same file. Done when those cells are generated, DRC-clean
-  and LVS-matched.
+- **Diffusion breaks** in `gen_layouts.py` (unlocks `or2_1` and `nor3_1` on
+  the PMOS side and `nand3_1`, `nand4_1`, `a21oi_1`, `a22oi_1` and `xor2_1`
+  on the NMOS side — see the placement table above). Overlaps the Now cell
+  additions, which edit the same file. Done when those cells are generated,
+  DRC-clean and LVS-matched.
 - **`nor2` placement.** Done when `nor2_1` and `nor2_2` generate without
   relaxing a rule; the PR states whether the fix is sizing or geometry.
 - **Cell area in the Liberty view** (row 10 needs it). Done when each cell
   in the `.lib` has an `area` derived from the generated layout.
 - **LEF abstracts in `views/`** with the 0.42 um track definition the
-  benchmark basis requires. Blocked on LVS-matched cells (Now 1).
+  benchmark basis requires. No longer blocked on LVS: the four committed
+  cells are matched (row 8).
 - **Baseline Liberty:** re-characterize the `sg13g2_stdcell` cells that
   `add8` maps to through the same `klt characterize` flow (benchmark basis,
   item 1). Done when the baseline `.lib` and its record are committed.
@@ -127,9 +125,11 @@ not this line.
 
 - **The 40-cell set.** Which 40 cells and drive strengths? The spec names
   the families only.
-- **Two channel tracks** (`buf_1`, `nand2_2`, every folded series stack). Does
-  the 3.36 um row leave room for a second Metal1 track between the strips
-  under the ratified geometry, or do these cells need a different topology?
+- **Two channel tracks** (`and2_1`, `buf_1`, `nand2_2`, every folded series
+  stack). It is now the named next limit for `and2_1`: PR #85 removed the
+  mixed-width refusal ahead of it. Does the 3.36 um row leave room for a
+  second Metal1 track between the strips under the ratified geometry, or do
+  these cells need a different topology?
 - **Rows 10-12 benchmark** against the re-characterized baseline. Which
   combinational designs beyond `add8`? The spec leaves that to the benchmark issue.
 - **T1 items 5-7** (corner verification, statistical evidence, post-layout
@@ -140,9 +140,10 @@ not this line.
 
 ## Blocked and waiting
 
-- Not the Now list: #73-#76 cover all four of its items (see Now), and as of
-  2026-11-14 #74 carries `loom:issue` — ready for a builder today. Nothing in
-  this roadmap is waiting on an issue being filed.
+- Not the old Now list: #73-#76 all closed on 2026-11-14 through merged PRs
+  #79/#83/#84/#85, and what they left undone is the Now list above, not a
+  waiting item. #82 is the named blocker for the T1 item-8 citation (Now
+  item 2). Nothing in this roadmap is waiting on an issue being filed.
 - #59, #62 and #69 are simplification proposals awaiting maintainer approval:
   tidy-ups, not steps toward the spec. #3 stays open as the tracker and #56
   is an automated hold digest.
