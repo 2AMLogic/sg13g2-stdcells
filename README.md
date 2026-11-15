@@ -55,14 +55,18 @@ and are re-derived from those files rather than restated here where they move.
 - **LVS matched**, `klt lvs`: every report in `layout/lvs/` reads
   `status: "match"`, `error_count: 0`, `body_verification.status: "verified"`.
 - **Pre-layout SPICE characterization**:
-  `sim/characterize/records/20261107-222836-6ee1577.md`, raw per-arc delay,
+  `sim/characterize/records/20261115-171205-3462cc8.md` (the record the
+  committed Liberty view cites; superseded original
+  `20261107-222836-6ee1577.md`), raw per-arc delay,
   transition and energy tables from `klt characterize`, recorded as
   `Data provenance: simulated`.
 - **One Liberty view**: `views/sg13g2_stdcells_tt_1p20v_25c.lib`, real
   `klt characterize` output covering all four cells at TT / 1.20 V / 25 C (spec
   row 9) — a single corner, combinational arcs only. It is not a characterization
-  report in the signoff sense (T1 item #8 is `[UNMET]`), and its `.provenance`
-  sidecar pins a config revision that no longer matches the tree (#82).
+  report in the signoff sense (T1 item #8 is `[UNMET]`): the view was
+  regenerated against the committed config and its freshness command passes —
+  what #82 still gates is the unminted item-8 attestation envelope, which needs
+  a local `klt signoff --attest` run (CI has no klt).
 - **Digital half**: the `add8` synthesis and place-and-route flow runs on the
   stock `sg13g2_stdcell` baseline, not yet on this library's cells —
   `flow/records/20261107-a1a4ec6/drc.json` (`clean`) and

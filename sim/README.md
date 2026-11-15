@@ -36,7 +36,8 @@ python3 -m sim.characterize --library --pdk-dir <ihp-sg13g2 dir>
 One corner per invocation (TT/1.20 V/25 C by default). FF/SS are one
 invocation per corner with `--backend batch`, never a local loop.
 
-**Status**: three records (one per mode; the library view was refreshed twice).
+**Status**: three records (one per mode; the library view was characterized
+twice — one refresh).
 
 - **Baseline leg** (first real record):
   `sim/characterize/records/20261105-042154-1376b8f.md` — `sg13g2_inv_1` from
