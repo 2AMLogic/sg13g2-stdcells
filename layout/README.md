@@ -37,7 +37,7 @@ The `process` and `cells` objects are exactly `design/README.md`'s contract. The
   "channel_tracks": 1,         // max Metal1 tracks between the strips (more -> exit 3)
   "n_diff_y0_nm": 400,         // bottom of the NMOS diffusion
   "p_diff_top_margin_nm": 400, // PMOS diffusion top sits this far below the row top
-  "layers": {                  // [layer, datatype]; "nsd" is schema-optional
+  "layers": {                  // [layer, datatype], all required
     "nwell": [..], "activ": [..], "gatpoly": [..], "psd": [..], "nsd": [..],
     "cont": [..], "metal1": [..], "metal1_label": [..]
   },
@@ -51,11 +51,11 @@ The `process` and `cells` objects are exactly `design/README.md`'s contract. The
 }
 ```
 
-`nsd` is optional to the *schema* -- a process whose n+ implant is drawn some
-other way may omit it -- but it is load-bearing for every cell this generator
-draws: each has an n-well tap, and the sg13g2 deck derives a well tie as
-`activ & nsd`. A config without `layout.layers.nsd` therefore exits `3` naming
-`nsd`, rather than emitting a tap the deck cannot see as a tie.
+Every layer in the block is required, including `nsd` (issue #80): each cell
+draws an n-well tap, and the sg13g2 deck derives a well tie as
+`activ & nsd`, so there is no configuration in which the generator does not
+need it. A config without `layout.layers.nsd` is a config error -- exit `2`
+naming `nsd`, before any placement work -- not a placement outcome.
 
 The two rules the taps added (issue #73):
 

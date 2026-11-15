@@ -52,8 +52,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "design"))
 import gen_netlists as gn  # noqa: E402
 
-LAYER_KEYS = ("nwell", "activ", "gatpoly", "psd", "cont", "metal1", "metal1_label")
-OPTIONAL_LAYERS = ("nsd",)
+LAYER_KEYS = ("nwell", "activ", "gatpoly", "psd", "nsd", "cont", "metal1", "metal1_label")
 RULE_KEYS = (
     "poly_width_nm", "poly_space_nm", "poly_endcap_nm", "poly_to_activ_nm", "cont_nm", "cont_space_nm",
     "activ_enc_cont_nm", "poly_enc_cont_nm", "m1_width_nm", "m1_space_nm",
@@ -83,7 +82,7 @@ def validate_layout(config):
     layers = lay.get("layers")
     if not isinstance(layers, dict):
         raise ValueError("layout.layers missing")
-    for k in LAYER_KEYS + tuple(x for x in OPTIONAL_LAYERS if x in layers):
+    for k in LAYER_KEYS:
         v = layers.get(k)
         ok = isinstance(v, list) and len(v) == 2 and all(isinstance(x, int) and not isinstance(x, bool) and 0 <= x < 32768 for x in v)
         if not ok:
@@ -246,7 +245,6 @@ def layout_cell(cell, proc, lay):
     """Return (Shapes, width_nm, height_nm) for one config cell, or raise PlaceError."""
     R, P = lay["rules"], lay["gate_pitch_nm"]
     H = lay["row_height_nm"]
-    name = cell["name"]
     c = gn.build(cell, proc)
     devs = [(i,) + d for i, d in enumerate(c.devices)]  # (i, kind, drain, gate, source, w, ng)
     ndevs = [(i, k, d, g, s, w, ng) for (i, k, d, g, s, w, ng) in devs if k == "n"]
@@ -347,9 +345,6 @@ def layout_cell(cell, proc, lay):
     # the diffusion enclosure on each side, pushed as close to its rail as the
     # diffusion spacing and the field-poly clearance allow -- for a multi-finger
     # cell the poly bridge, not the NMOS diffusion, is what binds on the VSS side.
-    if "nsd" not in lay["layers"]:
-        raise PlaceError("layout.layers.nsd is missing, so the n-well tap cannot be drawn as a well tie "
-                         "(the deck derives the tie as activ & nsd); give the config an nsd layer")
     if p_y0 - n_y1 <= 2 * sd:
         raise PlaceError(f"channel {p_y0 - n_y1} nm is narrower than the two implant enclosures "
                          f"(2 x sd_enc_activ {sd} nm): psd over the PMOS strip would overlap nsd "
@@ -428,7 +423,7 @@ def layout_cell(cell, proc, lay):
         base = (y0 + y1) // 2 - span // 2 - half_c
         return [base + t * pitch_c for t in range(k)]
 
-    net_m1 = {}  # net -> list of (rect, kind, x, side)
+    net_m1 = {}  # net -> list of (rect, side)
     for strip, nets, order, devs_, cols_, prof, side in (
             ("n", nn, nord, ndevs, cols, nprof, "below"),
             ("p", pn, pord, pdevs, pcols, pprof, "above")):
@@ -457,16 +452,15 @@ def layout_cell(cell, proc, lay):
 
     # Gate contacts: a poly pad in the channel, on the column's poly.
     gates = [ndevs[i][3] for i, _, _ in nord]
-    gate_rects = {}
     pad_h = R["cont_nm"] + 2 * R["poly_enc_cont_nm"]
     gate_pad_y = p_y0 - R["poly_to_activ_nm"] - R["poly_enc_cont_nm"] - R["cont_nm"]
     if gate_pad_y - R["poly_enc_cont_nm"] < n_y1 + R["poly_to_activ_nm"]:
         raise PlaceError("channel too short for a gate contact pad")
-    seen_gate = {}
-    for j, g in enumerate(gates):
+    seen_gate = set()
+    for g in gates:
         if g in seen_gate:
             raise PlaceError(f"gate net {g} drives the columns of two different devices; joining them needs more routing than one track model")
-        seen_gate[g] = j
+        seen_gate.add(g)
 
     # Horizontal tracks for signal nets with more than one attachment.
     tracks = {}
@@ -498,7 +492,7 @@ def layout_cell(cell, proc, lay):
         else:
             for rect, _ in att:
                 m1.append((net, rect))
-    for rect_net, rect in m1:
+    for _, rect in m1:
         S.box("metal1", *rect)
 
     poly_pads = []

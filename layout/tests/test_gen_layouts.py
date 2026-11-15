@@ -272,12 +272,23 @@ class Taps(unittest.TestCase):
                 self.assertGreaterEqual(abs(hi - lo), R["nwell_enc_nactiv_nm"], cell["name"])
 
     def test_missing_nsd_layer_names_nsd(self):
+        # nsd is a required layer (issue #80): a config without it is an
+        # exit-2 config error from validate(), not a per-cell placement
+        # failure -- the message names the key and no cell.
         cfg = copy.deepcopy(CFG)
         cfg["layout"]["layers"].pop("nsd")
-        with self.assertRaises(gl.PlaceError) as cm:
+        with self.assertRaises(ValueError) as cm:
             gl.generate(cfg)
-        self.assertIn("nsd", str(cm.exception))
-        self.assertIn("sg13g2_inv_1", str(cm.exception))
+        self.assertIn("layout.layers.nsd", str(cm.exception))
+        self.assertNotIn("sg13g2_inv_1", str(cm.exception))
+
+    def test_malformed_nsd_layer_is_a_config_error(self):
+        cfg = copy.deepcopy(CFG)
+        cfg["layout"]["layers"]["nsd"] = [7]  # not [layer, datatype]
+        with self.assertRaises(ValueError) as cm:
+            gl.generate(cfg)
+        self.assertIn("layout.layers.nsd must be [layer, datatype]", str(cm.exception))
+        self.assertNotIn("sg13g2_inv_1", str(cm.exception))
 
     def test_implant_reaching_past_the_band_is_a_named_failure(self):
         cfg = copy.deepcopy(CFG)
