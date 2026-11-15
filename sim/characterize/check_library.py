@@ -3,16 +3,29 @@
 `klt characterize` writes `views/<library>.lib` together with a
 `<library>.lib.provenance` sidecar naming the config it was characterized from
 (and that config's SHA-256), the corner, the cells, and the id of the
-append-only record under `sim/characterize/records/`. Nothing re-checks that
-those four artifacts still agree, so a config edit, a hand-edited `.lib`, or a
-deleted record leaves a sidecar that still *claims* to describe the view.
+append-only record under `sim/characterize/records/`. Without a re-check, a
+config edit or a deleted record leaves a sidecar that still *claims* to
+describe the view.
 
-This is that check. It re-derives every claim the sidecar makes from the files
-themselves and exits non-zero naming each disagreement, so it fails when the
-evidence goes stale rather than when the evidence is merely absent. It is what
-`manifests/inventories/item8.analog.json` declares as the freshness command
-behind its T1 item 8 citation (issue #75): a citation whose backing command
-cannot fail is not evidence.
+This is that check. It re-derives what the sidecar claims from the files
+themselves -- the library name and cell set in the `.lib`, the corner the view
+declares (the operating_conditions group name and, via the nom_* attributes
+and the group, voltage and temperature; the sidecar's process-corner entry is
+a name like mos_tt while the view's process attributes are numeric factors,
+so process is not comparable and is left unchecked), the config's SHA-256,
+and the measurement blocks of the record -- and exits non-zero naming each
+disagreement, so it fails when the evidence goes stale rather than when the
+evidence is merely absent. It is what `manifests/inventories/item8.analog.json`
+declares as the freshness command behind its T1 item 8 citation (issue #75):
+a citation whose backing command cannot fail is not evidence.
+
+What it deliberately does not catch: a hand-edited `.lib` whose library name,
+cell set and declared corner still agree with the sidecar. The sidecar
+records no hash of the `.lib` itself, so the delay tables are not pinned and
+a tampered table passes. Pinning the bytes needs `klt characterize` to record
+a content hash of the view it wrote (filed upstream on the klayout-tools
+tracker); until then, the claim is exactly what this module re-derives, no
+more.
 
 Run from the repo root:  python3 -m sim.characterize.check_library
 """
@@ -21,6 +34,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -36,6 +50,15 @@ _LIBRARY_RE = re.compile(r"^\s*library \(([A-Za-z0-9_]+)\)", re.MULTILINE)
 _MEASUREMENT_BLOCK_RE = re.compile(r"^### ", re.MULTILINE)
 _RECORD_FIELD_RE = re.compile(r"^- \*\*(Cell|Corner|Netlist provenance)\*\*: (.*)$", re.MULTILINE)
 _SPICE_PATH_RE = re.compile(r"\S+\.spice\b")
+# The generated operating_conditions group is flat (attributes only, no
+# nested groups), so the body is matched as a run of non-`}` characters.
+_OPERATING_CONDITIONS_RE = re.compile(
+    r"^\s*operating_conditions\s*\((?P<name>[A-Za-z0-9_]+)\)\s*\{(?P<body>[^}]*)\}",
+    re.MULTILINE)
+_OC_ATTR_RE = re.compile(
+    r"^\s*(?P<key>process|temperature|voltage)\s*:\s*(?P<value>[^;]+);", re.MULTILINE)
+_NOM_ATTR_RE = re.compile(
+    r"^\s*nom_(?P<key>process|temperature|voltage)\s*:\s*(?P<value>[^;]+);", re.MULTILINE)
 
 REQUIRED_KEYS = ("library", "corner", "config", "config_sha256", "cells", "evidence_record")
 
@@ -47,6 +70,27 @@ def cells_in_lib(text: str) -> list[str]:
 def library_name_in_lib(text: str) -> str | None:
     found = _LIBRARY_RE.search(text)
     return found.group(1) if found else None
+
+
+def operating_conditions_in_lib(text: str) -> list[dict[str, str]]:
+    """The declared ``operating_conditions`` groups: name plus flat attributes."""
+    return [{"name": m.group("name"), **dict(_OC_ATTR_RE.findall(m.group("body")))}
+            for m in _OPERATING_CONDITIONS_RE.finditer(text)]
+
+
+def nom_attributes_in_lib(text: str) -> dict[str, str]:
+    """The ``nom_process`` / ``nom_temperature`` / ``nom_voltage`` attributes."""
+    return {f"nom_{key}": value for key, value in _NOM_ATTR_RE.findall(text)}
+
+
+def _number(value) -> float | None:
+    """Parse a Liberty attribute value or sidecar number as a float."""
+    if isinstance(value, bool):
+        return None
+    try:
+        return float(str(value).strip().strip('"'))
+    except ValueError:
+        return None
 
 
 def _measurement_blocks(record_text: str) -> list[dict[str, str]]:
@@ -101,7 +145,53 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
             f"{_rel(lib_path, repo_root)}: holds cells {in_lib}, "
             f"sidecar claims {claimed}")
 
-    # 3. The config is still the one that was characterized, byte for byte.
+    # 3. The .lib declares the corner the sidecar says it was characterized
+    #    at: the operating_conditions group name, plus voltage and temperature
+    #    both as nom_* attributes and inside the group. The sidecar's
+    #    corner.process is a process-corner name (e.g. mos_tt) while the
+    #    view's process attributes are numeric process factors, so process is
+    #    not comparable and is deliberately left unchecked.
+    corner = prov["corner"]
+    if isinstance(corner, dict):
+        groups = operating_conditions_in_lib(lib_text)
+        noms = nom_attributes_in_lib(lib_text)
+        corner_name = corner.get("name")
+        if corner_name is not None and corner_name not in {g["name"] for g in groups}:
+            declared = ", ".join(g["name"] for g in groups)
+            if declared:
+                problems.append(
+                    f"{_rel(lib_path, repo_root)}: declares operating_conditions "
+                    f"group(s) {declared}, sidecar names corner {corner_name!r}")
+            else:
+                problems.append(
+                    f"{_rel(lib_path, repo_root)}: declares no operating_conditions "
+                    f"group, sidecar names corner {corner_name!r}")
+        group = next((g for g in groups if g["name"] == corner_name), None)
+        for sidecar_key, group_key, nom_key in (
+                ("supply_v", "voltage", "nom_voltage"),
+                ("temperature_c", "temperature", "nom_temperature")):
+            claimed_value = corner.get(sidecar_key)
+            if claimed_value is None:
+                continue
+            sources: list[tuple[str, object]] = [(nom_key, noms.get(nom_key))]
+            if group is not None:
+                sources.append((f"operating_conditions({group['name']}) {group_key}",
+                                group.get(group_key)))
+            for source, actual in sources:
+                if actual is None:
+                    problems.append(
+                        f"{_rel(lib_path, repo_root)}: declares no {source}, "
+                        f"sidecar was characterized at {sidecar_key} {claimed_value}")
+                    continue
+                actual_n, claimed_n = _number(actual), _number(claimed_value)
+                if (actual_n is None or claimed_n is None
+                        or not math.isclose(actual_n, claimed_n,
+                                            rel_tol=1e-9, abs_tol=1e-9)):
+                    problems.append(
+                        f"{_rel(lib_path, repo_root)}: {source} {actual} but "
+                        f"the sidecar was characterized at {sidecar_key} {claimed_value}")
+
+    # 4. The config is still the one that was characterized, byte for byte.
     config_path = repo_root / prov["config"]
     if not config_path.is_file():
         problems.append(f"{prov['config']}: config named by the sidecar is missing")
@@ -113,7 +203,7 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
                 f"{prov['config_sha256']} -- the config changed since this view "
                 f"was characterized; regenerate it")
 
-    # 4. The evidence record still exists and still speaks for these cells and corner.
+    # 5. The evidence record still exists and still speaks for these cells and corner.
     record_id = prov["evidence_record"]
     record_path = records_dir / f"{record_id}.md"
     if not record_path.is_file():
@@ -157,7 +247,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="python3 -m sim.characterize.check_library",
         description="Verify the committed Liberty view agrees with its provenance "
-                    "sidecar, the config it pins and the evidence record it names.")
+                    "sidecar -- library name, cell set, declared corner, the "
+                    "config it pins and the evidence record it names.")
     ap.add_argument("--lib", type=Path, default=DEFAULT_LIB,
                     help=f"Liberty view to check (default: {_rel(DEFAULT_LIB, REPO_ROOT)})")
     args = ap.parse_args(argv)
@@ -168,7 +259,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"stale: {problem}", file=sys.stderr)
         return 1
     print(f"fresh: {_rel(args.lib.resolve(), REPO_ROOT)} agrees with its provenance "
-          f"sidecar, pinned config and evidence record")
+          f"sidecar's library, cell set, corner, pinned config and evidence record")
     return 0
 
 
