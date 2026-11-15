@@ -62,7 +62,7 @@ T1: 12/22 items met
 [UNMET] T1 #7 [digital] Post-layout verification
         reason: no_evidence
 [MET  ] T1 #8 [analog] Characterization report
-        cite: manifests/envelopes/item8.analog.attest.json (kind=generic, status=pass, content_hash=sha256:53f4ba2cc2fc06c3a286a33365b8ce82f3ad7118c18a6b6daf704678d85d712d, exit_status=0)
+        cite: manifests/envelopes/item8.analog.attest.json (kind=generic, status=pass, content_hash=sha256:1910e308982aec47919dc6ba9d323533e1486ab4f1bfdc24e8a51d400ce61dea, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
 [UNMET] T1 #8 [digital] Characterization report
         reason: no_evidence
@@ -92,4 +92,4 @@ T1: 12/22 items met
         reason: tier_not_supported
 
 source: docs/design-evidence-tiers.md (content_hash=sha256:d9287ec9dc6107e560e00b1a8b7a670f757722713b5c651dee3d2cbde058490a)
-build: klt 0.9.3.dev3+gd5d57daf9a14
+build: klt 0.9.3.dev16+gdcf18e2e0c03

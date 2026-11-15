@@ -15,9 +15,9 @@
       {
         "check": "present",
         "role": "report",
-        "path": "sim/characterize/records/20261115-105337-921b1a8.md",
+        "path": "sim/characterize/records/20261115-220740-13dc481.md",
         "passed": true,
-        "content_hash": "sha256:a2f6b3a5342f924abb00aba872d40f44ead82fdd4d3330addb46b7e005da4588"
+        "content_hash": "sha256:fae2b85aaac248fbdfdbd8e8e362344cc29a815517e9c4264334f43d8f52c427"
       },
       {
         "check": "present",
@@ -31,7 +31,7 @@
         "role": "evidence",
         "path": "views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance",
         "passed": true,
-        "content_hash": "sha256:a38278b5d751096142e9e7e95f60c66fb35b860b98407d796265307b73d30a1c"
+        "content_hash": "sha256:160a9b30f2c7ef31ac810258074d14ede12fd775f9ab486efe80f068d4ed20a8"
       },
       {
         "check": "citation",
@@ -72,7 +72,7 @@
     ]
   },
   "provenance": {
-    "klt_version": "0.9.3.dev3+gd5d57daf9a14",
+    "klt_version": "0.9.3.dev16+gdcf18e2e0c03",
     "klayout_version": null,
     "pdk": null,
     "deck": null,
@@ -81,7 +81,7 @@
         "path": "manifests/inventories/item8.analog.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:53f4ba2cc2fc06c3a286a33365b8ce82f3ad7118c18a6b6daf704678d85d712d"
+      "content_hash": "sha256:1910e308982aec47919dc6ba9d323533e1486ab4f1bfdc24e8a51d400ce61dea"
     }
   }
 }

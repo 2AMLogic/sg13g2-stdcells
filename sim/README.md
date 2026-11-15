@@ -67,10 +67,12 @@ view cites.
   Notes line, a `simulator` field in the sidecar), so this list's klt/ngspice
   prose is a summary, not the only source of the toolchain.
 - **Library view, current**:
-  `sim/characterize/records/20261115-105337-921b1a8.md` — same four cells,
-  corner and grid, local backend, klt 0.9.3.dev3+gd5d57daf9a14, ngspice-47
-  (the measured tables are byte-identical again). This is the record id
-  cited by `views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`.
+  `sim/characterize/records/20261115-220740-13dc481.md` — same four cells,
+  corner and grid, local backend, klt 0.9.3.dev16+gdcf18e2e0c03, ngspice-47.
+  Re-characterized on the merged tree (`13dc481`) when the #125 merge moved
+  the `.lib`'s measured table bytes and the sidecar/record format carries the
+  simulator version. This is the record id cited by
+  `views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`.
 
 The local run needs ngspice >= 44 for the OSDI v0.4 PSP103 models. The request
 preloads `psp103.osdi` (the module the PDK's `psp103va` model cards bind to),

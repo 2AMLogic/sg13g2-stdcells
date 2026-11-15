@@ -563,6 +563,32 @@ re-minted against the merged bytes. The 11/22 sentence above is left as
 written — it was true of `206dac1` — exactly as the earlier laps were left in
 place.
 
+**Resolution recurrence, fourth lap (2026-11-15, this branch's `main` update
+`a100765`):** the merge brought #125's simulator-version recording (`af3b7b3`:
+a `simulator` field in the sidecar, `simulator ngspice-47` in the record's
+Notes line) and main's own refresh of the view, run on a dirty tree there —
+its record stamps `3462cc84… (dirty)`, the exact defect class this branch's
+pre-capture fix exists to close. Seven files conflicted; the only code hunk
+was `runner.py`'s `render()` Notes line, where both halves are load-bearing and
+both are kept: main's simulator key and this branch's doubled-`klt `-prefix
+strip. Regenerated exactly as every lap above — `python3 -m sim.characterize
+--library --pdk-dir /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged
+tree (`13dc481`) before any bookkeeping edit, single corner TT/1.20 V/25 C,
+local backend — appending record
+`sim/characterize/records/20261115-220740-13dc481.md`, keeping all three
+superseded records. This lap the `.lib` is **not** byte-identical: exactly one
+`leakage_power` value moved a last digit (`78.4631` → `78.4632`; main's run
+was on klt 0.9.3.dev3, this run on 0.9.3.dev16+gdcf18e2e0c03, ngspice
+unchanged at 47) — the toolchain is named in the record so the difference
+stays attributable. Items 8 and 10 were re-minted against the merged bytes
+(item 8's inventory `report` field names the new record, so its input digest
+moved to `1910e308…`, manifest updated; item 10's README pin refreshed). The
+report is regenerated and reads **T1 12/22** with `T1 #8 [analog]` `[MET]` —
+the committed `manifests/signoff-report.json` is the authority for the count;
+`klt signoff --manifest manifests/sg13g2-stdcells.json --check
+manifests/signoff-report.json` reads `status: match`. The 11/22 sentence above
+is left as written, exactly as the earlier laps were left in place.
+
 The friction this surfaced is filed as 2AMLogic/klayout-tools#5688: `klt
 signoff --attest 8` documents its `citations` as evidence-envelope paths but
 checks only that each file exists, delegating all content verification to the

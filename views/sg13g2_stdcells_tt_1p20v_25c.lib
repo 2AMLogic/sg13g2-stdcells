@@ -336,7 +336,7 @@ library (sg13g2_stdcells_tt_1p20v_25c) {
       when : "!A&!B";
     }
     leakage_power () {
-      value : 78.4631;
+      value : 78.4632;
       when : "!A&B";
     }
     leakage_power () {
