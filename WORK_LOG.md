@@ -4,6 +4,8 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-15
 
+- **PR #128**: ci: gate manifest evidence pins against the envelopes they name
+- **PR #127**: docs: record items 1 and 10 fix-round re-attestations in the #103 note
 - **PR #122**: check_library: pin the view's declared corner and narrow the freshness claim to what is checked
 - **PR #126**: fix: regenerate the recorded notch controls from a committed, CI-checked table
 - **PR #118**: layout: record the notch predicate's merged admit (opening <= 0) as a fourth DRC control
@@ -19,6 +21,9 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 - **PR #97**: refactor: remove never-read locals, dead CellSpec field and keep_artifacts knob
 - **PR #94**: sim/characterize: derive check_library default paths from LIBRARY_NAME and __file__
 - **PR #90**: build: hold the CI check list once in check-ci.sh and call it from all three places
+- **Issue #130** (closed): Mint the T1 item 8 attestation envelope for the refreshed Liberty view (view is now fresh)
+- **Issue #117** (closed): layout/README.md re-attestation note omits item 1 (added in PR #112's fix round)
+- **Issue #116** (closed): main's committed signoff report overstates T1 by six partitions (11/22 committed vs 5/22 re-graded)
 - **Issue #119** (closed): check_library: the freshness check claims to catch a hand-edited Liberty view but never reads the view's contents
 - **Issue #120** (closed): layout: recorded DRC controls have no committed regeneration recipe (the stream's cell-name override is undocumented)
 - **Issue #114** (closed): layout: the notch predicate's `opening <= 0` (merged-shapes) admit row has no DRC control behind it

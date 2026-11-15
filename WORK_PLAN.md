@@ -19,7 +19,7 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
-- **#116**: main's committed signoff report overstates T1 by six partitions (11/22 committed vs 5/22 re-graded)
+_None._
 
 ## Ready
 
@@ -33,23 +33,19 @@ Issues currently being built (`loom:building`).
 
 - **#82**: Liberty view provenance pins a config SHA-256 that no longer matches the tree, blocking T1 item 8
 - **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count
-- **#116**: main's committed signoff report overstates T1 by six partitions (11/22 committed vs 5/22 re-graded)
-- **#117**: layout/README.md re-attestation note omits item 1 (added in PR #112's fix round)
 - **#125**: Characterization records never record the simulator version (ngspice); only klt's is captured
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#127**: docs: record items 1 and 10 fix-round re-attestations in the #103 note
-- **#131**: sim/characterize: record the simulator version in evidence records and the Liberty sidecar
+- **#98**: fix: regenerate the TT Liberty view's provenance against the current config (T1 11/22)
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#121**: docs(spec): add decision record on attestation pin granularity (0002)
-- **#128**: ci: gate manifest evidence pins against the envelopes they name
 
 ## Proposed
 
@@ -59,15 +55,12 @@ Issues carrying `loom:curated`.
 - **#82**: Liberty view provenance pins a config SHA-256 that no longer matches the tree, blocking T1 item 8 *(curated)*
 - **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count *(curated)*
 - **#115**: Report upstream: generate-agents-md.sh is shipped into installed .loom/scripts/, where it cannot run *(curated)*
-- **#116**: main's committed signoff report overstates T1 by six partitions (11/22 committed vs 5/22 re-graded) *(curated)*
-- **#117**: layout/README.md re-attestation note omits item 1 (added in PR #112's fix round) *(curated)*
 - **#125**: Characterization records never record the simulator version (ngspice); only klt's is captured *(curated)*
+- **#129**: manifest-pins stage passes vacuously when a manifest carries zero object pins *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-- **#59**: Collapse sim/harness/evidence.py to the one record kind in use and drop stale DRAFT corner markers *(hermit)*
-- **#62**: Trim layout/toolchain.json to the fields toolchain_pin.py enforces: drop unread pin fields and stale bootstrap comment *(hermit)*
-- **#69**: Write characterization records in one shape: drop the first-cell copy and per-cell run-level repeats in sim/characterize/runner.py *(hermit)*
+_None._
 
 ## Epics
 
@@ -79,12 +72,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
-| Important | 1 |
+| Important | 0 |
 | Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 5 |
-| PRs awaiting review | 2 |
-| Approved PRs awaiting merge | 2 |
-| Curated | 7 |
-| Architect / Hermit proposals | 3 |
+| In Progress (`loom:building`) | 3 |
+| PRs awaiting review | 1 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 6 |
+| Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
