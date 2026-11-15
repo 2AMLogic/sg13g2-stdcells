@@ -148,6 +148,20 @@ class ParserTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             gn.generate(cfg)
 
+    def test_schema_version_must_be_1(self):
+        cfg = copy.deepcopy(CFG)
+        cfg["schema_version"] = 99
+        with self.assertRaises(ValueError):
+            gn.generate(cfg)
+        cfg = copy.deepcopy(CFG)
+        del cfg["schema_version"]
+        with self.assertRaises(ValueError):
+            gn.generate(cfg)
+        cfg = copy.deepcopy(CFG)
+        cfg["schema_version"] = True
+        with self.assertRaises(ValueError):
+            gn.generate(cfg)
+
 
 class PinNameAndGridTest(unittest.TestCase):
     def _cfg(self, inputs, outputs, **proc):

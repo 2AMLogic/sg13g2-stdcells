@@ -1,6 +1,6 @@
 # design
 
-Schematics (xschem) and the cell-family netlist generator.
+The cell-family netlist generator (transistor-level SPICE).
 
 ## `gen_netlists.py` — PDK-independent static-CMOS generator
 

@@ -33,6 +33,9 @@ RECORDS_DIR = Path(__file__).resolve().parent / "records"
 
 _CELL_RE = re.compile(r"^\s*cell \(([A-Za-z0-9_]+)\)", re.MULTILINE)
 _LIBRARY_RE = re.compile(r"^\s*library \(([A-Za-z0-9_]+)\)", re.MULTILINE)
+_MEASUREMENT_BLOCK_RE = re.compile(r"^### ", re.MULTILINE)
+_RECORD_FIELD_RE = re.compile(r"^- \*\*(Cell|Corner|Netlist provenance)\*\*: (.*)$", re.MULTILINE)
+_SPICE_PATH_RE = re.compile(r"\S+\.spice\b")
 
 REQUIRED_KEYS = ("library", "corner", "config", "config_sha256", "cells", "evidence_record")
 
@@ -44,6 +47,18 @@ def cells_in_lib(text: str) -> list[str]:
 def library_name_in_lib(text: str) -> str | None:
     found = _LIBRARY_RE.search(text)
     return found.group(1) if found else None
+
+
+def _measurement_blocks(record_text: str) -> list[dict[str, str]]:
+    """One ``{field: value}`` dict per ``###`` measurement block of a record.
+
+    Only the ``**Cell**`` / ``**Corner**`` / ``**Netlist provenance`` field lines
+    inside a block are extracted, so a mention of a cell or corner anywhere else
+    in the record (prose, a provenance path, the trailing ``## Data`` JSON) does
+    not count as a measurement.
+    """
+    return [dict(_RECORD_FIELD_RE.findall(block))
+            for block in _MEASUREMENT_BLOCK_RE.split(record_text)[1:]]
 
 
 def check(lib_path: Path, repo_root: Path = REPO_ROOT,
@@ -106,14 +121,25 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
             f"{_rel(record_path, repo_root)}: evidence record named by the sidecar is missing")
     else:
         record_text = record_path.read_text()
-        for cell in claimed:
-            if cell not in record_text:
-                problems.append(
-                    f"{_rel(record_path, repo_root)}: no measurements for cell {cell!r}")
         corner = (prov.get("corner") or {}).get("name")
-        if corner and f"**Corner**: {corner}" not in record_text:
-            problems.append(
-                f"{_rel(record_path, repo_root)}: no measurement at corner {corner!r}")
+        for cell in claimed:
+            measured = [b for b in _measurement_blocks(record_text)
+                        if b.get("Cell") == cell
+                        and (not corner or b.get("Corner") == corner)]
+            if not measured:
+                where = f" at corner {corner!r}" if corner else ""
+                problems.append(
+                    f"{_rel(record_path, repo_root)}: no measurement of cell "
+                    f"{cell!r}{where}")
+                continue
+            cell_netlist = f"{cell}.spice"
+            named = [Path(p).name for b in measured for p in
+                     _SPICE_PATH_RE.findall(b.get("Netlist provenance", ""))]
+            if named and cell_netlist not in named:
+                wrong = ", ".join(sorted(set(named)))
+                problems.append(
+                    f"{_rel(record_path, repo_root)}: measurements of cell {cell!r} "
+                    f"were taken on netlist(s) {wrong}, not {cell_netlist!r}")
 
     return problems
 

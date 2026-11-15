@@ -55,6 +55,12 @@ class Validation(unittest.TestCase):
     def test_missing_rule(self):
         self.bad(lambda c: c["layout"]["rules"].pop("m1_width_nm"))
 
+    def test_missing_notch_space_rule(self):
+        """The notch predicate reads psd_space_nm / nwell_space_nm; a config
+        without one must exit 2 naming the key, not silently skip a check."""
+        self.bad(lambda c: c["layout"]["rules"].pop("psd_space_nm"))
+        self.bad(lambda c: c["layout"]["rules"].pop("nwell_space_nm"))
+
     def test_bad_layer(self):
         self.bad(lambda c: c["layout"]["layers"].update(metal1=[8]))
 
@@ -63,6 +69,11 @@ class Validation(unittest.TestCase):
 
     def test_netlist_side_validation_still_applies(self):
         self.bad(lambda c: c["process"].pop("l_nm"))
+
+    def test_schema_version_must_be_1(self):
+        self.bad(lambda c: c.update(schema_version=99))
+        self.bad(lambda c: c.pop("schema_version"))
+        self.bad(lambda c: c.update(schema_version=True))
 
     def test_cli_exit_2(self):
         with tempfile.TemporaryDirectory() as d:
@@ -175,7 +186,7 @@ class MultiFinger(unittest.TestCase):
             "poly_width_nm": 130, "poly_space_nm": 180, "poly_endcap_nm": 180, "poly_to_activ_nm": 70, "cont_nm": 160,
             "cont_space_nm": 180, "activ_enc_cont_nm": 70, "poly_enc_cont_nm": 70, "m1_width_nm": 160, "m1_space_nm": 180,
             "rail_width_nm": 160, "nwell_enc_pactiv_nm": 310, "nwell_enc_nactiv_nm": 240, "activ_space_nm": 210,
-            "sd_enc_activ_nm": 180})
+            "sd_enc_activ_nm": 180, "psd_space_nm": 310, "nwell_space_nm": 620})
         self.assertEqual(CFG["layout"]["channel_tracks"], 1)
 
 
@@ -424,19 +435,6 @@ class MixedFingerWidths(unittest.TestCase):
         self.assertIn("netlist 500 nm", msg)
         self.assertIn("drawn 2 x 250 nm", msg)
 
-    def test_notch_profile_is_rejected(self):
-        """A tall-short-tall profile is a re-entrant notch in the merged strip,
-        and activ.space.1 / psd.space.1 are space-*or-notch* rules. No cell
-        reachable through design/gen_netlists.py produces one today, so the
-        predicate that refuses it is asserted directly."""
-        self.assertIsNone(gl._notch_column([500]))
-        self.assertIsNone(gl._notch_column([500, 1000, 1000]))   # monotone up
-        self.assertIsNone(gl._notch_column([1000, 1000, 500]))   # monotone down
-        self.assertIsNone(gl._notch_column([500, 1000, 500]))    # a peak, not a notch
-        self.assertEqual(gl._notch_column([1000, 500, 1000]), 1)
-        self.assertEqual(gl._notch_column([1000, 1000, 250, 500, 1000]), 2)
-        self.assertEqual(gl._notch_column([500, 1000, 250, 1000]), 2)
-
     def test_implants_may_not_meet_in_the_channel(self):
         """Both implants grow `sd_enc_activ` into the channel, so a channel that
         clears the strips can still leave psd over nsd -- not a real mask."""
@@ -445,6 +443,139 @@ class MixedFingerWidths(unittest.TestCase):
         with self.assertRaises(gl.PlaceError) as cm:
             gl.generate(cfg)
         self.assertIn("sd_enc_activ", str(cm.exception))
+
+
+def notch_layers(cfg=CFG):
+    """The per-strip layer tables the notch predicate checks, from the config:
+    activ on both strips, psd and the n-well on the PMOS strip only (the deck
+    models no nsd space rule), each entry as (hang_nm, threshold_nm)."""
+    R = cfg["layout"]["rules"]
+    act = R["cont_nm"] // 2 + R["activ_enc_cont_nm"]
+    return {
+        "n": {"activ": (act, R["activ_space_nm"])},
+        "p": {"activ": (act, R["activ_space_nm"]),
+              "psd": (act + R["sd_enc_activ_nm"], R["psd_space_nm"]),
+              "nwell": (act + R["nwell_enc_pactiv_nm"], R["nwell_space_nm"])},
+    }
+
+
+class NotchPredicate(unittest.TestCase):
+    """A valley in a strip's height profile is a re-entrant notch whose
+    legality is per run, per layer and per strip (issue #86): a short run of k
+    columns leaves an opening of k * gate_pitch_nm - 2 * hang in each layer
+    drawn over it, legal when the opening is <= 0 (the taller neighbours'
+    shapes merge) or >= that layer's space minimum. The table below is the
+    shipped rules' verdicts; the rows the generator admits or refuses are
+    also measured, not just asserted -- see the controls in layout/drc/controls/.
+    No cell reachable through design/gen_netlists.py produces a notched
+    profile, so the predicate is asserted directly."""
+
+    def hit(self, prof, pitch, strip):
+        r = gl._notch_violation(prof, pitch, notch_layers()[strip])
+        return None if r is None else r[:3]
+
+    def valley(self, k):
+        return [1000] + [500] * k + [1000]
+
+    def test_band_table(self):
+        # (pitch, k, NMOS verdict, PMOS verdict); None = admitted, otherwise
+        # (layer, opening, threshold)
+        table = [
+            (420, 1, ("activ", 120, 210), ("activ", 120, 210)),  # the shipped refusal is correct
+            (420, 2, None, ("psd", 180, 310)),                   # strip-asymmetric: same valley, one strip fine
+            (420, 3, None, ("nwell", 340, 620)),
+            (420, 4, None, None),
+            (560, 1, None, None),                                # implant/well openings go negative: merged
+            (840, 1, None, ("psd", 180, 310)),                   # an activ-only check would wrongly admit this
+            (1000, 1, None, ("nwell", 80, 620)),                 # the n-well is the binding layer here
+        ]
+        for pitch, k, n, p in table:
+            prof = self.valley(k)
+            self.assertEqual(self.hit(prof, pitch, "n"), n, f"P={pitch} k={k} NMOS")
+            self.assertEqual(self.hit(prof, pitch, "p"), p, f"P={pitch} k={k} PMOS")
+
+    def test_band_edges(self):
+        self.assertIsNone(self.hit(self.valley(1), 510, "n"))   # opening exactly 210 == activ_space_nm
+        self.assertEqual(self.hit(self.valley(1), 500, "n"), ("activ", 200, 210))  # one below refuses
+        self.assertIsNone(self.hit(self.valley(1), 660, "p"))   # psd opening exactly 0: shapes touch
+        self.assertIsNone(self.hit(self.valley(1), 280, "p"))   # every opening <= 0: merged, no notch
+
+    def test_no_valley_no_check(self):
+        self.assertIsNone(self.hit([500], 420, "n"))              # single run
+        self.assertIsNone(self.hit([500, 1000], 420, "n"))        # monotone up
+        self.assertIsNone(self.hit([1000, 1000, 500], 420, "n"))  # monotone down
+        self.assertIsNone(self.hit([500, 1000, 500], 420, "n"))   # a peak, not a notch
+        self.assertIsNone(self.hit([500, 1000, 500], 420, "p"))   # ...on either strip
+
+    def test_two_valleys(self):
+        prof = [1000, 500, 1000, 500, 1000]
+        self.assertEqual(self.hit(prof, 420, "n"), ("activ", 120, 210))  # the first valley refuses
+        self.assertIsNone(self.hit(prof, 840, "n"))                      # both admitted at the wider pitch
+
+    def test_wide_short_run_scales_the_opening(self):
+        # k counts columns: a two-column valley at the shipped pitch leaves a
+        # 540 nm activ opening where a one-column valley leaves 120 nm
+        self.assertIsNone(self.hit(self.valley(2), 420, "n"))
+        self.assertEqual(self.hit(self.valley(1), 420, "n"), ("activ", 120, 210))
+
+    def test_unequal_tall_heights_either_side(self):
+        # the notch is shallower on one side; the rule is depth-independent, so
+        # the verdict depends only on the opening
+        self.assertEqual(self.hit([1000, 500, 700], 420, "n"), ("activ", 120, 210))
+        self.assertIsNone(self.hit([1000, 500, 700], 640, "n"))  # 640 - 300 = 340 >= 210
+
+
+class ForcedNotch(unittest.TestCase):
+    """End-to-end refusal and admission, with a strip's drawn profile forced
+    the way issue #86's original measurement forced it (no reachable cell
+    notches, so the profile cannot arise on its own). The same forcing is how
+    the recorded controls in layout/drc/controls/ were produced."""
+
+    AND2 = {"name": "x_and2_1", "family": "and2", "drive": 1,
+            "inputs": ["A", "B"], "outputs": {"X": "(A*B)"}}
+
+    def forced_cfg(self, pitch=840):
+        cfg = copy.deepcopy(CFG)
+        cfg["layout"].update(row_height_nm=4200, gate_pitch_nm=pitch, channel_tracks=2)
+        cfg["cells"] = [copy.deepcopy(self.AND2)]
+        return cfg
+
+    def force(self, strip, prof, notch_off=False):
+        """Patch _strip_profile to hand back `prof` for `strip`'s devices --
+        and, for drawing a refused notch (the DRC controls), the check itself."""
+        real_prof, real_hit = gl._strip_profile, gl._notch_violation
+
+        def patched_prof(order, devs_, cols_):
+            p = real_prof(order, devs_, cols_)
+            return list(prof) if devs_[0][1] == strip else p
+
+        gl._strip_profile = patched_prof
+        gl._notch_violation = (lambda *a: None) if notch_off else real_hit
+        self.addCleanup(setattr, gl, "_strip_profile", real_prof)
+        self.addCleanup(setattr, gl, "_notch_violation", real_hit)
+
+    def test_pmos_notch_refused_naming_cell_strip_layer_and_numbers(self):
+        cfg = self.forced_cfg(pitch=840)
+        self.force("p", [800, 500, 800])
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(cfg)
+        msg = str(cm.exception)
+        self.assertIn("x_and2_1", msg)                                   # the cell
+        self.assertIn("PMOS strip height profile [800, 500, 800]", msg)  # the strip and the profile
+        self.assertIn("psd", msg)                                        # the offending layer
+        self.assertIn("180 nm", msg)                                     # the opening: 840 - 2 * (150 + 180)
+        self.assertIn("310 nm", msg)                                     # the threshold: psd_space_nm
+        # the identical valley on the NMOS strip is fine -- psd/nwell do not
+        # bind there and activ admits it; only the PMOS strip refuses the cell
+        self.assertIsNone(gl._notch_violation([800, 500, 800], 840, notch_layers()["n"]))
+
+    def test_admitted_nmos_notch_places_and_draws(self):
+        cfg = self.forced_cfg(pitch=840)
+        self.force("n", [1000, 500, 1000])
+        S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        self.assertEqual(W, 4 * 840)
+        runs = [b for b in S.boxes if b[0] == "activ" and b[2] == cfg["layout"]["n_diff_y0_nm"]]
+        self.assertEqual(sorted(b[4] - b[2] for b in runs), [500, 1000, 1000])  # the notch is really drawn
 
 
 class Failures(unittest.TestCase):
