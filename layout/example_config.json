@@ -48,7 +48,9 @@
    "nwell_enc_pactiv_nm": 310,
    "nwell_enc_nactiv_nm": 240,
    "activ_space_nm": 210,
-   "sd_enc_activ_nm": 180
+   "sd_enc_activ_nm": 180,
+   "psd_space_nm": 310,
+   "nwell_space_nm": 620
   }
  },
  "cells": [

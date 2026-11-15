@@ -1,6 +1,6 @@
 # views
 
-Generated abstract views (LEF, Liberty).
+Generated Liberty views. LEF abstracts are future work (ROADMAP.md).
 
 ## Liberty: `sg13g2_stdcells_tt_1p20v_25c.lib`
 

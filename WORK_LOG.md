@@ -4,6 +4,11 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-14
 
+- **PR #93**: chore: remove stale ngspice-harness gitignore rules and duplicate flow/build entry
+- **PR #85**: feat: step the diffusion outline so one strip can hold mixed finger widths
+- **PR #72**: docs: roadmap as of 2026-11-13
+- **Issue #91** (closed): Remove .gitignore rules left over from the removed local-ngspice harness half, and the duplicate flow scratch-dir entry
+- **Issue #74** (closed): layout: place devices of different finger widths in one diffusion strip (and2, or2, a21oi, o21ai)
 - **PR #84**: docs: state the recorded cell evidence in the README Status block
 - **PR #83**: feat: cite the cocotb testbench and hygiene inventory for T1 items 9 and 10
 - **PR #79**: feat: generate well and substrate taps, closing analog LVS on all four cells
