@@ -3,7 +3,7 @@
   "kind": "t1-attestation-inventory",
   "t1_item": 8,
   "description": "Analog partition characterization report: the append-only klt characterize record behind the committed TT/1.20 V/25 C Liberty view, cited for spec row 9 (Liberty corners). The freshness command re-derives every claim the view's provenance sidecar makes -- library name, cell set, the SHA-256 of the config it was characterized from, and the record it names -- so a config edit or a hand-edited view fails the attestation instead of being reported as current. The check is deliberately not weakened to pass.",
-  "report": "sim/characterize/records/20261114-222806-f1cf294.md",
+  "report": "sim/characterize/records/20261115-105337-921b1a8.md",
   "spec_rows": [
     "spec-row-9-liberty-corners-tt"
   ],

@@ -50,12 +50,17 @@ view cites.
   klt 0.9.2.dev247, ngspice-46. Superseded as the record the view's sidecar
   names (kept, append-only) when issue #73's two `layout.rules` keys staled
   the sidecar's config pin; re-characterized as the record below.
-- **Library view, current**:
+- **Library view, superseded**:
   `sim/characterize/records/20261114-222806-f1cf294.md` — same four cells,
-  corner and grid, local backend, klt 0.9.2.dev1029, ngspice-47 (a newer
-  toolchain than the superseded record; the measured tables are byte-identical
-  in the committed `.lib`). This is the record id cited by
-  `views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`.
+  corner and grid, local backend, klt 0.9.2.dev1029, ngspice-47. Superseded
+  as the record the view's sidecar names (kept, append-only) when issue
+  #104's three `layout.rules` keys staled the sidecar's config pin again;
+  the measured tables are byte-identical in the committed `.lib`.
+- **Library view, current**:
+  `sim/characterize/records/20261115-105337-921b1a8.md` — same four cells,
+  corner and grid, local backend, klt 0.9.3.dev3+gd5d57daf9a14, ngspice-47
+  (the measured tables are byte-identical again). This is the record id
+  cited by `views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`.
 
 The local run needs ngspice >= 44 for the OSDI v0.4 PSP103 models. The request
 preloads `psp103.osdi` (the module the PDK's `psp103va` model cards bind to),

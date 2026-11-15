@@ -55,11 +55,11 @@ and are re-derived from those files rather than restated here where they move.
 - **LVS matched**, `klt lvs`: every report in `layout/lvs/` reads
   `status: "match"`, `error_count: 0`, `body_verification.status: "verified"`.
 - **Pre-layout SPICE characterization**:
-  `sim/characterize/records/20261114-222806-f1cf294.md`, raw per-arc delay,
+  `sim/characterize/records/20261115-105337-921b1a8.md`, raw per-arc delay,
   transition and energy tables from `klt characterize`, recorded as
-  `Data provenance: simulated` (supersedes, append-only, record
-  `20261107-222836-6ee1577.md` after #73's config edit staled the view's
-  provenance pin — see #82).
+  `Data provenance: simulated` (supersedes, append-only, records
+  `20261114-222806-f1cf294.md` and `20261107-222836-6ee1577.md` after #73's
+  and #104's config edits staled the view's provenance pin — see #82).
 - **One Liberty view**: `views/sg13g2_stdcells_tt_1p20v_25c.lib`, real
   `klt characterize` output covering all four cells at TT / 1.20 V / 25 C (spec
   row 9) — a single corner, combinational arcs only. It is not itself the

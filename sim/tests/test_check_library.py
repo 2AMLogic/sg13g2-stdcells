@@ -19,7 +19,7 @@ from sim.characterize import check_library
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 REAL_LIB = REPO_ROOT / "views" / "sg13g2_stdcells_tt_1p20v_25c.lib"
 REAL_SIDECAR = Path(str(REAL_LIB) + ".provenance")
-REAL_RECORD = REPO_ROOT / "sim" / "characterize" / "records" / "20261114-222806-f1cf294.md"
+REAL_RECORD = REPO_ROOT / "sim" / "characterize" / "records" / "20261115-105337-921b1a8.md"
 
 
 @pytest.fixture
