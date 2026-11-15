@@ -156,7 +156,8 @@ def render(record_id: str, git: dict, data: dict, exts: list[CharacterizationExt
         data = {**data, **{k: v for k, v in data["cells"][0].items() if k not in data}}
     lines = [f"# {record_id}", "", "**Kind**: characterization (raw klt characterize measurements)",
              f"**Repo commit**: {git['commit']}{' (dirty)' if git['dirty'] else ''}", ""]
-    lines += [f"**Notes**: klt {data['klt']['version']}, backend {data['backend']}; "
+    klt_ver = str(data['klt']['version']).removeprefix("klt ")
+    lines += [f"**Notes**: klt {klt_ver}, backend {data['backend']}; "
               "delay/transition = worse of rise/fall, energy = rise + fall internal energy.", ""]
     for ext in exts:
         lines += [f"### {ext.cell} {ext.arc_related_pin} slew {ext.input_slew_ns} ns, load {ext.output_load_pf} pF",
