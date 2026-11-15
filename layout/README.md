@@ -554,6 +554,16 @@ main-side omission tracked in #116, deliberately not repaired inside this PR
 `status: match` because the committed report **is** the fresh grade, which is
 the criterion issue #82 actually sets.
 
+**Resolution recurrence, third lap (2026-11-15, this branch's `main` update
+`577d620`):** the merge brought #128's `1.analog` manifest-pin fix, so that
+item is `[MET]` again and the regenerated report reads **T1 12/22** with
+`T1 #8 [analog]` `[MET]` — the committed `manifests/signoff-report.json` is
+the authority for the count. Item 8's input digest is `53f4ba2c…` after the
+inventory `description` took main's narrowed #122 wording; items 8 and 10 were
+re-minted against the merged bytes. The 11/22 sentence above is left as
+written — it was true of `206dac1` — exactly as the earlier laps were left in
+place.
+
 The friction this surfaced is filed as 2AMLogic/klayout-tools#5688: `klt
 signoff --attest 8` documents its `citations` as evidence-envelope paths but
 checks only that each file exists, delegating all content verification to the
