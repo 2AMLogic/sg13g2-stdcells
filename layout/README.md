@@ -388,7 +388,11 @@ always name the same tree state; and regenerating the signoff report exposed a
 pre-existing item-10 staleness on `main` — `README.md` was edited (commit
 `df690f0`, the Status-block correction) after that envelope was minted —
 re-attested here, unchanged checks, so the report reads T1 12/22 with item 8
-[analog] `[MET]`.
+[analog] `[MET]`. The envelope was re-minted a second time before merge: the
+update from `main` moved both pinned files again (`README.md` and
+`.github/workflows/ci.yml`), so the committed envelope pins those files'
+post-merge bytes; the six checks pass unchanged and the report is
+byte-identical, still reading T1 12/22.
 
 The friction this surfaced is filed as 2AMLogic/klayout-tools#5688: `klt
 signoff --attest 8` documents its `citations` as evidence-envelope paths but
