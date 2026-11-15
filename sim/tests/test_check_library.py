@@ -20,7 +20,15 @@ from sim.characterize import check_library
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 REAL_LIB = REPO_ROOT / "views" / "sg13g2_stdcells_tt_1p20v_25c.lib"
 REAL_SIDECAR = Path(str(REAL_LIB) + ".provenance")
-REAL_RECORD = REPO_ROOT / "sim" / "characterize" / "records" / "20261107-222836-6ee1577.md"
+
+
+def _committed_record() -> Path:
+    """The record the committed sidecar names, so the fixture cannot drift from it."""
+    prov = json.loads(REAL_SIDECAR.read_text())
+    return REPO_ROOT / "sim" / "characterize" / "records" / f"{prov['evidence_record']}.md"
+
+
+REAL_RECORD = _committed_record()
 
 
 @pytest.fixture
@@ -29,8 +37,7 @@ def tree(tmp_path):
 
     Built from the committed artifacts, with the config replaced by one whose
     SHA-256 the sidecar actually pins -- so the baseline is fresh and each test
-    below isolates a single mutation. (The committed tree itself is *not*
-    fresh; see test_committed_tree_config_pin_is_stale.)
+    below isolates a single mutation.
     """
     root = tmp_path
     (root / "views").mkdir()
@@ -225,22 +232,17 @@ def test_truncated_sidecar_is_drift(tree):
     assert any("lacks" in p for p in run(tree))
 
 
-def test_committed_tree_config_pin_is_stale(tree):
-    """The committed tree is deliberately NOT fresh, and this records why.
+def test_committed_tree_is_fresh():
+    """The committed tree IS fresh as of the 20261115-171205-3462cc8 refresh.
 
-    `layout/example_config.json` gained two `layout.rules` keys for the well
-    and substrate taps (issue #73) after the Liberty view was characterized, so
-    the sidecar's whole-file `config_sha256` no longer matches. Nothing the
-    characterization consumes changed -- `process` and `cells` are byte
-    identical -- but the sidecar pins the whole file, so the pin is stale. This
-    is why T1 item 8 is not cited yet; see the PR for issue #75.
-
-    When the view is regenerated (or the pin narrowed), this test is the thing
-    that should fail, and the item 8 envelope can then be minted.
+    It was deliberately stale until that regeneration: the sidecar pinned a
+    pre-#73 ``example_config.json`` (whole-file sha256), and this test asserted
+    the staleness as the documented handoff signal for minting the T1 item 8
+    envelope. The refresh cleared the stale pin, so the assertion is inverted:
+    CI now fails on any future edit that re-stales the committed artifacts.
+    Minting the item 8 envelope is the remaining follow-up (its own issue).
     """
-    problems = check_library.check(REAL_LIB)
-    assert len(problems) == 1, problems
-    assert "example_config.json" in problems[0] and "sha256" in problems[0]
+    assert check_library.check(REAL_LIB) == []
 
 
 def test_default_paths_match_runner():
