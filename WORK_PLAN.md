@@ -46,6 +46,7 @@ PRs waiting on Judge (`loom:review-requested`).
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#121**: docs(spec): add decision record on attestation pin granularity (0002)
+- **#131**: sim/characterize: record the simulator version in evidence records and the Liberty sidecar
 
 ## Proposed
 
@@ -60,7 +61,9 @@ Issues carrying `loom:curated`.
 
 ## Proposed (Architect / Hermit)
 
-_None._
+- **#59**: Collapse sim/harness/evidence.py to the one record kind in use and drop stale DRAFT corner markers *(hermit)*
+- **#62**: Trim layout/toolchain.json to the fields toolchain_pin.py enforces: drop unread pin fields and stale bootstrap comment *(hermit)*
+- **#69**: Write characterization records in one shape: drop the first-cell copy and per-cell run-level repeats in sim/characterize/runner.py *(hermit)*
 
 ## Epics
 
@@ -76,8 +79,8 @@ _None._
 | Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 3 |
 | PRs awaiting review | 1 |
-| Approved PRs awaiting merge | 1 |
+| Approved PRs awaiting merge | 2 |
 | Curated | 6 |
-| Architect / Hermit proposals | 0 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
