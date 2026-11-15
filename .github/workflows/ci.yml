@@ -24,6 +24,8 @@ jobs:
         run: pip install pytest==9.2.0
       - name: unit tests
         run: ./check-ci.sh tests
+      - name: attestation envelopes match the committed files
+        run: ./check-ci.sh attestations
       - name: netlists are fresh
         run: ./check-ci.sh netlists
       - name: layouts are fresh
