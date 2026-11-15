@@ -15,15 +15,26 @@ Covers both provenance shapes klt emits:
   - input list:   provenance.input.paths = [ {"path": {...},
     "content_hash": ...}, ... ], whose sibling provenance.input.content_hash
     is an aggregate over the whole input set -- it names no single file, so
-    it is skipped.
+    it is skipped here.
 
 Every attestation.checks[] entry that carries a path is checked too; command
 checks record no hash and are skipped.
 
+With --manifest FILE the script instead checks a block manifest's evidence
+pins (issue #116): every evidence entry that is a {file, content_hash} object
+pins the provenance.input.content_hash of the envelope it names -- the
+single-file digest for the path shape, the input-set aggregate for the paths
+shape (exactly the field the per-file walk above skips). Bare path strings
+and lists of them record locations without a pin and are skipped. The
+envelope directory is not walked in this mode; envelope-vs-tree checking is
+the default run. Issue #116's defect was a re-minted envelope whose manifest
+pin was never re-pointed, so the committed signoff count disagreed with what
+the grader computed, and no CI stage could see it.
+
 An envelope that cannot be parsed, or that records no comparable hash at all,
-is an error, never a silent pass. Exits 0 when every recorded hash matches
-the tree, 1 on drift or a path missing from the tree, 2 on an unparseable
-envelope. Tool-free: stdlib Python only (see .github/workflows/ci.yml).
+is an error, never a silent pass. Exits 0 when everything matches, 1 on
+drift or a path missing from the tree, 2 on an unparseable envelope or
+manifest. Tool-free: stdlib Python only (see .github/workflows/ci.yml).
 """
 
 import argparse
@@ -160,15 +171,136 @@ def verify_records(envelope, envelope_name, repo_root):
     return unique, mismatches
 
 
+MANIFEST_FIX_HINT = (
+    "re-mint the envelope with `klt signoff --attest <item> --inventory "
+    "<inventory> -o <envelope>` (CI has no klt), or re-point the manifest pin"
+)
+
+
+def envelope_input_hash(envelope, envelope_name):
+    """Return the envelope's provenance.input.content_hash digest -- the
+    single-file digest for the path shape, the input-set aggregate for the
+    paths shape. This is the field a block manifest's evidence pin names."""
+    provenance = envelope.get("provenance")
+    if not isinstance(provenance, dict):
+        raise EnvelopeError(f"{envelope_name}: no provenance object")
+    inp = provenance.get("input")
+    if not isinstance(inp, dict):
+        raise EnvelopeError(f"{envelope_name}: provenance.input is not an object")
+    if "content_hash" not in inp:
+        raise EnvelopeError(
+            f"{envelope_name}: provenance.input records no content_hash"
+        )
+    return _parse_content_hash(inp["content_hash"], envelope_name, "provenance.input")
+
+
+def manifest_pin_findings(manifest, manifest_name, repo_root):
+    """Return (checked, errors, failures) for the manifest's evidence pins.
+
+    checked counts the pins compared; an error is a structural problem
+    (missing/unparseable envelope, malformed pin) and exits 2; a failure is
+    a pin that disagrees with the envelope it names and exits 1.
+    """
+    errors = []
+    failures = []
+    checked = 0
+    evidence = manifest.get("evidence")
+    if not isinstance(evidence, dict):
+        errors.append(f"{manifest_name}: no evidence object")
+        return checked, errors, failures
+    for key, entry in evidence.items():
+        where = f'evidence["{key}"]'
+        if isinstance(entry, str) or isinstance(entry, list):
+            # A bare evidence path, or a list of them: a location recorded
+            # without a pin, nothing to compare.
+            continue
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{manifest_name}: {where}: expected a path string, a list of "
+                f"paths, or a {{file, content_hash}} object, got {type(entry).__name__}"
+            )
+            continue
+        if "file" not in entry or "content_hash" not in entry:
+            errors.append(
+                f"{manifest_name}: {where}: object entries must carry both "
+                "'file' and 'content_hash'"
+            )
+            continue
+        rel = entry["file"]
+        if not isinstance(rel, str) or not rel:
+            errors.append(f"{manifest_name}: {where}: 'file' is not a path string")
+            continue
+        try:
+            pin = _parse_content_hash(entry["content_hash"], manifest_name, where)
+        except EnvelopeError as exc:
+            errors.append(str(exc))
+            continue
+        env_path = repo_root / rel
+        if not env_path.is_file():
+            errors.append(
+                f"{manifest_name}: {where}: envelope {rel} does not exist"
+            )
+            continue
+        try:
+            envelope = json.loads(env_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            errors.append(
+                f"{manifest_name}: {where}: envelope {rel} is not valid JSON ({exc})"
+            )
+            continue
+        try:
+            aggregate = envelope_input_hash(envelope, rel)
+        except EnvelopeError as exc:
+            errors.append(f"{manifest_name}: {where}: {exc}")
+            continue
+        checked += 1
+        if pin != aggregate:
+            failures.append(
+                f"{manifest_name}: {where} pins sha256:{pin} but envelope {rel} "
+                f"carries provenance.input.content_hash sha256:{aggregate}; "
+                f"{MANIFEST_FIX_HINT}"
+            )
+    return checked, errors, failures
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Verify envelope content_hash values against the committed files."
     )
     parser.add_argument("--envelope-dir", type=Path, default=DEFAULT_ENVELOPE_DIR,
                         help="directory of *.json envelopes (default: manifests/envelopes)")
+    parser.add_argument("--manifest", type=Path, default=None,
+                        help="check the evidence pins of this block manifest "
+                             "against the envelopes they name, instead of "
+                             "walking the envelope directory (envelope-vs-tree "
+                             "checking is skipped in this mode)")
     parser.add_argument("--repo-root", type=Path, default=DEFAULT_REPO_ROOT,
                         help="root the recorded paths resolve against (default: repo root)")
     args = parser.parse_args(argv)
+
+    repo_root = args.repo_root.resolve()
+
+    if args.manifest is not None:
+        try:
+            manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            print(f"check_attestations: {args.manifest.name}: not valid JSON ({exc})",
+                  file=sys.stderr)
+            return 2
+        checked, errors, failures = manifest_pin_findings(
+            manifest, args.manifest.name, repo_root
+        )
+        for error in errors:
+            print(f"check_attestations: {error}", file=sys.stderr)
+        for failure in failures:
+            print(f"check_attestations: {failure}", file=sys.stderr)
+        if errors:
+            return 2
+        if failures:
+            return 1
+        print(f"check_attestations: {checked} evidence pins in {args.manifest.name} "
+              f"match the envelopes they name")
+        return 0
 
     envelopes = sorted(args.envelope_dir.glob("*.json"))
     if not envelopes:
@@ -176,7 +308,6 @@ def main(argv=None):
               file=sys.stderr)
         return 2
 
-    repo_root = args.repo_root.resolve()
     errors = []
     failures = []
     total = 0
