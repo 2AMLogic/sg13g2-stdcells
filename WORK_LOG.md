@@ -2,6 +2,36 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-15
+
+- **PR #118**: layout: record the notch predicate's merged admit (opening <= 0) as a fourth DRC control
+- **PR #113**: refactor: fold process section into CHAR_CORNER_PVT, drop unused Corner/FAMILIES/CORNERS layer
+- **PR #112**: ci: gate attestation envelopes against the committed files and re-attest items 1, 9 and 10
+- **PR #108**: verification: implement the documented RTL_DIR override
+- **PR #107**: fix: require cell and corner inside one record block in check_library step 4
+- **PR #106**: docs: correct design/ and views/ sub-README summaries to tracked content
+- **PR #105**: fix: enforce schema_version == 1 in gen_netlists.validate
+- **PR #104**: layout: make the strip-notch refusal pitch-, layer- and strip-aware
+- **PR #101**: docs: re-derive ROADMAP snapshot against main @ 176f794
+- **PR #100**: fix: require the nsd layer and classify its absence as an exit-2 config error
+- **PR #97**: refactor: remove never-read locals, dead CellSpec field and keep_artifacts knob
+- **PR #94**: sim/characterize: derive check_library default paths from LIBRARY_NAME and __file__
+- **PR #90**: build: hold the CI check list once in check-ci.sh and call it from all three places
+- **Issue #114** (closed): layout: the notch predicate's `opening <= 0` (merged-shapes) admit row has no DRC control behind it
+- **Issue #111** (closed): Remove unused generality in sim/harness: corner-matrix kind, extra/notes slot, fs/sf corners
+- **Issue #109** (closed): Remove unused Corner/FAMILIES/CORNERS generality in sim/harness/corners.py
+- **Issue #103** (closed): T1 item 10 attestation hashes drift silently from the files they attest
+- **Issue #102** (closed): check_library: the evidence-record step matches cell and corner as loose substrings, so a record with no tt measurements passes as fresh
+- **Issue #96** (closed): ROADMAP: the Now list's item 4 and the blocked entry describe work main has already delivered
+- **Issue #95** (closed): Enforce or drop schema_version: both generators advertise a config contract version they never check
+- **Issue #89** (closed): verification: the documented RTL_DIR override is read by nothing, so a gate-level run silently tests the behavioral RTL
+- **Issue #88** (closed): sim/characterize: derive the Liberty view and records paths in check_library.py instead of retyping them
+- **Issue #87** (closed): Sub-READMEs still claim xschem schematics and LEF views the repo does not track
+- **Issue #86** (closed): layout: the notch refusal is pitch-independent, but a notch only violates when the opening is narrower than activ_space_nm
+- **Issue #81** (closed): Hold the CI check list in one place: ci.yml, package.json and README.md each carry their own copy
+- **Issue #80** (closed): gen_layouts: nsd is in OPTIONAL_LAYERS but the tap code requires it, so a missing nsd exits 3 instead of 2
+- **Issue #77** (closed): Remove never-read locals, a dead CellSpec field and the keep_artifacts knob in layout/gen_layouts.py and sim/characterize/request.py
+
 ### 2026-11-14
 
 - **PR #93**: chore: remove stale ngspice-harness gitignore rules and duplicate flow/build entry
