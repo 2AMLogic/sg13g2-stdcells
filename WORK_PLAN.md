@@ -33,20 +33,19 @@ Issues currently being built (`loom:building`).
 
 - **#82**: Liberty view provenance pins a config SHA-256 that no longer matches the tree, blocking T1 item 8
 - **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count
-- **#125**: Characterization records never record the simulator version (ngspice); only klt's is captured
+- **#129**: manifest-pins stage passes vacuously when a manifest carries zero object pins
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#98**: fix: regenerate the TT Liberty view's provenance against the current config (T1 11/22)
+- **#135**: fix: make manifest-pins fail on zero pins and unreadable manifests
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#121**: docs(spec): add decision record on attestation pin granularity (0002)
-- **#131**: sim/characterize: record the simulator version in evidence records and the Liberty sidecar
 
 ## Proposed
 
@@ -56,7 +55,6 @@ Issues carrying `loom:curated`.
 - **#82**: Liberty view provenance pins a config SHA-256 that no longer matches the tree, blocking T1 item 8 *(curated)*
 - **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count *(curated)*
 - **#115**: Report upstream: generate-agents-md.sh is shipped into installed .loom/scripts/, where it cannot run *(curated)*
-- **#125**: Characterization records never record the simulator version (ngspice); only klt's is captured *(curated)*
 - **#129**: manifest-pins stage passes vacuously when a manifest carries zero object pins *(curated)*
 
 ## Proposed (Architect / Hermit)
@@ -79,8 +77,8 @@ _None._
 | Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 3 |
 | PRs awaiting review | 1 |
-| Approved PRs awaiting merge | 2 |
-| Curated | 6 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 5 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
