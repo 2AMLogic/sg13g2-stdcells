@@ -441,7 +441,6 @@ the gate. The envelope hash check is deliberately *not* delegated to
 constraint; the `klt` check stays the deeper local verification (it also
 re-runs each inventory's commands).
 
-
 `T1 #8 [analog] Characterization report` is **not** cited, and stays
 `no_evidence` — deliberately, with the attestation committed as it graded. Its
 inventory (`manifests/inventories/item8.analog.json`) is committed and names
