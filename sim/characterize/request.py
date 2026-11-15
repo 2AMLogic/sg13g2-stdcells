@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..harness.corners import CHAR_CORNER_PVT, CORNERS, FAMILIES
+from ..harness.corners import CHAR_CORNER_PVT
 
 #: Default NLDM axes: input transition (ns) x output load (pF). Strictly
 #: ascending, as klt requires.
@@ -33,20 +33,16 @@ DEFAULT_CORNER = "tt"
 def corner_block(name: str) -> dict:
     """The klt request ``corner`` block for characterization corner ``name``.
 
-    The V/T pairing comes from ``CHAR_CORNER_PVT`` and the process section from
-    ``CORNERS`` -- this module keeps no copy of either.
+    Everything comes from ``CHAR_CORNER_PVT`` -- this module keeps no copy of it.
     """
     if name not in CHAR_CORNER_PVT:
         raise RequestError(
             f"{name!r} is not a characterization corner ({', '.join(CHAR_CORNER_PVT)})"
         )
-    sections = CORNERS[name].sections
-    if len(FAMILIES) != 1:
-        raise RequestError(f"cannot map corner {name!r} to one model section: families {FAMILIES}")
-    supply_v, temperature_c = CHAR_CORNER_PVT[name]
+    process, supply_v, temperature_c = CHAR_CORNER_PVT[name]
     return {
         "name": name,
-        "process": f"{FAMILIES[0]}_{sections[0]}",
+        "process": process,
         "supply_v": supply_v,
         "temperature_c": temperature_c,
     }

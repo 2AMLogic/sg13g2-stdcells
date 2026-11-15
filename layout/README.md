@@ -278,9 +278,10 @@ is the 4-finger inverter, not a multi-input cell.
 ### Recorded notch controls (issue #86)
 
 `layout/drc/controls/` holds the measured counterpart of the height-profile
-predicate: three stub-forced layouts, one per verdict the predicate can reach,
-each with its `klt drc --deck sg13g2 --format json` report next to it (and
-`klt drc --check` passing against the committed GDS):
+predicate: four stub-forced layouts covering the predicate's arms (the
+`opening >= threshold` admit, the `opening <= 0` merged admit, and the
+refusal), each with its `klt drc --deck sg13g2 --format json` report next to
+it (and `klt drc --check` passing against the committed GDS):
 
 * `notch-nmos-p840-admitted` -- an `and2`-shaped row at `gate_pitch_nm` 840
   whose NMOS strip is forced from `[1000, 1000, 500]` to `[1000, 500, 1000]`.
@@ -296,15 +297,41 @@ each with its `klt drc --deck sg13g2 --format json` report next to it (and
 * `notch-nmos-p420-refused` -- `inv_4` at the shipped 420 pitch, NMOS forced
   to `[500, 320, 500, 500]`: one `activ.space.1` (`420 - 300 = 120 < 210`),
   the row where refusing every valley was already right.
+* `notch-pmos-p600-merged` -- the shipped `inv_4` device set at
+  `gate_pitch_nm` 600, PMOS strip forced to `[800, 500, 800, 800]`, drawn
+  with `_notch_violation` left live (the predicate admits this row). This is
+  the `opening <= 0` arm's measurement: the psd opening `600 - 660 = -60` and
+  the n-well opening `600 - 920 = -320` are both negative -- the taller
+  neighbours' rectangles overlap, the layers merge, and there is no notch in
+  them at all. **It measures the merged arm for psd and nwell only**: activ
+  is admitted here on the *other* arm (`600 - 300 = 300 >= 210`), and
+  activ's own merged arm (`k * pitch <= 300` at `k = 1`) is reached by no
+  shipped-cell geometry at a placeable pitch, so no control covers it. The
+  deck agrees the merged rows are clean: `clean`, 0 violations, with all
+  three space-or-notch rules in `rules_checked`.
 
-The forcing is the generator's own drawing engine with
-`layout.gen_layouts._strip_profile` patched to hand back the forced profile
-for one strip's devices (and, for the two refused layouts, `_notch_violation`
-stubbed to `None` so the notch is drawn) -- the same stubbing
-`layout/tests/test_gen_layouts.py::ForcedNotch` exercises. The committed GDS
-is deterministic, and each report's `provenance.input.content_hash` pins the
-exact stream it graded. Recorded on klt `0.9.2.dev1029+g76f47afa48f1` /
-klayout `0.30.13`, deck `sg13g2`.
+The controls are regenerable the way the shipped GDS is:
+`python3 layout/gen_controls.py --check` rebuilds every stream in memory and
+fails on any drift (`check-ci.sh layouts` runs it on every PR); without
+`--check` it rewrites the `.gds` files (the `.json` reports are recorded
+evidence and are never touched). The script holds the control table -- per
+control the base cell, the `layout` overrides, the forced strip profile and
+whether `_notch_violation` was stubbed off -- and drives the generator's own
+drawing engine with `_strip_profile` patched, the same forcing
+`layout/tests/test_gen_layouts.py::ForcedNotch` exercises. Two inputs the
+per-control notes above do not spell out: the config cell is renamed to
+`notch_<strip>_p<pitch>` -- it is the stream's GDS structure name, with
+`_lib` appended for the library name (`notch_n_p420_lib` / `notch_n_p420`)
+-- and the two 840-pitch rows need `row_height_nm` 4200 and
+`channel_tracks` 2 alongside the `gate_pitch_nm` 840 bump; the table is the
+source of truth for both. The committed GDS is deterministic, and each
+report's `provenance.input.content_hash` pins the exact stream it graded. Recorded on klt `0.9.2.dev1029+g76f47afa48f1` /
+klayout `0.30.13`, deck `sg13g2` -- except `notch-pmos-p600-merged`, recorded
+on klt `0.9.3.dev3+gd5d57daf9a14` (klayout `0.30.13`). The deck's
+`content_hash` is byte-identical across the two klt versions
+(`sha256:cf6dfeadf75bd95bf89beb0a64e06ed43b65f6ff782df10ae200ea200a73d8e9`,
+the value every four reports carry), so the three earlier controls remain
+valid evidence without re-recording.
 
 ### Recorded LVS evidence (issues #42, #73)
 

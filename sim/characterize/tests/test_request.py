@@ -29,9 +29,10 @@ class RequestTests(unittest.TestCase):
         self.assertEqual(r["options"]["osdi_preload"], ["/pdk/libs.tech/ngspice/osdi/psp103.osdi"])
 
     def test_corner_comes_from_harness(self):
-        for name, (vdd, temp) in CHAR_CORNER_PVT.items():
+        for name, (process, vdd, temp) in CHAR_CORNER_PVT.items():
             c = build_request(SG13G2_INV_1, name, "/pdk")["corner"]
-            self.assertEqual((c["supply_v"], c["temperature_c"]), (vdd, temp))
+            self.assertEqual((c["process"], c["supply_v"], c["temperature_c"]),
+                             (process, vdd, temp))
         with self.assertRaises(RequestError):
             build_request(SG13G2_INV_1, "fs", "/pdk")
 

@@ -6,7 +6,7 @@ through `klt` — see `sim/characterize/`.
 
 | Module | Covers |
 |---|---|
-| `corners.py` | The five MOS process corners (`tt`/`ff`/`ss`/`fs`/`sf`), `Corner`, and this library's characterization corner pairings (`CHAR_CORNER_PVT`). |
+| `corners.py` | This library's characterization corner pairings (`CHAR_CORNER_PVT`: each corner's model `.lib` process section plus its supply/temperature pairing). |
 | `evidence.py` | `BaseExtensions` (open `extra` + `notes` slot) and `CharacterizationExtensions`: a validated per-arc cell-characterization record; fields are required on `record_kind=characterization` and rejected on other kinds. |
 | `report.py` | `git_provenance` and `allocate_record_id` (`<YYYYMMDD>-<HHMMSS>-<short-sha>`, append-only: never returns an id whose record exists). |
 
@@ -17,7 +17,9 @@ pytest: `python3 -m pytest sim/tests` from the repo root.
 
 Their supply/temperature pairings (`tt`/`ff`/`ss`) live in one constant,
 `corners.CHAR_CORNER_PVT` (TT/1.20 V/25 C, FF/1.32 V/-40 C, SS/1.08 V/125 C),
-taken from the README target table and **not ratified** until #1 lands; a
-ratification change is a one-line edit there. They are paired, not a full
-factorial. The sibling harness's corner-set registry and PVT grid were removed
-(#51) as unused; add a grid back only against a real `klt characterize` need.
+with each row also carrying its klt process section (`mos_tt`/`mos_ff`/
+`mos_ss`), taken from the README target table and **not ratified** until #1
+lands; a ratification change is a one-line edit there. They are paired, not a
+full factorial. The sibling harness's corner-set registry and PVT grid were
+removed (#51) as unused, as was the five-corner process layer (#109); add
+generality back only against a real `klt characterize` need.
