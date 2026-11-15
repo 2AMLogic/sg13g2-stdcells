@@ -224,7 +224,6 @@ def layout_cell(cell, proc, lay):
     """Return (Shapes, width_nm, height_nm) for one config cell, or raise PlaceError."""
     R, P = lay["rules"], lay["gate_pitch_nm"]
     H = lay["row_height_nm"]
-    name = cell["name"]
     c = gn.build(cell, proc)
     devs = [(i,) + d for i, d in enumerate(c.devices)]  # (i, kind, drain, gate, source, w, ng)
     ndevs = [(i, k, d, g, s, w, ng) for (i, k, d, g, s, w, ng) in devs if k == "n"]
@@ -396,7 +395,7 @@ def layout_cell(cell, proc, lay):
         base = (y0 + y1) // 2 - span // 2 - half_c
         return [base + t * pitch_c for t in range(k)]
 
-    net_m1 = {}  # net -> list of (rect, kind, x, side)
+    net_m1 = {}  # net -> list of (rect, side)
     for strip, nets, order, devs_, cols_, prof, side in (
             ("n", nn, nord, ndevs, cols, nprof, "below"),
             ("p", pn, pord, pdevs, pcols, pprof, "above")):
@@ -425,16 +424,15 @@ def layout_cell(cell, proc, lay):
 
     # Gate contacts: a poly pad in the channel, on the column's poly.
     gates = [ndevs[i][3] for i, _, _ in nord]
-    gate_rects = {}
     pad_h = R["cont_nm"] + 2 * R["poly_enc_cont_nm"]
     gate_pad_y = p_y0 - R["poly_to_activ_nm"] - R["poly_enc_cont_nm"] - R["cont_nm"]
     if gate_pad_y - R["poly_enc_cont_nm"] < n_y1 + R["poly_to_activ_nm"]:
         raise PlaceError("channel too short for a gate contact pad")
-    seen_gate = {}
-    for j, g in enumerate(gates):
+    seen_gate = set()
+    for g in gates:
         if g in seen_gate:
             raise PlaceError(f"gate net {g} drives the columns of two different devices; joining them needs more routing than one track model")
-        seen_gate[g] = j
+        seen_gate.add(g)
 
     # Horizontal tracks for signal nets with more than one attachment.
     tracks = {}
@@ -466,7 +464,7 @@ def layout_cell(cell, proc, lay):
         else:
             for rect, _ in att:
                 m1.append((net, rect))
-    for rect_net, rect in m1:
+    for _, rect in m1:
         S.box("metal1", *rect)
 
     poly_pads = []
