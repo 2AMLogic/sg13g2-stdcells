@@ -3,10 +3,20 @@ partition boundary:
   analog: transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS
   digital: add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline
 tier: none
-T1: 11/22 items met
+T1: 12/22 items met
 
-[UNMET] T1 #1 [analog] Design sources
-        reason: stale_evidence
+[MET  ] T1 #1 [analog] Design sources
+        cite: manifests/envelopes/item1.analog.attest.json (kind=generic, status=pass, content_hash=sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f, exit_status=0)
+        input: re-hashed the artifact this envelope names -- matches
+        bound: T1 item #1 -> 7 members (content_hash=sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f)
+        member design/gen_netlists.py: verified
+        member layout/example_config.json: verified
+        member layout/lvs/netlists/sg13g2_inv_1.spice: verified
+        member layout/lvs/netlists/sg13g2_inv_2.spice: verified
+        member layout/lvs/netlists/sg13g2_inv_4.spice: verified
+        member layout/lvs/netlists/sg13g2_nand2_1.spice: verified
+        member manifests/inventories/item1.analog.json: verified
+        regeneration: not claimed
 [MET  ] T1 #1 [digital] Design sources
         cite: flow/records/20261104-df96543/synthesize.json (kind=synthesize, status=ok, content_hash=sha256:634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139, exit_status=0)
         input: not re-hashed (content_hash compared against this envelope's own claim only -- the artifact itself was not read)

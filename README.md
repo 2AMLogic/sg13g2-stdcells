@@ -178,6 +178,8 @@ call it too, so there is no second copy to drift. To reproduce CI locally, run
 `./check-ci.sh <stage>`:
 
 - `tests` — unit tests (`design/tests`, `layout/tests`, `sim`)
+- `attestations` — envelope `content_hash` values match the committed files
+- `manifest-pins` — block manifest evidence pins match the envelopes they name
 - `netlists` — generated LVS netlists are fresh
 - `layouts` — generated layouts are fresh
 - `evidence-accept` — the evidence check accepts the committed flow record

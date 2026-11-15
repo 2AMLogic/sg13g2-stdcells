@@ -9,7 +9,7 @@
   "tier": null,
   "t1_item_count": 22,
   "build_t1_item_count": 22,
-  "t1_met_count": 11,
+  "t1_met_count": 12,
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:d9287ec9dc6107e560e00b1a8b7a670f757722713b5c651dee3d2cbde058490a",
   "build": {
@@ -30,28 +30,89 @@
       "partition_boundary": "transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS",
       "text": "committed schematic sources (or generator) plus the netlist derived from them, regenerated on design change.",
       "notes": [],
-      "status": "unmet",
-      "reason": "stale_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null,
-      "detail": {
-        "content_hash_pin": "stale",
-        "hash_check": {
-          "field": "provenance.input.content_hash",
-          "expected": "sha256:e1e8354a3f01d1eededc121290786e5229ecaf89e97f87d13d2e90f03aa44253",
-          "actual": "sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f",
-          "match": false
-        },
-        "compared_against": [
-          "design/gen_netlists.py",
-          "layout/example_config.json",
-          "layout/lvs/netlists/sg13g2_inv_1.spice",
-          "layout/lvs/netlists/sg13g2_inv_2.spice",
-          "layout/lvs/netlists/sg13g2_inv_4.spice",
-          "layout/lvs/netlists/sg13g2_nand2_1.spice",
-          "manifests/inventories/item1.analog.json"
-        ],
-        "hint": "content_hash must be the input-set digest over the files in compared_against (provenance.input.content_hash), not the hash of the evidence envelope file"
+      "citation": {
+        "file": "manifests/envelopes/item1.analog.attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 1,
+          "path": null,
+          "content_hash": "sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f",
+          "input_verified": true,
+          "members": [
+            {
+              "path": {
+                "path": "design/gen_netlists.py",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:758eab5f13e4853cdaa40525ac0474d755f3ede11c7e5cb9adeb44cad84612d4",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/example_config.json",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:a9431e088eebbca9bc5f6729b4341ea9f73331629d29e919ff232aee34db906b",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:65aa1e3c6e10bc76cea3cae6015b0c7b6f58161d896e8b6301fcf76a21d227e7",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/lvs/netlists/sg13g2_inv_2.spice",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:da42c9d5d4790a03f7959d0416799651ad1425a770ce08e879fde32741851d9f",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/lvs/netlists/sg13g2_inv_4.spice",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:f350f0e6257207c943ef822d4744a39bd50446f719c3ea96e871a7e40cfa894e",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "layout/lvs/netlists/sg13g2_nand2_1.spice",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:1fc9770ab7c6d2a87ba9e0026f630a789f736b1e4cc4a17dbfd79755692ada59",
+              "status": "verified"
+            },
+            {
+              "path": {
+                "path": "manifests/inventories/item1.analog.json",
+                "scope": "repo"
+              },
+              "content_hash": "sha256:00673dbd9027d70ad6567172545ac99a8c3d9b7cb1c302567bc0c57986922dc2",
+              "status": "verified"
+            }
+          ],
+          "summary": "T1 item 1 (Design sources): 10/10 attestation checks passed (klt signoff --attest)",
+          "source": "manifests/inventories/item1.analog.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 10,
+            "passed_count": 10
+          }
+        }
       }
     },
     {
