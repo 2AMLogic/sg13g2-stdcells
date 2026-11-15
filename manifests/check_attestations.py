@@ -32,9 +32,14 @@ pin was never re-pointed, so the committed signoff count disagreed with what
 the grader computed, and no CI stage could see it.
 
 An envelope that cannot be parsed, or that records no comparable hash at all,
-is an error, never a silent pass. Exits 0 when everything matches, 1 on
-drift or a path missing from the tree, 2 on an unparseable envelope or
-manifest. Tool-free: stdlib Python only (see .github/workflows/ci.yml).
+is an error, never a silent pass. The same holds in --manifest mode: a
+manifest whose evidence yields zero comparable pins (every entry a bare path
+with no pin) verifies nothing and is an error, the sibling of an empty
+envelope directory in the default run, as is a manifest file that cannot be
+read. Exits 0 when everything matches, 1 on drift or a path missing from the
+tree, 2 on an unparseable envelope or manifest -- including one that cannot
+be read, or that pins nothing. Tool-free: stdlib Python only (see
+.github/workflows/ci.yml).
 """
 
 import argparse
@@ -287,6 +292,10 @@ def main(argv=None):
             print(f"check_attestations: {args.manifest.name}: not valid JSON ({exc})",
                   file=sys.stderr)
             return 2
+        except (OSError, UnicodeDecodeError) as exc:
+            print(f"check_attestations: {args.manifest}: cannot read ({exc})",
+                  file=sys.stderr)
+            return 2
         checked, errors, failures = manifest_pin_findings(
             manifest, args.manifest.name, repo_root
         )
@@ -298,6 +307,12 @@ def main(argv=None):
             return 2
         if failures:
             return 1
+        if not checked:
+            print(f"check_attestations: no evidence pins found in "
+                  f"{args.manifest.name}: every evidence entry records a "
+                  f"bare path with no pin, so nothing was verified",
+                  file=sys.stderr)
+            return 2
         print(f"check_attestations: {checked} evidence pins in {args.manifest.name} "
               f"match the envelopes they name")
         return 0

@@ -53,7 +53,8 @@ stage_attestations() {
 # count its own grader contradicted (11 committed vs 10 fresh at the time).
 # --manifest mode checks exactly that pin. On failure, the message names the
 # repair: re-mint the envelope with `klt signoff --attest` or re-point the
-# manifest pin -- both are local steps, CI has no klt.
+# manifest pin -- both are local steps, CI has no klt. A manifest carrying
+# no pins at all is also an error (#129): the stage cannot pass vacuously.
 stage_manifest_pins() {
   python3 manifests/check_attestations.py --manifest manifests/sg13g2-stdcells.json
 }
