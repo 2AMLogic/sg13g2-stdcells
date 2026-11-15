@@ -111,6 +111,49 @@ def test_record_without_the_claimed_corner_is_drift(tree):
     assert any("corner" in p for p in run(tree))
 
 
+def test_record_measured_only_at_another_corner_is_drift(tree):
+    # Every block was measured at ss, but one stray line elsewhere in the record
+    # mentions the claimed corner -- cell and corner must match inside one block.
+    _, _, records = tree
+    record = records / REAL_RECORD.name
+    text = record.read_text().replace("- **Corner**: tt", "- **Corner**: ss")
+    record.write_text(text + "\nCorner note: **Corner**: tt\n")
+    assert any("corner" in p for p in run(tree))
+
+
+def test_cell_present_only_in_a_provenance_path_is_drift(tree):
+    # The name survives only inside a **Netlist provenance** path line -- that is
+    # not a measurement, so the record does not speak for the cell.
+    _, _, records = tree
+    record = records / REAL_RECORD.name
+    record.write_text(record.read_text().replace("- **Cell**: sg13g2_inv_4\n", ""))
+    assert any("sg13g2_inv_4" in p for p in run(tree))
+
+
+def test_record_measured_on_the_pdk_baseline_netlist_is_drift(tree):
+    # The PDK-baseline record measures a *different* netlist's sg13g2_inv_1
+    # (the benchmark denominator, characterized from sg13g2_stdcell.spice).
+    # A sidecar pointing at it must not pass the cell test on the shared name.
+    _, lib, records = tree
+    shutil.copy(REPO_ROOT / "sim" / "characterize" / "records"
+                / "20261105-042154-1376b8f.md", records / "20261105-042154-1376b8f.md")
+    edit_sidecar(lib, evidence_record="20261105-042154-1376b8f")
+    assert any("sg13g2_stdcell.spice" in p for p in run(tree))
+
+
+def test_provenance_without_a_netlist_path_is_not_a_stand_in(tree):
+    # A provenance that names no .spice file at all (e.g. layout-extracted
+    # measurements) cannot be compared against <cell>.spice -- the checker
+    # stays silent rather than rejecting evidence shapes it cannot judge.
+    _, lib, records = tree
+    record = records / REAL_RECORD.name
+    text = record.read_text().replace(
+        "- **Netlist provenance**: netlist supplied to klt characterize:",
+        "- **Netlist provenance**: extracted from layout")
+    record.write_text(text)
+    assert not any(".spice" in p for p in run(tree))
+
+
 def test_record_missing_a_cell_is_drift(tree):
     _, _, records = tree
     record = records / REAL_RECORD.name
