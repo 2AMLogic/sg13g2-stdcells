@@ -46,7 +46,7 @@ The `process` and `cells` objects are exactly `design/README.md`'s contract. The
     "cont_nm", "cont_space_nm", "activ_enc_cont_nm", "poly_enc_cont_nm",
     "m1_width_nm", "m1_space_nm", "rail_width_nm",
     "nwell_enc_pactiv_nm", "nwell_enc_nactiv_nm", "activ_space_nm",
-    "sd_enc_activ_nm"
+    "sd_enc_activ_nm", "psd_space_nm", "nwell_space_nm"
   }
 }
 ```
@@ -67,6 +67,18 @@ The two rules the taps added (issue #73):
 * `activ_space_nm` -- diffusion-to-diffusion space (`activ.space.1`, 0.21 um),
   the tap band's clearance from the device strips. The band's *height* stays
   derived (`cont_nm + 2 * activ_enc_cont_nm`), so it is not a config key.
+
+The two rules the notch predicate added (issue #86):
+
+* `psd_space_nm` -- p+ implant space-or-notch (`psd.space.1`, 0.31 um), the
+  PMOS strip's implant notch minimum. The deck models no `nsd` space rule, so
+  there is deliberately no `nsd_space_nm`: the NMOS strip's implant has
+  nothing to violate, which is what makes the notch check strip-asymmetric.
+* `nwell_space_nm` -- n-well space-or-notch (`nwell.space.1`, 0.62 um), the
+  widest notch minimum the generator enforces; on the PMOS strip it binds
+  wherever `k * gate_pitch_nm` sits between the psd band and 1540 nm.
+  Both are required keys: the notch predicate refuses a config that omits one
+  (exit `2` naming the key) rather than silently skipping a check.
 
 ### Placement model and its limits
 
@@ -97,20 +109,47 @@ stack is sized from the **shorter** of its two columns.
 
 Two limits the step brings with it:
 
-* **The height profile may not have a valley.** `activ.space.1` and
-  `psd.space.1` are minimum space *or notch* rules, so a tall-short-tall run
-  leaves a re-entrant notch in the merged polygon whose facing edges can sit
-  under the minimum (120 nm for a one-column short device at the shipped
-  `gate_pitch_nm`). A monotone step is a single concave corner and is fine. The
-  generator **refuses** a notched profile with a named exit `3`; it does not
-  reorder the strip to avoid one. Refusal is the conservative half of that
-  choice: a width-aware `order_strips` would place a few more cells, but on its
-  own it would silently draw a notch for any cell with no monotone ordering, and
-  this generator never draws a shape a rule forbids. So a cell that has a
-  monotone ordering which `order_strips` does not happen to pick is refused
-  today -- making the ordering width-aware *in addition to* the refusal is
-  deliberately left as separate work. No cell reachable through
-  `design/gen_netlists.py` produces a notched profile at present.
+* **A valley in the height profile may not notch narrower than a space rule.**
+  `activ.space.1`, `psd.space.1` and `nwell.space.1` are minimum space *or
+  notch* rules, so a tall-short-tall run leaves a re-entrant notch in the
+  merged polygon whose facing edges can sit under a minimum -- but whether
+  one actually does is a function of the short run's width, the pitch and the
+  strip, not a yes/no on "has a valley":
+
+  - a short run of `k` columns leaves an opening of
+    `k * gate_pitch_nm - 2 * hang` in each layer drawn over it, where `hang` is
+    how far that layer's rectangle reaches past the node columns it spans
+    (`cont_nm / 2 + activ_enc_cont_nm` for activ; the implant and the n-well
+    reach further by `sd_enc_activ_nm` and `nwell_enc_pactiv_nm`, so they are
+    the *binding* layers wherever they notch at all);
+  - a layer is legal when the opening is **<= 0** -- the taller neighbours'
+    rectangles overlap and the layer merges, leaving no notch in it at all --
+    or **>= the layer's space minimum**. Strictly between is the forbidden
+    band, so legality is *non-monotone* in the pitch: wider can be legal again;
+  - the check is **strip-asymmetric**: activ is checked on both strips, psd
+    and the n-well on the PMOS strip only. The sg13g2 deck models no `nsd`
+    space rule, so the NMOS strip's implant has nothing to violate -- a notch
+    can be legal on NMOS and refused on PMOS at the same geometry. The three
+    thresholds live in `layout.rules` as `activ_space_nm`, `psd_space_nm` and
+    `nwell_space_nm`; the generator refuses a config that omits one rather
+    than silently skipping the check.
+
+  The generator refuses a profile whose valley falls into some layer's
+  forbidden band, naming the cell, the strip, the profile, the offending
+  layer and both numbers -- opening vs. threshold (exit `3`); a valley every
+  layer admits is drawn. The predicate is measured, not just asserted:
+  `layout/drc/controls/` holds a stub-forced NMOS notch at `gate_pitch_nm`
+  840 (admitted: `clean`) and refused controls at 840 (PMOS, one
+  `psd.space.1`) and at the shipped 420 (NMOS, one `activ.space.1`). A
+  monotone step is a single concave corner and is fine. The generator does
+  not reorder the strip to avoid a notch: a width-aware `order_strips` would
+  place a few more cells, but on its own it would silently draw a notch for
+  any cell with no monotone ordering, and this generator never draws a shape
+  a rule forbids. So a cell that has a monotone ordering which
+  `order_strips` does not happen to pick is refused today -- making the
+  ordering width-aware *in addition to* the notch predicate is deliberately
+  left as separate work. No cell reachable through `design/gen_netlists.py`
+  produces a notched profile at present.
 * **A contact needs `2 * activ_enc_cont_nm + cont_nm` of diffusion height
   (300 nm as shipped), per device.** A device folded below it is refused even
   when the strip's tallest run is far above it, because the contact has to fit
@@ -235,6 +274,37 @@ SG13G2 geometry, not ratified spec rows (issue #1).
 Multi-input cells with fingers (`nand2_2`, `buf_2`, ...) are not in the config: with
 `channel_tracks: 1` they exit `3` (see above), so the second multi-finger cell
 is the 4-finger inverter, not a multi-input cell.
+
+### Recorded notch controls (issue #86)
+
+`layout/drc/controls/` holds the measured counterpart of the height-profile
+predicate: three stub-forced layouts, one per verdict the predicate can reach,
+each with its `klt drc --deck sg13g2 --format json` report next to it (and
+`klt drc --check` passing against the committed GDS):
+
+* `notch-nmos-p840-admitted` -- an `and2`-shaped row at `gate_pitch_nm` 840
+  whose NMOS strip is forced from `[1000, 1000, 500]` to `[1000, 500, 1000]`.
+  The predicate admits it (activ opening `840 - 300 = 540 >= 210`; the deck
+  models no `nsd` space rule) and the deck agrees: `clean`, 0 violations,
+  with `activ.space.1`, `psd.space.1` and `nwell.space.1` all in
+  `rules_checked`. This is the row the issue was filed from.
+* `notch-pmos-p840-refused` -- the same row with the *PMOS* strip forced to
+  `[800, 500, 800]`, drawn only because the predicate was stubbed off. The
+  deck flags exactly one `psd.space.1` (`840 - 660 = 180 < 310`), recorded
+  via `--negative-control-categories psd.space.1`. This is the row an
+  activ-only check would wrongly admit.
+* `notch-nmos-p420-refused` -- `inv_4` at the shipped 420 pitch, NMOS forced
+  to `[500, 320, 500, 500]`: one `activ.space.1` (`420 - 300 = 120 < 210`),
+  the row where refusing every valley was already right.
+
+The forcing is the generator's own drawing engine with
+`layout.gen_layouts._strip_profile` patched to hand back the forced profile
+for one strip's devices (and, for the two refused layouts, `_notch_violation`
+stubbed to `None` so the notch is drawn) -- the same stubbing
+`layout/tests/test_gen_layouts.py::ForcedNotch` exercises. The committed GDS
+is deterministic, and each report's `provenance.input.content_hash` pins the
+exact stream it graded. Recorded on klt `0.9.2.dev1029+g76f47afa48f1` /
+klayout `0.30.13`, deck `sg13g2`.
 
 ### Recorded LVS evidence (issues #42, #73)
 

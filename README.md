@@ -48,8 +48,10 @@ and are re-derived from those files rather than restated here where they move.
   outputs under `--check`.
 - **Four cells** — `sg13g2_inv_1`, `sg13g2_inv_2`, `sg13g2_inv_4`,
   `sg13g2_nand2_1` — with GDS in `layout/gds/`.
-- **DRC clean**, `klt drc`: every report in `layout/drc/` reads
-  `status: "clean"`, `violation_count: 0`.
+- **DRC clean**, `klt drc`: every per-cell report in `layout/drc/` reads
+  `status: "clean"`, `violation_count: 0` (the notch controls under
+  `layout/drc/controls/` are negative evidence and read `violations` by
+  construction).
 - **LVS matched**, `klt lvs`: every report in `layout/lvs/` reads
   `status: "match"`, `error_count: 0`, `body_verification.status: "verified"`.
 - **Pre-layout SPICE characterization**:

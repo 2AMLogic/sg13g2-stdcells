@@ -26,9 +26,12 @@ Placement model (deliberately small; anything outside it is a named failure):
   * a strip may hold devices of different drawn finger widths: it is one merged
     polygon whose outer edge is fixed (the NMOS strip grows up, the PMOS strip
     grows down) and whose channel-facing edge steps at the device boundary. A
-    tall-short-tall height profile would leave a re-entrant notch in that
-    polygon, which the diffusion/implant space-or-notch rules forbid, so it is
-    a named failure rather than a drawn shape;
+    valley in that profile leaves a re-entrant notch whose opening in each
+    drawn layer is the short run's width minus two overhangs; the
+    diffusion/implant space-or-notch rules tolerate it only when the shapes
+    merge (opening <= 0) or the opening clears that layer's space minimum, so
+    a valley that falls into some layer's forbidden band is a named failure
+    rather than a drawn shape;
   * the strips are ordered so each is a single chain of devices sharing a
     source/drain net, and both orderings have the same gate-net sequence, so
     each poly column crosses both strips;
@@ -55,7 +58,7 @@ RULE_KEYS = (
     "poly_width_nm", "poly_space_nm", "poly_endcap_nm", "poly_to_activ_nm", "cont_nm", "cont_space_nm",
     "activ_enc_cont_nm", "poly_enc_cont_nm", "m1_width_nm", "m1_space_nm",
     "rail_width_nm", "nwell_enc_pactiv_nm", "nwell_enc_nactiv_nm", "activ_space_nm",
-    "sd_enc_activ_nm",
+    "sd_enc_activ_nm", "psd_space_nm", "nwell_space_nm",
 )
 LAYOUT_INT_KEYS = ("row_height_nm", "gate_pitch_nm", "channel_tracks", "n_diff_y0_nm", "p_diff_top_margin_nm")
 
@@ -209,14 +212,33 @@ def _runs(prof):
     return out
 
 
-def _notch_column(prof):
-    """First column that sits in a valley of `prof` (taller columns on both
-    sides), or None. Such a column is a re-entrant notch in the merged strip
-    polygon; a profile without one is unimodal, so every step is a single
-    concave corner, which the space-or-notch rules allow."""
-    for c in range(1, len(prof) - 1):
-        if max(prof[:c]) > prof[c] < max(prof[c + 1:]):
-            return c
+def _notch_violation(prof, pitch, layers):
+    """The first rule a valley of `prof` would break, or None.
+
+    `layers` maps a drawn layer name to its (hang_nm, threshold_nm): each of
+    that layer's rectangles reaches hang_nm past the node columns it spans, so
+    a short run sitting between its two taller neighbours leaves an opening of
+    k * pitch - 2 * hang in it, where k counts the columns between those
+    neighbours. The opening is legal when it is <= 0 (the neighbours'
+    rectangles overlap and the layer merges, leaving no notch there at all) or
+    >= threshold; strictly between is the layer's forbidden band. Legality is
+    therefore non-monotone in the pitch. Per strip the caller passes exactly
+    the layers drawn there that have a space-or-notch rule: activ on both
+    strips, psd and the n-well on the PMOS strip only (the sg13g2 deck models
+    no nsd space rule, so the NMOS strip's implant has nothing to violate).
+    Returns (layer, opening, threshold, (first column, last column)) for the
+    first valley and layer in the forbidden band, else None."""
+    runs = _runs(prof)
+    for i, (c0, c1, h) in enumerate(runs):
+        left = [r for r in runs[:i] if r[2] > h]
+        right = [r for r in runs[i + 1:] if r[2] > h]
+        if not left or not right:
+            continue  # monotone terrain or a peak: a single concave corner, no notch
+        k = right[0][0] - left[-1][1] - 1
+        for layer, (hang, thr) in layers.items():
+            opening = k * pitch - 2 * hang
+            if 0 < opening < thr:
+                return layer, opening, thr, (c0, c1)
     return None
 
 
@@ -251,18 +273,31 @@ def layout_cell(cell, proc, lay):
     if N != len(pcols):
         raise PlaceError("NMOS and PMOS strips have different column counts")
     # Height profile: devices of different drawn finger widths share a strip, so
-    # the strip's channel-facing edge steps from column to column. Refuse a
-    # profile with a valley in it -- that is a re-entrant notch in the merged
-    # activ/psd/nsd polygon, and those are space-*or-notch* rules.
+    # the strip's channel-facing edge steps from column to column. A valley in
+    # it is a re-entrant notch in the merged activ/implant/well polygon, and the
+    # space rules there are space-*or-notch* rules: legal only when the shapes
+    # merge or the notch opening clears the layer's minimum. Refuse only a
+    # valley that falls into some layer's forbidden band, and name the rule it
+    # would break; a monotone step or a fully admitted valley is drawn.
     nprof = _strip_profile(nord, ndevs, cols)
     pprof = _strip_profile(pord, pdevs, pcols)
+    half_c = R["cont_nm"] // 2
+    act_hang = half_c + R["activ_enc_cont_nm"]  # diffusion extent beyond a node-centre
+    sd = R["sd_enc_activ_nm"]
+    notch_layers = {
+        "n": {"activ": (act_hang, R["activ_space_nm"])},
+        "p": {"activ": (act_hang, R["activ_space_nm"]),
+              "psd": (act_hang + sd, R["psd_space_nm"]),
+              "nwell": (act_hang + R["nwell_enc_pactiv_nm"], R["nwell_space_nm"])},
+    }
     for kind, order, devs_, cols_, prof in (("N", nord, ndevs, cols, nprof), ("P", pord, pdevs, pcols, pprof)):
-        c = _notch_column(prof)
-        if c is not None:
+        hit = _notch_violation(prof, P, notch_layers[kind.lower()])
+        if hit:
+            layer, opening, thr, (c0, c1) = hit
             raise PlaceError(
-                f"{kind}MOS strip height profile {prof} nm is tall-short-tall at column {c}, so the "
-                f"merged diffusion and implant would leave a re-entrant notch (activ.space / psd.space "
-                f"are space-or-notch rules); the short device is {_dev_desc(_dev_at(order, devs_, cols_, c))}")
+                f"{kind}MOS strip height profile {prof} nm notches over columns {c0}..{c1}, leaving an "
+                f"opening of {opening} nm in {layer} between the taller runs, under the {thr} nm {layer}.space "
+                f"minimum (space-or-notch rule); the short device is {_dev_desc(_dev_at(order, devs_, cols_, c0))}")
     W = (N + 1) * P
     rail = R["rail_width_nm"]
     vdd, vss = proc["vdd_net"], proc["vss_net"]
@@ -277,8 +312,6 @@ def layout_cell(cell, proc, lay):
     p_y0 = p_y1 - max(pprof)
     if p_y0 <= n_y1:
         raise PlaceError(f"row height {H} nm leaves no channel between the NMOS and PMOS strips")
-    half_c = R["cont_nm"] // 2
-    act_hang = half_c + R["activ_enc_cont_nm"]  # diffusion extent beyond a node-centre
     if P // 2 - R["poly_width_nm"] // 2 < half_c:
         raise PlaceError("gate pitch too small for a contact between two gates")
     S = Shapes()
@@ -317,7 +350,6 @@ def layout_cell(cell, proc, lay):
     if "nsd" not in lay["layers"]:
         raise PlaceError("layout.layers.nsd is missing, so the n-well tap cannot be drawn as a well tie "
                          "(the deck derives the tie as activ & nsd); give the config an nsd layer")
-    sd = R["sd_enc_activ_nm"]
     if p_y0 - n_y1 <= 2 * sd:
         raise PlaceError(f"channel {p_y0 - n_y1} nm is narrower than the two implant enclosures "
                          f"(2 x sd_enc_activ {sd} nm): psd over the PMOS strip would overlap nsd "
