@@ -51,6 +51,9 @@ stage_netlists() {
 
 stage_layouts() {
   python3 layout/gen_layouts.py --config layout/example_config.json --check
+  # The recorded notch controls (layout/drc/controls/*.gds) are evidence and
+  # get the same freshness check as the shipped GDS (issue #120).
+  python3 layout/gen_controls.py --check
 }
 
 stage_evidence_accept() {
