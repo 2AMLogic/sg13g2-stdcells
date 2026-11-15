@@ -25,9 +25,11 @@ import re
 import sys
 from pathlib import Path
 
+from .request import LIBRARY_NAME
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-DEFAULT_LIB = REPO_ROOT / "views" / "sg13g2_stdcells_tt_1p20v_25c.lib"
-RECORDS_DIR = REPO_ROOT / "sim" / "characterize" / "records"
+DEFAULT_LIB = REPO_ROOT / "views" / f"{LIBRARY_NAME}.lib"
+RECORDS_DIR = Path(__file__).resolve().parent / "records"
 
 _CELL_RE = re.compile(r"^\s*cell \(([A-Za-z0-9_]+)\)", re.MULTILINE)
 _LIBRARY_RE = re.compile(r"^\s*library \(([A-Za-z0-9_]+)\)", re.MULTILINE)

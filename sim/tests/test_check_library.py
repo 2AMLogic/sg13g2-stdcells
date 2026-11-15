@@ -143,3 +143,17 @@ def test_committed_tree_config_pin_is_fresh(tree):
     only `process` and `cells`.
     """
     assert check_library.check(REAL_LIB) == []
+
+
+def test_default_paths_match_runner():
+    """The checker and the writer derive the same view and records paths.
+
+    `runner.py` writes the view and records; `check_library.py` checks them.
+    Both must resolve their defaults from the same single sources --
+    `request.LIBRARY_NAME` and this package's own directory -- so a rename in
+    the writer cannot leave the checker reporting on a path nobody produces.
+    """
+    from sim.characterize import runner
+
+    assert check_library.DEFAULT_LIB == runner.DEFAULT_LIB
+    assert check_library.RECORDS_DIR == runner.RECORDS_DIR
