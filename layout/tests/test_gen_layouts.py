@@ -486,6 +486,7 @@ class NotchPredicate(unittest.TestCase):
             (420, 3, None, ("nwell", 340, 620)),
             (420, 4, None, None),
             (560, 1, None, None),                                # implant/well openings go negative: merged
+            (600, 1, None, None),                                # the pitch notch-pmos-p600-merged was recorded at
             (840, 1, None, ("psd", 180, 310)),                   # an activ-only check would wrongly admit this
             (1000, 1, None, ("nwell", 80, 620)),                 # the n-well is the binding layer here
         ]
@@ -576,6 +577,29 @@ class ForcedNotch(unittest.TestCase):
         self.assertEqual(W, 4 * 840)
         runs = [b for b in S.boxes if b[0] == "activ" and b[2] == cfg["layout"]["n_diff_y0_nm"]]
         self.assertEqual(sorted(b[4] - b[2] for b in runs), [500, 1000, 1000])  # the notch is really drawn
+
+    def test_admitted_pmos_merged_valley_places_and_draws(self):
+        """issue #114: the `opening <= 0` merged admit, measured as
+        layout/drc/controls/notch-pmos-p600-merged. The shipped inv_4 device
+        set at pitch 600 with the PMOS strip forced to [800, 500, 800, 800]:
+        activ admits on the >= threshold arm (600 - 300 = 300 >= 210) while
+        psd (600 - 660 = -60) and nwell (600 - 920 = -320) merge, so the
+        predicate admits the row with the check live."""
+        cfg = copy.deepcopy(CFG)
+        cfg["layout"]["gate_pitch_nm"] = 600
+        cell = next(c for c in cfg["cells"] if c["name"] == "sg13g2_inv_4")
+        self.force("p", [800, 500, 800, 800])
+        S, W, H = gl.layout_cell(cell, cfg["process"], cfg["layout"])
+        self.assertEqual(W, 5 * 600)  # (N + 1) * pitch for N = 4 columns
+        p_y1 = cfg["layout"]["row_height_nm"] - cfg["layout"]["p_diff_top_margin_nm"]
+        R = cfg["layout"]["rules"]
+        hang = R["cont_nm"] // 2 + R["activ_enc_cont_nm"]
+        pitch = cfg["layout"]["gate_pitch_nm"]
+        runs = [b for b in S.boxes if b[0] == "activ" and b[4] == p_y1]
+        self.assertEqual(sorted(b[4] - b[2] for b in runs), [500, 800, 800])  # the merged valley is really drawn
+        self.assertEqual(sorted(b[3] - b[1] for b in runs),                     # runs [800] [500] [800 800]:
+                         [pitch + 2 * hang, pitch + 2 * hang, 2 * pitch + 2 * hang])  # the tall side is two columns
+        self.assertIsNone(gl._notch_violation([800, 500, 800, 800], 600, notch_layers()["p"]))
 
 
 class Failures(unittest.TestCase):
