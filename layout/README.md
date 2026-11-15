@@ -310,13 +310,22 @@ it (and `klt drc --check` passing against the committed GDS):
   deck agrees the merged rows are clean: `clean`, 0 violations, with all
   three space-or-notch rules in `rules_checked`.
 
-The forcing is the generator's own drawing engine with
-`layout.gen_layouts._strip_profile` patched to hand back the forced profile
-for one strip's devices (and, for the two refused layouts, `_notch_violation`
-stubbed to `None` so the notch is drawn) -- the same stubbing
-`layout/tests/test_gen_layouts.py::ForcedNotch` exercises. The committed GDS
-is deterministic, and each report's `provenance.input.content_hash` pins the
-exact stream it graded. Recorded on klt `0.9.2.dev1029+g76f47afa48f1` /
+The controls are regenerable the way the shipped GDS is:
+`python3 layout/gen_controls.py --check` rebuilds every stream in memory and
+fails on any drift (`check-ci.sh layouts` runs it on every PR); without
+`--check` it rewrites the `.gds` files (the `.json` reports are recorded
+evidence and are never touched). The script holds the control table -- per
+control the base cell, the `layout` overrides, the forced strip profile and
+whether `_notch_violation` was stubbed off -- and drives the generator's own
+drawing engine with `_strip_profile` patched, the same forcing
+`layout/tests/test_gen_layouts.py::ForcedNotch` exercises. Two inputs the
+per-control notes above do not spell out: the config cell is renamed to
+`notch_<strip>_p<pitch>` -- it is the stream's GDS structure name, with
+`_lib` appended for the library name (`notch_n_p420_lib` / `notch_n_p420`)
+-- and the two 840-pitch rows need `row_height_nm` 4200 and
+`channel_tracks` 2 alongside the `gate_pitch_nm` 840 bump; the table is the
+source of truth for both. The committed GDS is deterministic, and each
+report's `provenance.input.content_hash` pins the exact stream it graded. Recorded on klt `0.9.2.dev1029+g76f47afa48f1` /
 klayout `0.30.13`, deck `sg13g2` -- except `notch-pmos-p600-merged`, recorded
 on klt `0.9.3.dev3+gd5d57daf9a14` (klayout `0.30.13`). The deck's
 `content_hash` is byte-identical across the two klt versions
