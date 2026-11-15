@@ -36,7 +36,8 @@ python3 -m sim.characterize --library --pdk-dir <ihp-sg13g2 dir>
 One corner per invocation (TT/1.20 V/25 C by default). FF/SS are one
 invocation per corner with `--backend batch`, never a local loop.
 
-**Status**: three records; the library-view record is the one the committed
+**Status**: four records (one per mode; the library view was characterized
+three times — two refreshes); the library-view record is the one the committed
 view cites.
 
 - **Baseline leg** (first real record):
@@ -56,6 +57,15 @@ view cites.
   as the record the view's sidecar names (kept, append-only) when issue
   #104's three `layout.rules` keys staled the sidecar's config pin again;
   the measured tables are byte-identical in the committed `.lib`.
+- **Library view, superseded**:
+  `sim/characterize/records/20261115-171205-3462cc8.md` — same four cells,
+  corner and grid, local backend, klt 0.9.3.dev3+gd5d57daf9a14, ngspice-47.
+  Superseded as the record the view's sidecar names (kept, append-only) when
+  #125's simulator-version recording touched the record and sidecar format
+  and main re-characterized on a dirty tree; the first to carry the simulator
+  version in the artifact itself (`simulator ngspice-47` in the record's
+  Notes line, a `simulator` field in the sidecar), so this list's klt/ngspice
+  prose is a summary, not the only source of the toolchain.
 - **Library view, current**:
   `sim/characterize/records/20261115-105337-921b1a8.md` — same four cells,
   corner and grid, local backend, klt 0.9.3.dev3+gd5d57daf9a14, ngspice-47

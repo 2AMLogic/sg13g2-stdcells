@@ -481,24 +481,23 @@ re-runs each inventory's commands).
 `T1 #8 [analog] Characterization report` is **not** cited, and stays
 `no_evidence` — deliberately, with the attestation committed as it graded. Its
 inventory (`manifests/inventories/item8.analog.json`) is committed and names
-the report `sim/characterize/records/20261107-222836-6ee1577.md` and, for spec
+the report `sim/characterize/records/20261115-171205-3462cc8.md` and, for spec
 row 9, the Liberty view and its provenance sidecar; its freshness command
 (`python3 -m sim.characterize.check_library`, new) re-derives what the sidecar
 claims -- library name, cell set, declared corner, config hash and record, but
-not the view's delay tables, which the sidecar does not hash -- and it
-**fails**: the sidecar pins
-`layout/example_config.json` at `sha256:1a02f3cc…`, and the committed config
-hashes `sha256:8e360822…`. Issue #73 added two `layout.rules` keys
-(`activ_space_nm`, `nwell_enc_nactiv_nm`) for the well and substrate taps
-*after* the view was characterized. Nothing the characterization consumes
-changed — the config's `process` and `cells` blocks are byte-identical at both
-hashes, and `design/gen_netlists.py` never reads the `layout` block — but the
-sidecar pins the whole file, so the recorded provenance no longer matches the
-tree. The view has to be regenerated (or the pin narrowed to what
-characterization actually consumes) before item 8 can be cited; that needs a
-`klt characterize` run against the PDK, which issue #75 put out of scope. The
-check was deliberately not weakened to pass: a freshness command that cannot
-fail is not evidence. Tracked in issue #82.
+not the view's delay tables, which the sidecar does not hash. The staleness
+that used to block citation is resolved: issue #73 had added two `layout.rules`
+keys (`activ_space_nm`, `nwell_enc_nactiv_nm`) for the well and substrate taps
+*after* the view was characterized, leaving the sidecar pinning
+`layout/example_config.json` at `sha256:1a02f3cc…` — a hash the committed
+config no longer had (nothing the characterization consumes changed, but the
+sidecar pins the whole file). The view was regenerated against the committed
+config, and the freshness command now **passes**: the sidecar pins the
+committed config's current hash. What still keeps item 8 at `no_evidence` is
+the envelope itself, which is unminted — minting needs a local
+`klt signoff --attest` run, and CI deliberately has no klt. The check was
+deliberately not weakened to pass: a freshness command that cannot fail is not
+evidence. Tracked in issue #82.
 
 **Resolution (2026-11-14, issue #82): the view was regenerated.** Of the two
 ways out recorded above, regenerating was taken and narrowing the pin was

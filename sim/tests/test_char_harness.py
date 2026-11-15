@@ -5,6 +5,8 @@ Run from the repo root:  python -m pytest sim/tests
 
 import pytest
 
+from sim.characterize import runner
+from sim.characterize.request import CellSpec
 from sim.harness import corners, evidence
 
 GOOD = dict(
@@ -63,3 +65,80 @@ def test_bad_sense_and_corner_rejected():
 def test_char_fields_rejected_on_other_record_kind():
     with pytest.raises(evidence.EvidenceFormatError):
         evidence.CharacterizationExtensions(record_kind="corner-matrix", cell="x").validate()
+
+
+# --- record provenance carries the simulator (issue #125) -----------------
+
+CELL = CellSpec("sg13g2_inv_1", inputs=("A",), outputs={"Y": "!A"})
+RECORD_ID = "20260101-000000-abc1234"
+
+
+def _response(simulation):
+    """Minimal klt characterize response; batch shape (top-level fields null)."""
+    arc = {
+        "related_pin": "A", "output_pin": "Y", "timing_sense": "negative_unate",
+        "side_inputs": {},
+        "cell_rise": {"values": [[0.05]]}, "cell_fall": {"values": [[0.06]]},
+        "rise_transition": {"values": [[0.04]]}, "fall_transition": {"values": [[0.05]]},
+        "rise_power": {"values": [[0.001]]}, "fall_power": {"values": [[0.001]]},
+    }
+    entry = {"cell": {"name": CELL.name}, "arcs": [arc], "leakage": {"values": [[0.1]]}}
+    if simulation is not None:
+        entry["simulation"] = simulation
+    return {
+        "provenance": {"klt_version": "klt 0.9.3.dev3"},
+        "corner": {"name": "tt"},
+        "grid": {"input_transition_ns": [0.1], "output_load_pf": [0.01]},
+        "units": {},
+        "cells": [entry],
+        "cell": None, "arcs": None, "leakage": None, "simulation": None,
+    }
+
+
+def _record_data(simulation):
+    return runner.build_record_data(_response(simulation), CELL, backend="local")
+
+
+def _library_data(simulation):
+    d = _record_data(simulation)
+    return {**d, "cells": [d], "record_id": RECORD_ID}
+
+
+def _notes(record_data):
+    md = runner.render(RECORD_ID, {"commit": "abc", "dirty": False}, record_data, [])
+    return next(line for line in md.splitlines() if line.startswith("**Notes**"))
+
+
+def test_build_record_data_captures_simulator_from_per_cell_block():
+    # The response's top-level simulation is null (batch shape); the per-cell
+    # entry is the only source -- reading the top-level key would drop it.
+    assert _record_data({"engine": "ngspice", "engine_version": "47"}).get("simulator") \
+        == {"engine": "ngspice", "version": "47"}
+
+
+def test_notes_line_names_simulator():
+    assert "simulator ngspice-47" in _notes(_library_data({"engine": "ngspice", "engine_version": "47"}))
+
+
+def test_sidecar_names_simulator_beside_klt(tmp_path):
+    config = tmp_path / "cfg.json"
+    config.write_text("{}\n")
+    prov = runner.provenance_for(config, {"name": "tt"},
+                                 _library_data({"engine": "ngspice", "engine_version": "47"}))
+    assert prov["simulator"] == "ngspice-47"
+    assert "klt_version" in prov
+
+
+@pytest.mark.parametrize("simulation", [
+    None,
+    {},
+    {"engine": "ngspice", "engine_version": None},
+    {"engine": None, "engine_version": "47"},
+])
+def test_missing_simulator_renders_explicit_unknown(simulation):
+    data = _record_data(simulation)
+    captured = data["simulator"]
+    assert captured == {"engine": (simulation or {}).get("engine"),
+                        "version": (simulation or {}).get("engine_version")}
+    assert captured["engine"] is None or captured["version"] is None
+    assert "simulator unknown" in _notes(data)

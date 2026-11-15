@@ -13,8 +13,9 @@
     "supply_v": 1.2,
     "temperature_c": 25.0
   },
-  "evidence_record": "20261115-105337-921b1a8",
+  "evidence_record": "20261115-171205-3462cc8",
   "klt_version": "klt 0.9.3.dev3+gd5d57daf9a14",
   "library": "sg13g2_stdcells_tt_1p20v_25c",
-  "repo_commit": "921b1a897fea6e607bbeed7ba3834393cd3c5961"
+  "repo_commit": "3462cc84d2932d215d91b4ee5129d46075ac73d5 (dirty)",
+  "simulator": "ngspice-47"
 }

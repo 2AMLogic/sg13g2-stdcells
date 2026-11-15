@@ -19,7 +19,14 @@ from sim.characterize import check_library
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 REAL_LIB = REPO_ROOT / "views" / "sg13g2_stdcells_tt_1p20v_25c.lib"
 REAL_SIDECAR = Path(str(REAL_LIB) + ".provenance")
-REAL_RECORD = REPO_ROOT / "sim" / "characterize" / "records" / "20261115-105337-921b1a8.md"
+
+def _committed_record() -> Path:
+    """The record the committed sidecar names, so the fixture cannot drift from it."""
+    prov = json.loads(REAL_SIDECAR.read_text())
+    return REPO_ROOT / "sim" / "characterize" / "records" / f"{prov['evidence_record']}.md"
+
+
+REAL_RECORD = _committed_record()
 
 
 @pytest.fixture
@@ -219,17 +226,15 @@ def test_truncated_sidecar_is_drift(tree):
     assert any("lacks" in p for p in run(tree))
 
 
-def test_committed_tree_config_pin_is_fresh(tree):
-    """The committed tree is fresh, and this records why.
+def test_committed_tree_is_fresh():
+    """The committed tree IS fresh as of this issue-82 regeneration lap.
 
-    The Liberty view was regenerated for issue #82 after issue #73's two
-    `layout.rules` keys staled the sidecar's whole-file `config_sha256` pin:
-    `python3 -m sim.characterize --library --pdk-dir <ihp-sg13g2 dir>` re-
-    characterized the view against the current config and appended record
-    `20261114-222806-f1cf294`, which the sidecar now names. This is the test
-    that fails if the pin goes stale again -- a `layout.rules` edit will do
-    it, since the pin covers the whole config while characterization consumes
-    only `process` and `cells`.
+    The sidecar pins the committed ``example_config.json`` by whole-file
+    SHA-256, so each merge from main that touches the pinned files re-stales
+    the pin and each lap re-characterizes on the merged tree before any
+    bookkeeping edit (record below, minted from the merge commit, clean).
+    The refresh cleared the stale pin, so the assertion holds and CI fails
+    on any future edit that re-stales the committed artifacts.
     """
     assert check_library.check(REAL_LIB) == []
 

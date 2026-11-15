@@ -40,7 +40,7 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   reports and T1 #7 is `[UNMET]`, so no extracted view has been verified.
 - **Liberty (row 9).** `views/sg13g2_stdcells_tt_1p20v_25c.lib` holds the four
   cells at TT / 1.20 V / 25 C, emitted by `klt characterize` (#40), with a
-  provenance sidecar and the record `sim/characterize/records/20261107-222836-6ee1577.md`.
+  provenance sidecar and the record `sim/characterize/records/20261115-171205-3462cc8.md`.
   It carries no `area` attribute.
 - **Benchmark (rows 10-12): not started on this library.** `flow/records/`
   holds the `add8` baseline on the stock `sg13g2_stdcell` only: synthesis,
@@ -97,9 +97,10 @@ each item's own done-criterion, not against whether its issue closed.
    `reason: no_evidence`, which says nothing was cited, not why a citation
    cannot be made. Done when item 8 is cited through a `klt signoff
    --attest` envelope and the report is regenerated, or the report records
-   why the tool rejects the citation. Blocked by #82: the provenance sidecar
-   pins a config hash that no longer matches the tree, and citing stale
-   provenance would be evidence in name only.
+   why the tool rejects the citation. The provenance staleness #82 tracked is
+   resolved — the view was regenerated against the committed config and its
+   freshness command passes — leaving only the unminted envelope, which needs
+   a local `klt signoff --attest` run (CI has no klt); tracked in #82.
 
 ## Next
 
