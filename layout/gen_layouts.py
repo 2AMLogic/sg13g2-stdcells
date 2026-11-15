@@ -49,8 +49,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "design"))
 import gen_netlists as gn  # noqa: E402
 
-LAYER_KEYS = ("nwell", "activ", "gatpoly", "psd", "cont", "metal1", "metal1_label")
-OPTIONAL_LAYERS = ("nsd",)
+LAYER_KEYS = ("nwell", "activ", "gatpoly", "psd", "nsd", "cont", "metal1", "metal1_label")
 RULE_KEYS = (
     "poly_width_nm", "poly_space_nm", "poly_endcap_nm", "poly_to_activ_nm", "cont_nm", "cont_space_nm",
     "activ_enc_cont_nm", "poly_enc_cont_nm", "m1_width_nm", "m1_space_nm",
@@ -80,7 +79,7 @@ def validate_layout(config):
     layers = lay.get("layers")
     if not isinstance(layers, dict):
         raise ValueError("layout.layers missing")
-    for k in LAYER_KEYS + tuple(x for x in OPTIONAL_LAYERS if x in layers):
+    for k in LAYER_KEYS:
         v = layers.get(k)
         ok = isinstance(v, list) and len(v) == 2 and all(isinstance(x, int) and not isinstance(x, bool) and 0 <= x < 32768 for x in v)
         if not ok:
@@ -313,9 +312,6 @@ def layout_cell(cell, proc, lay):
     # the diffusion enclosure on each side, pushed as close to its rail as the
     # diffusion spacing and the field-poly clearance allow -- for a multi-finger
     # cell the poly bridge, not the NMOS diffusion, is what binds on the VSS side.
-    if "nsd" not in lay["layers"]:
-        raise PlaceError("layout.layers.nsd is missing, so the n-well tap cannot be drawn as a well tie "
-                         "(the deck derives the tie as activ & nsd); give the config an nsd layer")
     sd = R["sd_enc_activ_nm"]
     if p_y0 - n_y1 <= 2 * sd:
         raise PlaceError(f"channel {p_y0 - n_y1} nm is narrower than the two implant enclosures "
