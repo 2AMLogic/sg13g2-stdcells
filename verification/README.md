@@ -5,7 +5,7 @@ cocotb testbenches. Recorded results are append-only evidence.
 | File | What it is |
 |---|---|
 | `test_add8.py` | exhaustive cocotb check of `rtl/add8.v` — all 2^17 `a`/`b`/`cin` cases |
-| `Makefile` | cocotb + Icarus harness (`RTL_DIR` overrides the DUT dir, e.g. to run the same test on a synthesized netlist) |
+| `Makefile` | cocotb + Icarus harness (`RTL_DIR` overrides the DUT dir to run the same test on an alternative *behavioral* `add8.v`; a synthesized netlist is not yet runnable — the repo tracks no SG13G2 cell-level Verilog model) |
 | `cold_start.sh` | provisions cocotb in a throwaway virtualenv and runs the testbench from a clean checkout |
 
 ## Running it
