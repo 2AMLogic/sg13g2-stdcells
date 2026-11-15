@@ -491,6 +491,30 @@ envelope pins — main had moved that file without re-minting there, a
 staleness this branch inherited — so that envelope was re-minted identically
 (cold start re-run, 6/6 checks unchanged); the report stays byte-identical.
 
+**Resolution recurrence (2026-11-15, the data point that paragraph predicted):**
+main's PR #104 added three more `layout.rules` keys (`psd_space_nm`,
+`nwell_space_nm`, `sd_enc_activ_nm`), staleing the whole-file config pin again
+on any merge of this branch — the second recurrence lap in eight days, and the
+reason the narrowing option (a `spec/` decision record) is deferred no longer
+lightly: it is filed structurally as #110/#116. Regenerated again exactly as
+above — `python3 -m sim.characterize --library --pdk-dir
+/home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged tree (`921b1a8`) before
+any bookkeeping edit, single corner TT/1.20 V/25 C, local backend — appending
+record `sim/characterize/records/20261115-105337-921b1a8.md`, keeping both
+superseded records, `.lib` byte-identical yet again. Toolchain moved again
+(klt 0.9.2.dev1029 → 0.9.3.dev3+gd5d57daf9a14; ngspice unchanged at 47) and is
+named in the record so any numeric difference stays attributable. Items 8 and
+10 were re-minted against the merged bytes (item 8's inventory report field
+names the new record, so its input digest moved to `6876f546…`, manifest
+updated). The report is regenerated with the honest grade, **T1 11/22**, one
+below the previous claim: `1.analog` grades `stale_evidence` because main's
+#112 re-minted that envelope but left the manifest's `content_hash` entry at
+the pre-#112 input digest (`e1e8354a…` vs the envelope's own `d5a5ee9c…`) — a
+main-side omission tracked in #116, deliberately not repaired inside this PR
+(design sources are not #82's scope); `--manifest --check` reads
+`status: match` because the committed report **is** the fresh grade, which is
+the criterion issue #82 actually sets.
+
 The friction this surfaced is filed as 2AMLogic/klayout-tools#5688: `klt
 signoff --attest 8` documents its `citations` as evidence-envelope paths but
 checks only that each file exists, delegating all content verification to the
