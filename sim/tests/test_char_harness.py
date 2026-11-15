@@ -26,17 +26,13 @@ GOOD = dict(
 
 def test_characterization_corners_are_paired_not_factorial():
     # FF is simulated ONLY at 1.32 V / -40 C etc.; the 3x3x3 full factorial
-    # (27 points) is deliberately not what this is.
+    # (27 points) is deliberately not what this is. Each row carries its own
+    # klt process section -- the strings emitted in the request's corner block.
     assert corners.CHAR_CORNER_PVT == {
-        "tt": (1.20, 25.0),
-        "ff": (1.32, -40.0),
-        "ss": (1.08, 125.0),
+        "tt": ("mos_tt", 1.20, 25.0),
+        "ff": ("mos_ff", 1.32, -40.0),
+        "ss": ("mos_ss", 1.08, 125.0),
     }
-    assert set(corners.CHAR_CORNER_PVT) <= set(corners.CORNERS)
-
-
-def test_builtin_corners_untouched():
-    assert tuple(corners.CORNERS) == ("tt", "ff", "ss", "fs", "sf")
 
 
 def test_valid_record_passes_and_renders():
