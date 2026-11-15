@@ -12,6 +12,7 @@
 # Usage: ./check-ci.sh [stage]
 #
 #   tests            unit tests
+#   attestations     envelope content_hash values match the committed files
 #   netlists         generated LVS netlists are fresh
 #   layouts          generated layouts are fresh
 #   evidence-accept  the evidence check accepts the committed flow record
@@ -26,10 +27,21 @@ cd "$(dirname "$0")"
 # The flow record CI gates on. Repointing CI at a newer record is this one line.
 FLOW_RECORD=flow/records/20261104-df96543
 
-ALL_STAGES="tests netlists layouts evidence-accept evidence-reject"
+ALL_STAGES="tests attestations netlists layouts evidence-accept evidence-reject"
 
 stage_tests() {
-  python3 -m pytest design/tests layout/tests sim
+  python3 -m pytest design/tests layout/tests sim manifests/tests
+}
+
+# Every envelope under manifests/envelopes/ records a sha256 per attested
+# file; this stage re-hashes the committed files and fails on any
+# disagreement, so an edit to an attested file cannot leave the envelope
+# silently describing bytes that no longer exist (issue #103). Stdlib Python
+# only. When the failure is a deliberate edit, re-attest locally with
+# `klt signoff --attest <item> --inventory <inventory> -o <envelope>` -- CI
+# has no klt, so re-attestation is always a local step.
+stage_attestations() {
+  python3 manifests/check_attestations.py
 }
 
 stage_netlists() {
@@ -63,6 +75,7 @@ stage_evidence_reject() {
 run_stage() {
   case "$1" in
     tests) stage_tests ;;
+    attestations) stage_attestations ;;
     netlists) stage_netlists ;;
     layouts) stage_layouts ;;
     evidence-accept) stage_evidence_accept ;;

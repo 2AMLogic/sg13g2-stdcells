@@ -417,6 +417,30 @@ manifests/signoff-report.json` reports `status: match` with `doc_drift: false`,
 and both new envelopes re-attest (`klt signoff --attest <n> --inventory <inv>
 --check <envelope>`, exit 0).
 
+**The envelopes are now gated (issue #103).** When an attested file changes,
+its envelope must be re-attested — the same practice as the #73 re-attestation
+above — and, until #103, nothing committed noticed when that step was skipped:
+`df690f0` edited `README.md` and PR #90 edited `.github/workflows/ci.yml`
+without re-attesting item 10, and a re-attestation of item 9 (its
+`verification/Makefile` changed in PR #108) went missing the same way. All
+three are re-attested here through `klt signoff --attest <n>` (item 10: 6/6
+checks pass; item 9: the cocotb cold start passes, 2.0.0/iverilog 13.0, 6/6).
+To close the class, `manifests/check_attestations.py` — new, stdlib Python
+only — re-hashes every committed file named by every envelope under
+`manifests/envelopes/` (both provenance shapes klt emits) and fails on any
+disagreement; `./check-ci.sh attestations` runs it as a CI step, and
+`manifests/tests/` pins it (the corrupted-hash negative control included). The
+consequence to expect: once this gate is in CI, any edit to an attested file
+(`README.md`, `LICENSE`, `.github/workflows/ci.yml`, the item 9 testbench
+files, the item 1/2 sources and generated artifacts) turns CI red until the
+owning envelope is re-attested — and re-attesting needs `klt`, which CI
+deliberately does not have, so the fix is always a local
+`klt signoff --attest <n> --inventory <inv> -o <envelope>`, never a change to
+the gate. The envelope hash check is deliberately *not* delegated to
+`klt signoff --attest --check` in CI: that would break CI's tool-free
+constraint; the `klt` check stays the deeper local verification (it also
+re-runs each inventory's commands).
+
 `T1 #8 [analog] Characterization report` is **not** cited, and stays
 `no_evidence` — deliberately, with the attestation committed as it graded. Its
 inventory (`manifests/inventories/item8.analog.json`) is committed and names
