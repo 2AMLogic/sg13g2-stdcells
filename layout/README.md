@@ -464,8 +464,10 @@ re-runs each inventory's commands).
 inventory (`manifests/inventories/item8.analog.json`) is committed and names
 the report `sim/characterize/records/20261107-222836-6ee1577.md` and, for spec
 row 9, the Liberty view and its provenance sidecar; its freshness command
-(`python3 -m sim.characterize.check_library`, new) re-derives every claim the
-sidecar makes, and it **fails**: the sidecar pins
+(`python3 -m sim.characterize.check_library`, new) re-derives what the sidecar
+claims -- library name, cell set, declared corner, config hash and record, but
+not the view's delay tables, which the sidecar does not hash -- and it
+**fails**: the sidecar pins
 `layout/example_config.json` at `sha256:1a02f3cc…`, and the committed config
 hashes `sha256:8e360822…`. Issue #73 added two `layout.rules` keys
 (`activ_space_nm`, `nwell_enc_nactiv_nm`) for the well and substrate taps
