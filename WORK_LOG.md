@@ -4,6 +4,8 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-15
 
+- **PR #131**: sim/characterize: record the simulator version in evidence records and the Liberty sidecar
+- **Issue #125** (closed): Characterization records never record the simulator version (ngspice); only klt's is captured
 - **PR #128**: ci: gate manifest evidence pins against the envelopes they name
 - **PR #127**: docs: record items 1 and 10 fix-round re-attestations in the #103 note
 - **PR #122**: check_library: pin the view's declared corner and narrow the freshness claim to what is checked
