@@ -264,11 +264,16 @@ def test_dirty_stamp_with_trailing_whitespace_is_drift(tree):
 
 
 def test_commit_with_dirty_substring_outside_the_suffix_is_not_flagged(tree):
-    # The predicate is anchored on the exact " (dirty)" suffix: a commit string
-    # that merely contains "dirty" elsewhere is a clean stamp (issue #134).
+    # The dirtiness predicate is anchored on the exact " (dirty)" suffix: a
+    # commit string that merely contains "dirty" elsewhere is a clean stamp
+    # (issue #134), so no dirtiness finding joins the one this repointed
+    # sidecar now earns from the commit-agreement check (issue #147).
     _, lib, _ = tree
     edit_sidecar(lib, repo_commit=f"dirty-{'a' * 40}")
-    assert run(tree) == []
+    problems = run(tree)
+    assert not any("(dirty)" in p for p in problems), problems
+    assert any("another tree" in p for p in problems), problems
+    assert len(problems) == 1, problems
 
 
 def test_record_without_a_commit_stamp_is_drift(tree):
@@ -280,6 +285,45 @@ def test_record_without_a_commit_stamp_is_drift(tree):
         line for line in record.read_text().splitlines(keepends=True)
         if not line.startswith("**Repo commit**")))
     assert any("Repo commit" in p for p in run(tree))
+
+
+def test_sidecar_repointed_at_another_trees_record_is_drift(tree):
+    # The sidecar names tree X, the record it cites stamps tree Y: the
+    # provenance chain is internally contradictory and must not report
+    # fresh (issue #147). Exact on the full SHA -- a short SHA is not the
+    # full one and is reported, not tolerated.
+    _, lib, _ = tree
+    edit_sidecar(lib, repo_commit="b" * 40)
+    problems = run(tree)
+    assert any("another tree" in p for p in problems), problems
+    assert len(problems) == 1, problems
+
+
+def test_dirty_suffix_alone_does_not_double_as_a_mismatch(tree):
+    # A sidecar stamp gone dirty on the same commit yields #134's dirtiness
+    # finding only; the commit parts still agree, so #147 adds no duplicate
+    # mismatch finding for the same dirty suffix.
+    _, lib, _ = tree
+    prov = json.loads(Path(str(lib) + ".provenance").read_text())
+    edit_sidecar(lib, repo_commit=prov["repo_commit"] + " (dirty)")
+    problems = run(tree)
+    assert any("repo_commit" in p and "(dirty)" in p for p in problems), problems
+    assert not any("another tree" in p for p in problems), problems
+    assert len(problems) == 1, problems
+
+
+def test_record_without_a_commit_stamp_yields_no_mismatch_finding(tree):
+    # With no record stamp the existing check reports the missing line;
+    # the agreement check stays silent rather than adding a second finding
+    # for a stamp that is not there (issue #147).
+    _, _, records = tree
+    record = records / REAL_RECORD.name
+    record.write_text("".join(
+        line for line in record.read_text().splitlines(keepends=True)
+        if not line.startswith("**Repo commit**")))
+    problems = run(tree)
+    assert any("Repo commit" in p for p in problems), problems
+    assert not any("another tree" in p for p in problems), problems
 
 
 def test_writer_stamp_format_is_what_the_checker_rejects(tree):
