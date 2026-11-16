@@ -314,8 +314,11 @@ def test_manifest_single_input_envelope_pin_mismatch_fails(tmp_path, capsys):
 def test_manifest_bare_path_entries_are_skipped_not_errors(tmp_path, capsys):
     # Several evidence entries today are bare path strings or lists of them
     # (e.g. 4.digital); they record locations without a pin and must not
-    # trip the check.
-    root, _ = make_repo(tmp_path, {}, {})
+    # trip the check. One object pin rides along so the manifest is checkable
+    # at all -- a manifest with no pins at all is the zero-pin error (#129).
+    files = {"f.txt": b"f"}
+    envelopes = {"item.attest.json": single_shape_envelope("f.txt", b"f")}
+    root, _ = make_repo(tmp_path, files, envelopes)
     manifest = write_manifest(
         root,
         {
@@ -325,11 +328,78 @@ def test_manifest_bare_path_entries_are_skipped_not_errors(tmp_path, capsys):
                 "3.analog": "layout/drc/cell.json",
                 "4.analog": ["layout/lvs/cell_1.json", "layout/lvs/cell_2.json"],
                 "11.digital": ["flow/records/r/erc.json"],
+                "9.digital": {
+                    "file": "envelopes/item.attest.json",
+                    "content_hash": sha(b"f"),
+                },
             },
         },
     )
     assert run_manifest(root, manifest) == 0
     assert capsys.readouterr().err == ""
+
+
+def test_manifest_with_zero_pins_fails_not_vacuously(tmp_path, capsys):
+    # Negative control (#129): a manifest whose evidence carries only bare
+    # path strings and lists pins nothing, so the run verifies nothing -- the
+    # sibling of an empty envelope dir in the default mode. It must exit 2
+    # naming the manifest, never print the success line.
+    root, _ = make_repo(tmp_path, {}, {})
+    manifest = write_manifest(
+        root,
+        {
+            "block": "fake",
+            "evidence": {
+                "1.digital": "flow/records/r/synthesize.json",
+                "4.analog": ["layout/lvs/cell_1.json", "layout/lvs/cell_2.json"],
+            },
+        },
+    )
+    assert run_manifest(root, manifest) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert MANIFEST_NAME in captured.err
+    assert "no evidence pins" in captured.err
+
+
+def test_manifest_missing_file_exits_2_not_traceback(tmp_path, capsys):
+    # #129 gap 2: a --manifest path that does not exist must report a
+    # readable error and exit 2, not traceback with FileNotFoundError (exit 1).
+    missing = tmp_path / "repo" / "does-not-exist.json"
+    assert ca.main(["--manifest", str(missing), "--repo-root", str(tmp_path)]) == 2
+    err = capsys.readouterr().err
+    assert err.strip()
+    assert "cannot read" in err
+    assert "does-not-exist.json" in err
+
+
+def test_manifest_directory_path_exits_2_not_traceback(tmp_path, capsys):
+    d = tmp_path / "repo" / "a-directory"
+    d.mkdir(parents=True)
+    assert ca.main(["--manifest", str(d), "--repo-root", str(tmp_path)]) == 2
+    assert "cannot read" in capsys.readouterr().err
+
+
+def test_manifest_non_utf8_file_exits_2_not_traceback(tmp_path, capsys):
+    root = tmp_path / "repo"
+    root.mkdir(parents=True)
+    path = root / "binary.json"
+    path.write_bytes(b"\x80\x81\xfe\xff")
+    assert ca.main(["--manifest", str(path), "--repo-root", str(root)]) == 2
+    assert "cannot read" in capsys.readouterr().err
+
+
+def test_manifest_invalid_json_keeps_specific_message(tmp_path, capsys):
+    # Regression: a readable file holding invalid JSON keeps the existing
+    # "not valid JSON" message rather than the generic "cannot read" one.
+    root = tmp_path / "repo"
+    root.mkdir(parents=True)
+    path = root / "broken.json"
+    path.write_text("{not json")
+    assert ca.main(["--manifest", str(path), "--repo-root", str(root)]) == 2
+    err = capsys.readouterr().err
+    assert "not valid JSON" in err
+    assert "cannot read" not in err
 
 
 def test_manifest_naming_missing_envelope_fails_loudly(tmp_path, capsys):
