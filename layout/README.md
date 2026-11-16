@@ -612,3 +612,22 @@ digest is unchanged at `50d2ba3a…`, so the manifest is untouched) and
 characterization was re-run and no record was added — the record chain of the
 fourth lap above is unchanged, and the count sentences earlier laps left are
 left as written.
+
+**Gate hardening (2026-11-16, issue #134): the freshness command now fails on
+a dirty provenance stamp.** The command re-derived library name, cell set,
+corner, config hash and record, but never read the `repo_commit` the sidecar
+and its record carry — so the two committed records stamped `(dirty)`
+(`20261107-222836-6ee1577`, `20261115-171205-3462cc8`) passed every gate in
+the repo while citing measurements reproducible from no commit.
+`check_library.check()` now reports a finding when the sidecar's
+`repo_commit` or the cited record's `**Repo commit**` line carries the dirty
+suffix, and the stamp format is one shared definition
+(`sim/harness/report.py`'s `commit_stamp`/`is_dirty_stamp`) that the writer
+(`runner.py`), the checker and their tests all read, so the suffix cannot
+drift apart. The two historical dirty records are kept, append-only — the
+check gates what the sidecar cites, not the archive — and the committed
+sidecar and its record stamp clean (`13dc481`), so the command still passes
+on main's bytes unchanged. The command's own claim (module docstring,
+`--help` description, success line) names the stamp check now, per the #122
+narrowing discipline. No characterization was re-run and no envelope was
+re-minted: none of the edited files is envelope-pinned.
