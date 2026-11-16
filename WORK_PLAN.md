@@ -19,43 +19,45 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
-_None._
+- **#154**: check_library: an empty provenance stamp reports fresh on both sides
 
 ## Ready
 
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#115**: Report upstream: generate-agents-md.sh is shipped into installed .loom/scripts/, where it cannot run
+- **#154**: check_library: an empty provenance stamp reports fresh on both sides
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-- **#82**: Liberty view provenance pins a config SHA-256 that no longer matches the tree, blocking T1 item 8
-- **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count
-- **#129**: manifest-pins stage passes vacuously when a manifest carries zero object pins
+- **#142**: sim/characterize: run_klt never passes --wait-for-capacity on a batch klt characterize submit
+- **#149**: sim: run_klt leaves an unreaped /tmp scratch dir when called without workdir
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#135**: fix: make manifest-pins fail on zero pins and unreadable manifests
+_None._
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#121**: docs(spec): add decision record on attestation pin granularity (0002)
+- **#151**: fix: reap characterize_and_record's klt scratch dir via caller-owned workdir
 
 ## Proposed
 
 Issues carrying `loom:curated`.
 
 - **#3**: Gap-to-T1 tracker: sg13g2-stdcells artifact-presence survey *(curated)*
-- **#82**: Liberty view provenance pins a config SHA-256 that no longer matches the tree, blocking T1 item 8 *(curated)*
 - **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count *(curated)*
 - **#115**: Report upstream: generate-agents-md.sh is shipped into installed .loom/scripts/, where it cannot run *(curated)*
-- **#129**: manifest-pins stage passes vacuously when a manifest carries zero object pins *(curated)*
+- **#142**: sim/characterize: run_klt never passes --wait-for-capacity on a batch klt characterize submit *(curated)*
+- **#149**: sim: run_klt leaves an unreaped /tmp scratch dir when called without workdir *(curated)*
+- **#154**: check_library: an empty provenance stamp reports fresh on both sides *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -73,12 +75,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
-| Important | 0 |
-| Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 3 |
-| PRs awaiting review | 1 |
-| Approved PRs awaiting merge | 1 |
-| Curated | 5 |
+| Important | 1 |
+| Ready (`loom:issue`) | 2 |
+| In Progress (`loom:building`) | 2 |
+| PRs awaiting review | 0 |
+| Approved PRs awaiting merge | 2 |
+| Curated | 6 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
