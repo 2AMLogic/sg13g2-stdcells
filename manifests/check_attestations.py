@@ -186,6 +186,8 @@ def envelope_input_hash(envelope, envelope_name):
     """Return the envelope's provenance.input.content_hash digest -- the
     single-file digest for the path shape, the input-set aggregate for the
     paths shape. This is the field a block manifest's evidence pin names."""
+    if not isinstance(envelope, dict):
+        raise EnvelopeError(f"{envelope_name}: top level is not a JSON object")
     provenance = envelope.get("provenance")
     if not isinstance(provenance, dict):
         raise EnvelopeError(f"{envelope_name}: no provenance object")
@@ -209,6 +211,9 @@ def manifest_pin_findings(manifest, manifest_name, repo_root):
     errors = []
     failures = []
     checked = 0
+    if not isinstance(manifest, dict):
+        errors.append(f"{manifest_name}: top level is not a JSON object")
+        return checked, errors, failures
     evidence = manifest.get("evidence")
     if not isinstance(evidence, dict):
         errors.append(f"{manifest_name}: no evidence object")
