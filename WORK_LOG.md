@@ -4,6 +4,12 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-16
 
+- **PR #155**: docs: point ROADMAP Liberty row at the current characterize record
+- **PR #153**: check_library: flag a sidecar repo_commit that disagrees with the record's stamp
+- **PR #148**: fix: derive the Liberty view name from the characterization corner
+- **Issue #147** (closed): check_library never relates the sidecar's repo_commit to the record stamp, so a sidecar repointed at another tree's record passes
+- **Issue #144** (closed): ROADMAP.md still cites superseded (dirty) record 20261115-171205-3462cc8 in the present tense
+- **Issue #143** (closed): Liberty library name and default view path are hard-coded to tt, so --corner ff|ss cannot produce a correctly-named library view
 - **PR #150**: test: pin characterize_library's capture-before-write provenance ordering
 - **PR #145**: fix: fail check_library on dirty provenance stamps
 - **PR #141**: feat: add --corner selection to the sim.characterize CLI
