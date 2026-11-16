@@ -4,6 +4,8 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-16
 
+- **PR #151**: fix: reap characterize_and_record's klt scratch dir via caller-owned workdir
+- **Issue #149** (closed): sim: run_klt leaves an unreaped /tmp scratch dir when called without workdir
 - **PR #155**: docs: point ROADMAP Liberty row at the current characterize record
 - **PR #153**: check_library: flag a sidecar repo_commit that disagrees with the record's stamp
 - **PR #148**: fix: derive the Liberty view name from the characterization corner
