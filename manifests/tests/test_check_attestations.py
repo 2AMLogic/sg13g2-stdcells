@@ -470,6 +470,38 @@ def test_manifest_without_evidence_object_fails_loudly(tmp_path, capsys):
     assert "no evidence object" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("raw", ["[]\n", "null\n", '"s"\n', "42\n"])
+def test_manifest_non_object_top_level_fails_loudly(tmp_path, capsys, raw):
+    # #137 site 1: a readable manifest holding valid JSON whose top level
+    # is not an object must report rc 2 with a clean message naming the
+    # file, never an AttributeError traceback.
+    root, _ = make_repo(tmp_path, {}, {})
+    path = root / "nonobject.json"
+    path.write_text(raw)  # write_manifest() can't produce a non-object top level
+    assert ca.main(["--manifest", str(path), "--repo-root", str(root)]) == 2
+    err = capsys.readouterr().err
+    assert "nonobject.json: top level is not a JSON object" in err
+    assert "Traceback" not in err
+
+
+def test_manifest_naming_non_object_envelope_fails_loudly(tmp_path, capsys):
+    # #137 site 2: a pin naming an envelope whose top level is not an
+    # object must report rc 2 with a clean message naming that envelope,
+    # never a traceback.
+    root, _ = make_repo(tmp_path, {}, {})
+    (root / "envelopes" / "list.attest.json").write_text("[]\n")
+    manifest = write_manifest(
+        root,
+        {"block": "fake",
+         "evidence": {"1.analog": {"file": "envelopes/list.attest.json",
+                                   "content_hash": sha(b"x")}}},
+    )
+    assert run_manifest(root, manifest) == 2
+    err = capsys.readouterr().err
+    assert "list.attest.json: top level is not a JSON object" in err
+    assert "Traceback" not in err
+
+
 def test_manifest_mode_does_not_walk_the_envelope_dir(tmp_path):
     # --manifest is its own CI stage; it checks pins only, so an unrelated
     # stale envelope in the envelope dir must not fail it (the attestations
