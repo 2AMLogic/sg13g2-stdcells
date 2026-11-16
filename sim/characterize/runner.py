@@ -44,6 +44,9 @@ def run_klt(request: dict, backend: str = "local", workdir: Path | None = None,
 
     Raises :class:`CharacterizeFailed` loudly on a non-zero exit or unparsable output
     (e.g. a missing cell/arc) -- nothing is recorded in that case.
+
+    When ``workdir`` is given, the caller owns scratch cleanup; the ``None``
+    fallback creates a temp dir nothing reaps, so callers should pass ``workdir``.
     """
     scratch = Path(workdir or tempfile.mkdtemp(prefix="klt-characterize-"))
     scratch.mkdir(parents=True, exist_ok=True)
@@ -213,8 +216,10 @@ def record(data: dict, records_dir: Path = RECORDS_DIR, repo_root: Path = REPO_R
 
 def characterize_and_record(cell: CellSpec, corner: str, pdk_dir, backend: str = "local",
                             records_dir: Path = RECORDS_DIR, **axes) -> Path:
-    response = run_klt(build_request(cell, corner, pdk_dir, **axes), backend=backend)
-    return record(build_record_data(response, cell, backend), records_dir=records_dir)
+    with tempfile.TemporaryDirectory(prefix="sg13g2-char-") as tmp:
+        response = run_klt(build_request(cell, corner, pdk_dir, **axes), backend=backend,
+                           workdir=Path(tmp) / "work")
+        return record(build_record_data(response, cell, backend), records_dir=records_dir)
 
 
 DEFAULT_CONFIG = REPO_ROOT / "layout" / "example_config.json"
