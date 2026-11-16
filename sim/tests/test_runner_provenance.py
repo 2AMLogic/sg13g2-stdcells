@@ -12,6 +12,7 @@ Run from the repo root:  python -m pytest sim/tests
 """
 
 from sim.characterize import runner
+from sim.harness.report import commit_stamp
 
 GIT = {"commit": "a" * 40, "short": "aaaaaaa", "branch": "main", "dirty": False}
 GIT_DIRTY = {**GIT, "dirty": True}
@@ -66,8 +67,8 @@ def test_record_and_sidecar_stamp_one_tree_state(tmp_path):
 def test_dirty_snapshot_marks_both_stamps(tmp_path):
     path = write_record(tmp_path, GIT_DIRTY)
     prov = sidecar(tmp_path, path, GIT_DIRTY)
-    assert repo_commit_line(path) == f"**Repo commit**: {GIT['commit']} (dirty)"
-    assert prov["repo_commit"] == f"{GIT['commit']} (dirty)"
+    assert repo_commit_line(path) == f"**Repo commit**: {commit_stamp(GIT_DIRTY)}"
+    assert prov["repo_commit"] == commit_stamp(GIT_DIRTY)
 
 
 def test_notes_line_names_klt_once(tmp_path):
