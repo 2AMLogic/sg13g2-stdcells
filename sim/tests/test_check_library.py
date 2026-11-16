@@ -20,6 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 REAL_LIB = REPO_ROOT / "views" / "sg13g2_stdcells_tt_1p20v_25c.lib"
 REAL_SIDECAR = Path(str(REAL_LIB) + ".provenance")
 
+
 def _committed_record() -> Path:
     """The record the committed sidecar names, so the fixture cannot drift from it."""
     prov = json.loads(REAL_SIDECAR.read_text())

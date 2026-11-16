@@ -57,12 +57,13 @@ and are re-derived from those files rather than restated here where they move.
 - **Pre-layout SPICE characterization**:
   `sim/characterize/records/20261115-220740-13dc481.md` (the record the
   committed Liberty view cites; superseded originals
-  `20261115-105337-921b1a8.md`, `20261114-222806-f1cf294.md` and
-  `20261107-222836-6ee1577.md`), raw per-arc delay,
+  `20261115-171205-3462cc8.md`, `20261115-105337-921b1a8.md`,
+  `20261114-222806-f1cf294.md` and `20261107-222836-6ee1577.md` — the full
+  chain is whatever `sim/characterize/records/` holds), raw per-arc delay,
   transition and energy tables from `klt characterize`, recorded as
   `Data provenance: simulated` (supersedes, append-only, the records above
-  after #73's and #104's config edits and two main-branch updates staled the
-  view's provenance pin — see #82).
+  after #73's and #104's config edits and successive main-branch updates
+  staled the view's provenance pin — see #82).
 - **One Liberty view**: `views/sg13g2_stdcells_tt_1p20v_25c.lib`, real
   `klt characterize` output covering all four cells at TT / 1.20 V / 25 C (spec
   row 9) — a single corner, combinational arcs only. It is not itself the
