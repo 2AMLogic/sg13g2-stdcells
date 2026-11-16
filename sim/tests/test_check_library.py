@@ -100,6 +100,22 @@ def test_renamed_library_is_drift(tree):
     assert any("some_other_library" in p for p in run(tree))
 
 
+def test_library_name_not_derived_from_sidecar_corner_is_drift(tree):
+    # The live mislabel this check exists for (issue #143): a view characterized
+    # at FF whose declared library name is still the tt-named constant. The
+    # sidecar's library field and corner data both come from the real run, so
+    # no other check can see it -- the declared name must be related to the
+    # name the sidecar's corner derives.
+    _, lib, _ = tree
+    sidecar = Path(str(lib) + ".provenance")
+    corner = json.loads(sidecar.read_text())["corner"]
+    edit_sidecar(lib, corner={**corner, "name": "ff", "process": "mos_ff",
+                              "supply_v": 1.32, "temperature_c": -40.0})
+    problems = run(tree)
+    assert any("sg13g2_stdcells_tt_1p20v_25c" in p and "sg13g2_stdcells_ff_1p32v_m40c" in p
+               for p in problems), problems
+
+
 def test_hand_edited_lib_voltage_is_drift(tree):
     # An attribute tampered in the view itself, library name and cell set
     # untouched: the corner comparison is what catches it (issue #119).
@@ -245,7 +261,8 @@ def test_default_paths_match_runner():
 
     `runner.py` writes the view and records; `check_library.py` checks them.
     Both must resolve their defaults from the same single sources --
-    `request.LIBRARY_NAME` and this package's own directory -- so a rename in
+    `request.library_view_name` (via `request.LIBRARY_NAME`, the default
+    corner's derived name) and this package's own directory -- so a rename in
     the writer cannot leave the checker reporting on a path nobody produces.
     """
     from sim.characterize import runner

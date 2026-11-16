@@ -8,7 +8,10 @@ config edit or a deleted record leaves a sidecar that still *claims* to
 describe the view.
 
 This is that check. It re-derives what the sidecar claims from the files
-themselves -- the library name and cell set in the `.lib`, the corner the view
+themselves -- the library name and cell set in the `.lib` (the name both
+against the sidecar's field and against the name derived from the sidecar's
+corner, so a view whose name asserts one corner while its data is another is
+caught -- issue #143), the corner the view
 declares (the operating_conditions group name and, via the nom_* attributes
 and the group, voltage and temperature; the sidecar's process-corner entry is
 a name like mos_tt while the view's process attributes are numeric factors,
@@ -39,7 +42,7 @@ import re
 import sys
 from pathlib import Path
 
-from .request import LIBRARY_NAME
+from .request import LIBRARY_NAME, RequestError, library_view_name
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_LIB = REPO_ROOT / "views" / f"{LIBRARY_NAME}.lib"
@@ -136,6 +139,24 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
         problems.append(
             f"{_rel(lib_path, repo_root)}: declares library {declared!r}, "
             f"sidecar names {prov['library']!r}")
+
+    # 1b. The declared name is the one the sidecar's corner derives -- the one
+    #     relation check 1 cannot span, since the sidecar's library field is
+    #     stamped from the writer's own name choice. A view whose data says ff
+    #     while its name still says tt_1p20v_25c is a mislabel either way.
+    corner = prov["corner"]
+    if isinstance(corner, dict) and corner.get("name") is not None:
+        try:
+            expected = library_view_name(corner["name"])
+        except RequestError:
+            problems.append(
+                f"{_rel(sidecar_path, repo_root)}: names corner {corner['name']!r}, "
+                f"not a characterization corner -- no library name can be derived")
+        else:
+            if declared != expected:
+                problems.append(
+                    f"{_rel(lib_path, repo_root)}: declares library {declared!r}, "
+                    f"but corner {corner['name']!r} derives {expected!r}")
 
     # 2. The .lib holds exactly the cells the sidecar claims were characterized.
     in_lib = sorted(cells_in_lib(lib_text))
