@@ -8,7 +8,6 @@ reported.
 Run from the repo root:  python -m pytest sim/tests
 """
 
-import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -33,11 +32,12 @@ REAL_RECORD = _committed_record()
 
 @pytest.fixture
 def tree(tmp_path):
-    """A miniature repo whose Liberty view, sidecar, config and record agree.
+    """A miniature repo copied from the committed artifacts, which are fresh.
 
-    Built from the committed artifacts, with the config replaced by one whose
-    SHA-256 the sidecar actually pins -- so the baseline is fresh and each test
-    below isolates a single mutation.
+    The committed Liberty view, sidecar, config and record agree -- the view
+    was regenerated for issue #82, so the sidecar's pin matches the committed
+    config and no swap is needed. The baseline is fresh and each test below
+    isolates a single mutation.
     """
     root = tmp_path
     (root / "views").mkdir()
@@ -48,14 +48,9 @@ def tree(tmp_path):
     lib = root / "views" / REAL_LIB.name
     shutil.copy(REAL_LIB, lib)
     shutil.copy(REAL_RECORD, records / REAL_RECORD.name)
-
-    config = root / "layout" / "example_config.json"
-    config.write_bytes((REPO_ROOT / "layout" / "example_config.json").read_bytes())
-
-    prov = json.loads(REAL_SIDECAR.read_text())
-    prov["config"] = "layout/example_config.json"
-    prov["config_sha256"] = hashlib.sha256(config.read_bytes()).hexdigest()
-    Path(str(lib) + ".provenance").write_text(json.dumps(prov, indent=2, sort_keys=True) + "\n")
+    shutil.copy(REPO_ROOT / "layout" / "example_config.json",
+                root / "layout" / "example_config.json")
+    shutil.copy(REAL_SIDECAR, Path(str(lib) + ".provenance"))
 
     return root, lib, records
 
@@ -233,14 +228,14 @@ def test_truncated_sidecar_is_drift(tree):
 
 
 def test_committed_tree_is_fresh():
-    """The committed tree IS fresh as of the 20261115-171205-3462cc8 refresh.
+    """The committed tree IS fresh as of this issue-82 regeneration lap.
 
-    It was deliberately stale until that regeneration: the sidecar pinned a
-    pre-#73 ``example_config.json`` (whole-file sha256), and this test asserted
-    the staleness as the documented handoff signal for minting the T1 item 8
-    envelope. The refresh cleared the stale pin, so the assertion is inverted:
-    CI now fails on any future edit that re-stales the committed artifacts.
-    Minting the item 8 envelope is the remaining follow-up (its own issue).
+    The sidecar pins the committed ``example_config.json`` by whole-file
+    SHA-256, so each merge from main that touches the pinned files re-stales
+    the pin and each lap re-characterizes on the merged tree before any
+    bookkeeping edit (record below, minted from the merge commit, clean).
+    The refresh cleared the stale pin, so the assertion holds and CI fails
+    on any future edit that re-stales the committed artifacts.
     """
     assert check_library.check(REAL_LIB) == []
 

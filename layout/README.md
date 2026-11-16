@@ -499,9 +499,116 @@ the envelope itself, which is unminted — minting needs a local
 deliberately not weakened to pass: a freshness command that cannot fail is not
 evidence. Tracked in issue #82.
 
+**Resolution (2026-11-14, issue #82): the view was regenerated.** Of the two
+ways out recorded above, regenerating was taken and narrowing the pin was
+rejected — narrowing makes a claim about what provenance must cover (that a
+digest over `process` + `cells` is adequate), which belongs in a `spec/`
+decision record of its own, deferred until the coarse pin goes stale again;
+this regeneration is the first data point on what that recurrence costs. The
+regeneration (`python3 -m sim.characterize --library --pdk-dir
+/home/ubuntu/share/pdk/ihp-sg13g2`) ran on a clean worktree and appended
+record `sim/characterize/records/20261114-222806-f1cf294.md`; the superseded
+record `20261107-222836-6ee1577.md` is kept, append-only. It re-measured under
+a newer toolchain — klt 0.9.2.dev247 → 0.9.2.dev1029, ngspice-46 → ngspice-47 —
+so any numeric difference between the two records is attributable to that; in
+the event the committed `.lib` is byte-identical. Two side findings are
+recorded with it: the first regeneration attempt surfaced that the runner
+stamped the sidecar's `repo_commit` `(dirty)` from its own outputs (the
+`.lib` and record are written before the sidecar is stamped), fixed by
+snapshotting git provenance once before the run so the record and its sidecar
+always name the same tree state; and regenerating the signoff report exposed a
+pre-existing item-10 staleness on `main` — `README.md` was edited (commit
+`df690f0`, the Status-block correction) after that envelope was minted —
+re-attested here, unchanged checks, so the report reads T1 12/22 with item 8
+[analog] `[MET]`. The envelope was re-minted a second time before merge: the update from `main`
+moved both pinned files again (`README.md` and `.github/workflows/ci.yml`), so
+the committed envelope pins those files' post-merge bytes; the six checks pass
+unchanged and the report is byte-identical, still reading T1 12/22. The same
+merge also moved `verification/Makefile` (PR #108), which item 9 [digital]'s
+envelope pins — main had moved that file without re-minting there, a
+staleness this branch inherited — so that envelope was re-minted identically
+(cold start re-run, 6/6 checks unchanged); the report stays byte-identical.
+
+**Resolution recurrence (2026-11-15, the data point that paragraph predicted):**
+main's PR #104 added three more `layout.rules` keys (`psd_space_nm`,
+`nwell_space_nm`, `sd_enc_activ_nm`), staleing the whole-file config pin again
+on any merge of this branch — the second recurrence lap in eight days, and the
+reason the narrowing option (a `spec/` decision record) is deferred no longer
+lightly: it is filed structurally as #110/#116. Regenerated again exactly as
+above — `python3 -m sim.characterize --library --pdk-dir
+/home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged tree (`921b1a8`) before
+any bookkeeping edit, single corner TT/1.20 V/25 C, local backend — appending
+record `sim/characterize/records/20261115-105337-921b1a8.md`, keeping both
+superseded records, `.lib` byte-identical yet again. Toolchain moved again
+(klt 0.9.2.dev1029 → 0.9.3.dev3+gd5d57daf9a14; ngspice unchanged at 47) and is
+named in the record so any numeric difference stays attributable. Items 8 and
+10 were re-minted against the merged bytes (item 8's inventory report field
+names the new record, so its input digest moved to `6876f546…`, manifest
+updated). The report is regenerated with the honest grade, **T1 11/22**, one
+below the previous claim: `1.analog` grades `stale_evidence` because main's
+#112 re-minted that envelope but left the manifest's `content_hash` entry at
+the pre-#112 input digest (`e1e8354a…` vs the envelope's own `d5a5ee9c…`) — a
+main-side omission tracked in #116, deliberately not repaired inside this PR
+(design sources are not #82's scope); `--manifest --check` reads
+`status: match` because the committed report **is** the fresh grade, which is
+the criterion issue #82 actually sets.
+
+**Resolution recurrence, third lap (2026-11-15, this branch's `main` update
+`577d620`):** the merge brought #128's `1.analog` manifest-pin fix, so that
+item is `[MET]` again and the regenerated report reads **T1 12/22** with
+`T1 #8 [analog]` `[MET]` — the committed `manifests/signoff-report.json` is
+the authority for the count. Item 8's input digest is `53f4ba2c…` after the
+inventory `description` took main's narrowed #122 wording; items 8 and 10 were
+re-minted against the merged bytes. The 11/22 sentence above is left as
+written — it was true of `206dac1` — exactly as the earlier laps were left in
+place.
+
+**Resolution recurrence, fourth lap (2026-11-15, this branch's `main` update
+`a100765`):** the merge brought #125's simulator-version recording (`af3b7b3`:
+a `simulator` field in the sidecar, `simulator ngspice-47` in the record's
+Notes line) and main's own refresh of the view, run on a dirty tree there —
+its record stamps `3462cc84… (dirty)`, the exact defect class this branch's
+pre-capture fix exists to close. Seven files conflicted; the only code hunk
+was `runner.py`'s `render()` Notes line, where both halves are load-bearing and
+both are kept: main's simulator key and this branch's doubled-`klt `-prefix
+strip. Regenerated exactly as every lap above — `python3 -m sim.characterize
+--library --pdk-dir /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged
+tree (`13dc481`) before any bookkeeping edit, single corner TT/1.20 V/25 C,
+local backend — appending record
+`sim/characterize/records/20261115-220740-13dc481.md`, keeping all four
+superseded records (`6ee1577`, `f1cf294`, `921b1a8`, `3462cc8`). This lap the
+`.lib` is **not** byte-identical: exactly one `leakage_power` value moved a
+last digit (`78.4631` → `78.4632`; main's run
+was on klt 0.9.3.dev3, this run on 0.9.3.dev16+gdcf18e2e0c03, ngspice
+unchanged at 47) — the toolchain is named in the record so the difference
+stays attributable. Items 8 and 10 were re-minted against the merged bytes
+(item 8's inventory `report` field names the new record, so its input digest
+moved to `1910e308…`, manifest updated; item 10's README pin refreshed). The
+report is regenerated and reads **T1 12/22** with `T1 #8 [analog]` `[MET]` —
+the committed `manifests/signoff-report.json` is the authority for the count;
+`klt signoff --manifest manifests/sg13g2-stdcells.json --check
+manifests/signoff-report.json` reads `status: match`. The 11/22 sentence above
+is left as written, exactly as the earlier laps were left in place.
+
 The friction this surfaced is filed as 2AMLogic/klayout-tools#5688: `klt
 signoff --attest 8` documents its `citations` as evidence-envelope paths but
 checks only that each file exists, delegating all content verification to the
 caller's `envelope_checks` command — which it accepts unconstrained, `true`
 included. That is precisely why the command behind this repo's item 8 citation
 was written to be falsifiable rather than merely present.
+
+Resolution lap (prose corrections per review): the merge prose had dropped one
+record from each README's chain — `921b1a8` from `sim/README.md`'s list,
+`3462cc8` from `README.md`'s supersession chain — and `sim/README.md`'s Status
+line still counted the pre-recurrence tree. Both records are restored,
+`sim/README.md`'s Status now counts the committed tree (six records; the
+library view characterized five times — four refreshes), and `README.md`
+defers the full chain to `sim/characterize/records/` instead of restating it.
+Editing `README.md` moved its byte pin in item 10's hygiene envelope, so that
+envelope was re-minted (its three audit commands re-run, 6/6; the inventory
+digest is unchanged at `50d2ba3a…`, so the manifest is untouched) and
+`manifests/signoff-report.*` regenerated byte-identical: still **T1 12/22**,
+`--check` reads `status: match`, no `stale_evidence` anywhere. No
+characterization was re-run and no record was added — the record chain of the
+fourth lap above is unchanged, and the count sentences earlier laps left are
+left as written.

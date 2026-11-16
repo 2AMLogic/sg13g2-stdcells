@@ -36,24 +36,51 @@ python3 -m sim.characterize --library --pdk-dir <ihp-sg13g2 dir>
 One corner per invocation (TT/1.20 V/25 C by default). FF/SS are one
 invocation per corner with `--backend batch`, never a local loop.
 
-**Status**: three records (one per mode; the library view was characterized
-twice — one refresh).
+**Status**: six records (one baseline leg; the library view was characterized
+five times — four refreshes); the library-view record is the one the committed
+view cites.
 
 - **Baseline leg** (first real record):
   `sim/characterize/records/20261105-042154-1376b8f.md` — `sg13g2_inv_1` from
   the PDK's `sg13g2_stdcell`, TT/1.20 V/25 C, 5x5 slew x load grid, one arc,
   local backend, klt 0.9.0.dev1379, ngspice-46.
-- **Library view**: `sim/characterize/records/20261107-222836-6ee1577.md` — the
-  four cells of `layout/example_config.json` (`sg13g2_inv_1`, `sg13g2_inv_2`,
-  `sg13g2_inv_4`, `sg13g2_nand2_1`), TT/1.20 V/25 C, 5x5 grid, five arcs, local
-  backend, klt 0.9.2.dev247.
-- **Library view refresh**: `sim/characterize/records/20261115-171205-3462cc8.md`
-  — same mode and grid as the record above, newer klt. This record and the
-  sidecar it mints (`views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`) are
-  the first to carry the simulator version in the artifact itself
-  (`simulator ngspice-47` in the record's Notes line, a `simulator` field in
-  the sidecar), so this list's klt/ngspice prose is a summary, not the only
-  source of the toolchain.
+- **Library view, superseded**:
+  `sim/characterize/records/20261107-222836-6ee1577.md` — the four cells of
+  `layout/example_config.json` (`sg13g2_inv_1`, `sg13g2_inv_2`, `sg13g2_inv_4`,
+  `sg13g2_nand2_1`), TT/1.20 V/25 C, 5x5 grid, five arcs, local backend,
+  klt 0.9.2.dev247, ngspice-46. Superseded as the record the view's sidecar
+  names (kept, append-only) when issue #73's two `layout.rules` keys staled
+  the sidecar's config pin; re-characterized as the record below.
+- **Library view, superseded**:
+  `sim/characterize/records/20261114-222806-f1cf294.md` — same four cells,
+  corner and grid, local backend, klt 0.9.2.dev1029, ngspice-47. Superseded
+  as the record the view's sidecar names (kept, append-only) when issue
+  #104's three `layout.rules` keys staled the sidecar's config pin again;
+  the measured tables are byte-identical in the committed `.lib`.
+- **Library view, superseded**:
+  `sim/characterize/records/20261115-105337-921b1a8.md` — same four cells,
+  corner and grid, local backend, klt 0.9.3.dev3+gd5d57daf9a14, ngspice-47.
+  Superseded as the record the view's sidecar names (kept, append-only) when
+  #125's simulator-version recording merged and main re-characterized the
+  view on a dirty tree there (the record below); its measured tables are
+  byte-identical in the committed `.lib` — exactly one `leakage_power` last
+  digit separates the dirty-tree run's tables from both neighbours.
+- **Library view, superseded**:
+  `sim/characterize/records/20261115-171205-3462cc8.md` — same four cells,
+  corner and grid, local backend, klt 0.9.3.dev3+gd5d57daf9a14, ngspice-47.
+  Superseded as the record the view's sidecar names (kept, append-only) when
+  #125's simulator-version recording touched the record and sidecar format
+  and main re-characterized on a dirty tree; the first to carry the simulator
+  version in the artifact itself (`simulator ngspice-47` in the record's
+  Notes line, a `simulator` field in the sidecar), so this list's klt/ngspice
+  prose is a summary, not the only source of the toolchain.
+- **Library view, current**:
+  `sim/characterize/records/20261115-220740-13dc481.md` — same four cells,
+  corner and grid, local backend, klt 0.9.3.dev16+gdcf18e2e0c03, ngspice-47.
+  Re-characterized on the merged tree (`13dc481`) when the #125 merge moved
+  the `.lib`'s measured table bytes and the sidecar/record format carries the
+  simulator version. This is the record id cited by
+  `views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`.
 
 The local run needs ngspice >= 44 for the OSDI v0.4 PSP103 models. The request
 preloads `psp103.osdi` (the module the PDK's `psp103va` model cards bind to),
