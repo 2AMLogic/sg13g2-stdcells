@@ -2,6 +2,22 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-16
+
+- **PR #150**: test: pin characterize_library's capture-before-write provenance ordering
+- **PR #145**: fix: fail check_library on dirty provenance stamps
+- **PR #141**: feat: add --corner selection to the sim.characterize CLI
+- **PR #139**: fix: guard non-object JSON top level in check_attestations --manifest mode
+- **PR #135**: fix: make manifest-pins fail on zero pins and unreadable manifests
+- **PR #98**: fix: regenerate the TT Liberty view's provenance against the current config (T1 #8 [analog] MET)
+- **Issue #140** (closed): Add --corner to the sim.characterize CLI the docs say selects FF/SS
+- **Issue #138** (closed): test_runner_provenance pins the shared-snapshot contract but not the capture-before-write ordering it exists to protect
+- **Issue #137** (closed): check_attestations --manifest tracebacks on a valid-JSON manifest that is not an object
+- **Issue #134** (closed): Committed Liberty evidence on main stamps a dirty tree, and no check can fail on it
+- **Issue #129** (closed): manifest-pins stage passes vacuously when a manifest carries zero object pins
+- **Issue #124** (closed): test_committed_tree_config_pin_is_fresh docstring names a superseded record id
+- **Issue #82** (closed): Liberty view provenance pins a config SHA-256 that no longer matches the tree, blocking T1 item 8
+
 ### 2026-11-15
 
 - **PR #131**: sim/characterize: record the simulator version in evidence records and the Liberty sidecar
