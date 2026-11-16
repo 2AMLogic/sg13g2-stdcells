@@ -5,6 +5,8 @@ Run from the repo root:  python -m pytest sim/tests
 
 import pytest
 
+from pathlib import Path
+
 from sim.characterize import runner
 from sim.characterize.request import CellSpec
 from sim.harness import corners, evidence
@@ -142,3 +144,68 @@ def test_missing_simulator_renders_explicit_unknown(simulation):
                         "version": (simulation or {}).get("engine_version")}
     assert captured["engine"] is None or captured["version"] is None
     assert "simulator unknown" in _notes(data)
+
+
+# --- CLI selects the corner (issue #140) -----------------------------------
+
+def _main_capture(monkeypatch, argv):
+    seen = {}
+
+    def fake_cell(*a, **kw):
+        seen["cell"] = a, kw
+        return "rec"
+
+    def fake_lib(*a, **kw):
+        seen["lib"] = a, kw
+        return "rec"
+
+    monkeypatch.setattr(runner, "characterize_and_record", fake_cell)
+    monkeypatch.setattr(runner, "characterize_library", fake_lib)
+    return runner.main(argv), seen
+
+
+def test_cli_corner_reaches_both_modes(monkeypatch):
+    from sim.harness.corners import CHAR_CORNER_PVT
+
+    assert list(CHAR_CORNER_PVT) == ["tt", "ff", "ss"]  # choices draw from here, not retyped
+    rc, seen = _main_capture(monkeypatch, ["--corner", "ff"])
+    assert rc == 0
+    assert seen["cell"][0][1] == "ff"
+    rc, seen = _main_capture(monkeypatch, ["--library", "--corner", "ss", "--lib", "ff.lib"])
+    assert rc == 0
+    assert seen["lib"][0][1] == "ss"
+    assert seen["lib"][1]["lib_path"] == Path("ff.lib").resolve()
+
+
+def test_cli_default_corner_is_tt(monkeypatch):
+    rc, seen = _main_capture(monkeypatch, [])
+    assert rc == 0
+    assert seen["cell"][0][1] == "tt"
+
+
+def test_cli_unknown_corner_and_backend_exit_nonzero():
+    for argv in (["--corner", "fs"], ["--backend", "ssh"]):
+        with pytest.raises(SystemExit) as exc:
+            runner.main(argv)
+        assert exc.value.code != 0
+
+
+def test_cli_config_lib_without_library_rejected():
+    with pytest.raises(SystemExit) as exc:
+        runner.main(["--config", "other.json"])
+    assert exc.value.code != 0
+
+
+def test_cli_library_default_corner_uses_default_lib(monkeypatch):
+    # The tt-named default view path is only correct at the default corner.
+    rc, seen = _main_capture(monkeypatch, ["--library"])
+    assert rc == 0
+    assert seen["lib"][1]["lib_path"] == runner.DEFAULT_LIB.resolve()
+
+
+def test_cli_library_nondefault_corner_requires_lib():
+    # LIBRARY_NAME/DEFAULT_LIB bake in tt_1p20v_25c; letting --corner ff|ss
+    # write there would overwrite the committed TT view under its TT name.
+    with pytest.raises(SystemExit) as exc:
+        runner.main(["--library", "--corner", "ff"])
+    assert exc.value.code != 0

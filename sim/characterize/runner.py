@@ -272,15 +272,26 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="python3 -m sim.characterize")
     ap.add_argument("--pdk-dir", default=os.environ.get("SG13G2_PDK_PATH") or
                     os.path.join(os.environ.get("PDK_ROOT", ""), "ihp-sg13g2"))
-    ap.add_argument("--backend", default="local")
+    ap.add_argument("--backend", default="local", choices=["local", "batch"])
+    from ..harness.corners import CHAR_CORNER_PVT
+    ap.add_argument("--corner", default=DEFAULT_CORNER, choices=list(CHAR_CORNER_PVT),
+                    help="characterization corner (default: %(default)s)")
     ap.add_argument("--library", action="store_true",
                     help=f"characterize every cell of --config into {DEFAULT_LIB.relative_to(REPO_ROOT)}")
-    ap.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
-    ap.add_argument("--lib", type=Path, default=DEFAULT_LIB)
+    ap.add_argument("--config", type=Path, default=None,
+                    help=f"cell config, used with --library (default: {DEFAULT_CONFIG.relative_to(REPO_ROOT)})")
+    ap.add_argument("--lib", type=Path, default=None,
+                    help=f"Liberty output path, used with --library (default: {DEFAULT_LIB.relative_to(REPO_ROOT)})")
     args = ap.parse_args(argv)
     if args.library:
-        print(characterize_library(args.config.resolve(), DEFAULT_CORNER, args.pdk_dir,
-                                   lib_path=args.lib.resolve(), backend=args.backend))
+        if args.corner != DEFAULT_CORNER and args.lib is None:
+            ap.error("--library at a non-default corner needs an explicit --lib; the default view path is tt-named")
+        config = args.config or DEFAULT_CONFIG
+        lib = args.lib or DEFAULT_LIB
+        print(characterize_library(config.resolve(), args.corner, args.pdk_dir,
+                                   lib_path=lib.resolve(), backend=args.backend))
         return 0
-    print(characterize_and_record(SG13G2_INV_1, DEFAULT_CORNER, args.pdk_dir, backend=args.backend))
+    if args.config is not None or args.lib is not None:
+        ap.error("--config/--lib are only used with --library")
+    print(characterize_and_record(SG13G2_INV_1, args.corner, args.pdk_dir, backend=args.backend))
     return 0
