@@ -18,7 +18,7 @@ Two modes. The default **baseline leg** characterizes one existing
 Liberty: it records measurements only.
 
 ```
-python3 -m sim.characterize --pdk-dir <ihp-sg13g2 dir> [--backend local|batch]
+python3 -m sim.characterize --pdk-dir <ihp-sg13g2 dir> [--corner tt|ff|ss] [--backend local|batch]
 python3 -m unittest sim.characterize.tests.test_request
 ```
 
@@ -33,8 +33,8 @@ this package writes the `.lib.provenance` sidecar beside it (see
 python3 -m sim.characterize --library --pdk-dir <ihp-sg13g2 dir>
 ```
 
-One corner per invocation (TT/1.20 V/25 C by default). FF/SS are one
-invocation per corner with `--backend batch`, never a local loop.
+One corner per invocation (`--corner tt|ff|ss`, TT/1.20 V/25 C by default).
+FF/SS are one invocation per corner with `--backend batch`, never a local loop.
 
 **Status**: six records (one baseline leg; the library view was characterized
 five times — four refreshes); the library-view record is the one the committed

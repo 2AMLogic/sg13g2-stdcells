@@ -142,3 +142,52 @@ def test_missing_simulator_renders_explicit_unknown(simulation):
                         "version": (simulation or {}).get("engine_version")}
     assert captured["engine"] is None or captured["version"] is None
     assert "simulator unknown" in _notes(data)
+
+
+# --- CLI selects the corner (issue #140) -----------------------------------
+
+def _main_capture(monkeypatch, argv):
+    seen = {}
+
+    def fake_cell(*a, **kw):
+        seen["cell"] = a, kw
+        return "rec"
+
+    def fake_lib(*a, **kw):
+        seen["lib"] = a, kw
+        return "rec"
+
+    monkeypatch.setattr(runner, "characterize_and_record", fake_cell)
+    monkeypatch.setattr(runner, "characterize_library", fake_lib)
+    return runner.main(argv), seen
+
+
+def test_cli_corner_reaches_both_modes(monkeypatch):
+    from sim.harness.corners import CHAR_CORNER_PVT
+
+    assert list(CHAR_CORNER_PVT) == ["tt", "ff", "ss"]  # choices draw from here, not retyped
+    rc, seen = _main_capture(monkeypatch, ["--corner", "ff"])
+    assert rc == 0
+    assert seen["cell"][0][1] == "ff"
+    rc, seen = _main_capture(monkeypatch, ["--library", "--corner", "ss"])
+    assert rc == 0
+    assert seen["lib"][0][1] == "ss"
+
+
+def test_cli_default_corner_is_tt(monkeypatch):
+    rc, seen = _main_capture(monkeypatch, [])
+    assert rc == 0
+    assert seen["cell"][0][1] == "tt"
+
+
+def test_cli_unknown_corner_and_backend_exit_nonzero():
+    for argv in (["--corner", "fs"], ["--backend", "ssh"]):
+        with pytest.raises(SystemExit) as exc:
+            runner.main(argv)
+        assert exc.value.code != 0
+
+
+def test_cli_config_lib_without_library_rejected():
+    with pytest.raises(SystemExit) as exc:
+        runner.main(["--config", "other.json"])
+    assert exc.value.code != 0
