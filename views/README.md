@@ -1,6 +1,12 @@
 # views
 
-Generated Liberty views. LEF abstracts are future work (ROADMAP.md).
+Generated Liberty views, one per characterization corner. The view name is
+derived from the corner's supply/temperature pairing in
+`sim.harness.corners.CHAR_CORNER_PVT` (`sim.characterize.request.library_view_name`):
+`sg13g2_stdcells_<corner>_<supply>v_<temp>c`, with negative temperatures
+spelling `m` for minus — so TT/1.20 V/25 C is `sg13g2_stdcells_tt_1p20v_25c.lib`
+and FF/1.32 V/-40 C is `sg13g2_stdcells_ff_1p32v_m40c.lib`. LEF abstracts are
+future work (ROADMAP.md).
 
 ## Liberty: `sg13g2_stdcells_tt_1p20v_25c.lib`
 
