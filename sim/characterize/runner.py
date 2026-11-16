@@ -281,9 +281,11 @@ def main(argv=None) -> int:
     ap.add_argument("--config", type=Path, default=None,
                     help=f"cell config, used with --library (default: {DEFAULT_CONFIG.relative_to(REPO_ROOT)})")
     ap.add_argument("--lib", type=Path, default=None,
-                    help="Liberty output path, used with --library")
+                    help=f"Liberty output path, used with --library (default: {DEFAULT_LIB.relative_to(REPO_ROOT)})")
     args = ap.parse_args(argv)
     if args.library:
+        if args.corner != DEFAULT_CORNER and args.lib is None:
+            ap.error("--library at a non-default corner needs an explicit --lib; the default view path is tt-named")
         config = args.config or DEFAULT_CONFIG
         lib = args.lib or DEFAULT_LIB
         print(characterize_library(config.resolve(), args.corner, args.pdk_dir,
