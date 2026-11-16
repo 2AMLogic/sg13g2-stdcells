@@ -243,6 +243,89 @@ def test_truncated_sidecar_is_drift(tree):
     assert any("lacks" in p for p in run(tree))
 
 
+def test_dirty_sidecar_stamp_is_drift(tree):
+    # A (dirty) repo_commit is not reproducible from any commit (issue #134).
+    _, lib, _ = tree
+    edit_sidecar(lib, repo_commit=f"{'a' * 40} (dirty)")
+    problems = run(tree)
+    assert any("repo_commit" in p and "(dirty)" in p for p in problems), problems
+
+
+def test_dirty_record_stamp_is_drift(tree):
+    # The measurement the sidecar cites itself stamps a dirty tree (issue #134).
+    _, _, records = tree
+    record = records / REAL_RECORD.name
+    record.write_text("".join(
+        line.rstrip("\n") + " (dirty)\n" if line.startswith("**Repo commit**") else line
+        for line in record.read_text().splitlines(keepends=True)))
+    problems = run(tree)
+    assert any(REAL_RECORD.name in p and "(dirty)" in p for p in problems), problems
+
+
+def test_sidecar_without_repo_commit_is_drift(tree):
+    # Decided explicitly (issue #134): repo_commit is a REQUIRED_KEY, so
+    # provenance without a stamp cannot pass unstated.
+    _, lib, _ = tree
+    prov = json.loads(Path(str(lib) + ".provenance").read_text())
+    del prov["repo_commit"]
+    Path(str(lib) + ".provenance").write_text(
+        json.dumps(prov, indent=2, sort_keys=True) + "\n")
+    assert any("repo_commit" in p for p in run(tree))
+
+
+def test_dirty_stamp_with_trailing_whitespace_is_drift(tree):
+    _, lib, _ = tree
+    edit_sidecar(lib, repo_commit=f"{'a' * 40} (dirty)   ")
+    assert any("(dirty)" in p for p in run(tree))
+
+
+def test_commit_with_dirty_substring_outside_the_suffix_is_not_flagged(tree):
+    # The predicate is anchored on the exact " (dirty)" suffix: a commit string
+    # that merely contains "dirty" elsewhere is a clean stamp (issue #134).
+    _, lib, _ = tree
+    edit_sidecar(lib, repo_commit=f"dirty-{'a' * 40}")
+    assert run(tree) == []
+
+
+def test_record_without_a_commit_stamp_is_drift(tree):
+    # The cited measurement's stamp is its reproducibility claim; a record
+    # without the line names no tree it is reproducible from (issue #134).
+    _, _, records = tree
+    record = records / REAL_RECORD.name
+    record.write_text("".join(
+        line for line in record.read_text().splitlines(keepends=True)
+        if not line.startswith("**Repo commit**")))
+    assert any("Repo commit" in p for p in run(tree))
+
+
+def test_writer_stamp_format_is_what_the_checker_rejects(tree):
+    """The stamp the runner writes is the stamp the checker rejects (issue #134).
+
+    In the spirit of `test_default_paths_match_runner`: writer and checker
+    must read the one stamp definition in `harness.report`, so the `(dirty)`
+    suffix cannot drift apart between the stamps `runner.py` emits (record
+    line, sidecar `repo_commit`) and the predicate `check_library.py` applies.
+    """
+    from sim.characterize import runner
+
+    root, _, _ = tree
+    git = {"commit": "a" * 40, "short": "aaaaaaa", "branch": "main", "dirty": False}
+    dirty = {**git, "dirty": True}
+
+    record_text = runner.render("r", dirty, {"klt": {"version": "klt 0"},
+                                            "backend": "local"}, [])
+    line = next(l for l in record_text.splitlines() if l.startswith("**Repo commit**"))
+    stamp = line.removeprefix("**Repo commit**: ")
+    assert check_library.is_dirty_stamp(stamp)
+    assert not check_library.is_dirty_stamp(runner.commit_stamp(git))
+
+    lib_data = {"klt": {"version": "klt 0"}, "backend": "local",
+                "cells": [{"cell": "c"}], "record_id": "r"}
+    prov = runner.provenance_for(root / "layout" / "example_config.json",
+                                 {"name": "tt"}, lib_data, git=dirty)
+    assert check_library.is_dirty_stamp(prov["repo_commit"])
+
+
 def test_committed_tree_is_fresh():
     """The committed tree IS fresh as of this issue-82 regeneration lap.
 

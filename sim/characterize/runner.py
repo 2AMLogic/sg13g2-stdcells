@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 
 from ..harness.evidence import CharacterizationExtensions
-from ..harness.report import allocate_record_id, git_provenance
+from ..harness.report import allocate_record_id, commit_stamp, git_provenance
 from .request import (DEFAULT_CORNER, CellSpec, build_library_request, build_request,
                       cells_from_config, library_view_name)
 
@@ -176,7 +176,7 @@ def render(record_id: str, git: dict, data: dict, exts: list[CharacterizationExt
     if "cells" in data:
         data = {**data, **{k: v for k, v in data["cells"][0].items() if k not in data}}
     lines = [f"# {record_id}", "", "**Kind**: characterization (raw klt characterize measurements)",
-             f"**Repo commit**: {git['commit']}{' (dirty)' if git['dirty'] else ''}", ""]
+             f"**Repo commit**: {commit_stamp(git)}", ""]
     klt_ver = str(data['klt']['version']).removeprefix("klt ")
     lines += [f"**Notes**: klt {klt_ver}, backend {data['backend']}, "
               f"simulator {simulator_str(data)}; "
@@ -244,7 +244,7 @@ def provenance_for(config: Path, corner: dict, data: dict, git: dict | None = No
         "library": library_view_name(corner["name"]),
         "klt_version": data["klt"]["version"],
         "simulator": simulator_str(data),
-        "repo_commit": git["commit"] + (" (dirty)" if git["dirty"] else ""),
+        "repo_commit": commit_stamp(git),
         "corner": corner,
         "config": rel,
         "config_sha256": hashlib.sha256(Path(config).read_bytes()).hexdigest(),
