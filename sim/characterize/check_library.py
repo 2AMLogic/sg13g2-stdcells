@@ -25,6 +25,9 @@ a citation whose backing command cannot fail is not evidence.
 The provenance stamps themselves are checked too: a `repo_commit` marked
 dirty -- on the sidecar or on the record it names -- is a disagreement,
 because a measurement taken on a dirty tree is reproducible from no commit.
+And the two stamps must agree on the commit itself: the writer formats both
+from one `git_provenance()` snapshot, so committed bytes naming different
+trees mean a sidecar repointed at another tree's record (issue #147).
 
 What it deliberately does not catch: a hand-edited `.lib` whose library name,
 cell set and declared corner still agree with the sidecar. The sidecar
@@ -121,6 +124,21 @@ def _record_commit_stamp(record_text: str) -> str | None:
     """The record's ``**Repo commit**`` stamp, or None if the line is absent."""
     found = _RECORD_COMMIT_STAMP_RE.search(record_text)
     return found.group(1).strip() if found else None
+
+
+def _stamp_commit(stamp) -> str | None:
+    """The commit part of a ``<commit>[ (dirty)]`` stamp.
+
+    Everything before the first whitespace, so the `` (dirty)`` suffix is
+    stripped and a dirty stamp compares equal to its clean form -- dirtiness
+    is #134's finding, not a mismatch. None when the stamp carries no commit
+    part (missing line, empty or non-string value): the existing checks own
+    that case.
+    """
+    if not isinstance(stamp, str):
+        return None
+    parts = stamp.split()
+    return parts[0] if parts else None
 
 
 def check(lib_path: Path, repo_root: Path = REPO_ROOT,
@@ -261,6 +279,20 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
                 f"{_rel(record_path, repo_root)}: **Repo commit** {stamp!r} "
                 f"stamps a dirty tree -- the cited measurement is not "
                 f"reproducible from any commit; re-characterize on a clean tree")
+
+        # The two stamps must also agree on the commit itself (issue #147): the
+        # writer formats both from one git_provenance() snapshot, so committed
+        # bytes naming different trees mean the sidecar was repointed at
+        # another tree's record. Exact on the full SHA -- no short-vs-full
+        # tolerance; both stamps carry full 40-char SHAs today.
+        record_commit = _stamp_commit(stamp)
+        sidecar_commit = _stamp_commit(prov["repo_commit"])
+        if (record_commit is not None and sidecar_commit is not None
+                and record_commit != sidecar_commit):
+            problems.append(
+                f"{_rel(record_path, repo_root)}: **Repo commit** {stamp!r} "
+                f"but the sidecar's repo_commit is {prov['repo_commit']!r} -- "
+                f"the cited measurement was taken on another tree")
 
         corner = (prov.get("corner") or {}).get("name")
         for cell in claimed:
