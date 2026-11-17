@@ -4,6 +4,8 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-17
 
+- **PR #146**: fix(sim): pass --wait-for-capacity on batch klt characterize submits
+- **Issue #142** (closed): sim/characterize: run_klt never passes --wait-for-capacity on a batch klt characterize submit
 - **Issue #115** (closed): Report upstream: generate-agents-md.sh is shipped into installed .loom/scripts/, where it cannot run
 
 ### 2026-11-16
