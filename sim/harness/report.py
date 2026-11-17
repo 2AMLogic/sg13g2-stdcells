@@ -33,6 +33,29 @@ def git_provenance(repo_root: Path) -> dict:
     }
 
 
+# The one dirty marker in the repo: `commit_stamp` appends it, `is_dirty_stamp`
+# recognises it, and nothing else hand-types the literal (issue #134).
+_DIRTY_SUFFIX = " (dirty)"
+
+
+def commit_stamp(git: dict) -> str:
+    """``<commit>[ (dirty)]`` -- the stamp format writer and checker share.
+
+    Takes a :func:`git_provenance` snapshot so a stamp always names the tree
+    state the snapshot captured.
+    """
+    return git["commit"] + (_DIRTY_SUFFIX if git["dirty"] else "")
+
+
+def is_dirty_stamp(stamp: str) -> bool:
+    """Whether ``stamp`` is a :func:`commit_stamp` output that marked a dirty tree.
+
+    Anchored on the exact `` (dirty)`` suffix (trailing whitespace tolerated),
+    so a commit string that merely contains ``dirty`` elsewhere does not match.
+    """
+    return stamp.rstrip().endswith(_DIRTY_SUFFIX)
+
+
 def format_record_id(short_sha: str, when: _dt.datetime) -> str:
     """``<YYYYMMDD>-<HHMMSS>-<short-git-sha>``."""
     return f"{when.strftime('%Y%m%d-%H%M%S')}-{short_sha}"

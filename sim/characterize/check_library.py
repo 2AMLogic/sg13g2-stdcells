@@ -8,7 +8,10 @@ config edit or a deleted record leaves a sidecar that still *claims* to
 describe the view.
 
 This is that check. It re-derives what the sidecar claims from the files
-themselves -- the library name and cell set in the `.lib`, the corner the view
+themselves -- the library name and cell set in the `.lib` (the name both
+against the sidecar's field and against the name derived from the sidecar's
+corner, so a view whose name asserts one corner while its data is another is
+caught -- issue #143), the corner the view
 declares (the operating_conditions group name and, via the nom_* attributes
 and the group, voltage and temperature; the sidecar's process-corner entry is
 a name like mos_tt while the view's process attributes are numeric factors,
@@ -18,6 +21,13 @@ disagreement, so it fails when the evidence goes stale rather than when the
 evidence is merely absent. It is what `manifests/inventories/item8.analog.json`
 declares as the freshness command behind its T1 item 8 citation (issue #75):
 a citation whose backing command cannot fail is not evidence.
+
+The provenance stamps themselves are checked too: a `repo_commit` marked
+dirty -- on the sidecar or on the record it names -- is a disagreement,
+because a measurement taken on a dirty tree is reproducible from no commit.
+And the two stamps must agree on the commit itself: the writer formats both
+from one `git_provenance()` snapshot, so committed bytes naming different
+trees mean a sidecar repointed at another tree's record (issue #147).
 
 What it deliberately does not catch: a hand-edited `.lib` whose library name,
 cell set and declared corner still agree with the sidecar. The sidecar
@@ -39,7 +49,8 @@ import re
 import sys
 from pathlib import Path
 
-from .request import LIBRARY_NAME
+from ..harness.report import is_dirty_stamp
+from .request import LIBRARY_NAME, RequestError, library_view_name
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_LIB = REPO_ROOT / "views" / f"{LIBRARY_NAME}.lib"
@@ -49,6 +60,9 @@ _CELL_RE = re.compile(r"^\s*cell \(([A-Za-z0-9_]+)\)", re.MULTILINE)
 _LIBRARY_RE = re.compile(r"^\s*library \(([A-Za-z0-9_]+)\)", re.MULTILINE)
 _MEASUREMENT_BLOCK_RE = re.compile(r"^### ", re.MULTILINE)
 _RECORD_FIELD_RE = re.compile(r"^- \*\*(Cell|Corner|Netlist provenance)\*\*: (.*)$", re.MULTILINE)
+# The record's provenance stamp is a top-of-file `**Repo commit**: <sha>[ (dirty)]`
+# line, not a `- **Key**: value` bullet, so _RECORD_FIELD_RE does not match it.
+_RECORD_COMMIT_STAMP_RE = re.compile(r"^\*\*Repo commit\*\*: (.*)$", re.MULTILINE)
 _SPICE_PATH_RE = re.compile(r"\S+\.spice\b")
 # The generated operating_conditions group is flat (attributes only, no
 # nested groups), so the body is matched as a run of non-`}` characters.
@@ -60,7 +74,8 @@ _OC_ATTR_RE = re.compile(
 _NOM_ATTR_RE = re.compile(
     r"^\s*nom_(?P<key>process|temperature|voltage)\s*:\s*(?P<value>[^;]+);", re.MULTILINE)
 
-REQUIRED_KEYS = ("library", "corner", "config", "config_sha256", "cells", "evidence_record")
+REQUIRED_KEYS = ("library", "corner", "config", "config_sha256", "cells",
+                 "evidence_record", "repo_commit")
 
 
 def cells_in_lib(text: str) -> list[str]:
@@ -105,6 +120,27 @@ def _measurement_blocks(record_text: str) -> list[dict[str, str]]:
             for block in _MEASUREMENT_BLOCK_RE.split(record_text)[1:]]
 
 
+def _record_commit_stamp(record_text: str) -> str | None:
+    """The record's ``**Repo commit**`` stamp, or None if the line is absent."""
+    found = _RECORD_COMMIT_STAMP_RE.search(record_text)
+    return found.group(1).strip() if found else None
+
+
+def _stamp_commit(stamp) -> str | None:
+    """The commit part of a ``<commit>[ (dirty)]`` stamp.
+
+    Everything before the first whitespace, so the `` (dirty)`` suffix is
+    stripped and a dirty stamp compares equal to its clean form -- dirtiness
+    is #134's finding, not a mismatch. None when the stamp carries no commit
+    part (missing line, empty or non-string value): the existing checks own
+    that case.
+    """
+    if not isinstance(stamp, str):
+        return None
+    parts = stamp.split()
+    return parts[0] if parts else None
+
+
 def check(lib_path: Path, repo_root: Path = REPO_ROOT,
           records_dir: Path | None = None) -> list[str]:
     """Return a list of human-readable drift findings; empty means fresh."""
@@ -136,6 +172,24 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
         problems.append(
             f"{_rel(lib_path, repo_root)}: declares library {declared!r}, "
             f"sidecar names {prov['library']!r}")
+
+    # 1b. The declared name is the one the sidecar's corner derives -- the one
+    #     relation check 1 cannot span, since the sidecar's library field is
+    #     stamped from the writer's own name choice. A view whose data says ff
+    #     while its name still says tt_1p20v_25c is a mislabel either way.
+    corner = prov["corner"]
+    if isinstance(corner, dict) and corner.get("name") is not None:
+        try:
+            expected = library_view_name(corner["name"])
+        except RequestError:
+            problems.append(
+                f"{_rel(sidecar_path, repo_root)}: names corner {corner['name']!r}, "
+                f"not a characterization corner -- no library name can be derived")
+        else:
+            if declared != expected:
+                problems.append(
+                    f"{_rel(lib_path, repo_root)}: declares library {declared!r}, "
+                    f"but corner {corner['name']!r} derives {expected!r}")
 
     # 2. The .lib holds exactly the cells the sidecar claims were characterized.
     in_lib = sorted(cells_in_lib(lib_text))
@@ -211,6 +265,35 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
             f"{_rel(record_path, repo_root)}: evidence record named by the sidecar is missing")
     else:
         record_text = record_path.read_text()
+
+        # The record's own stamp is checked in this branch rather than in the
+        # next step because the record text is already read here. Without the
+        # line the cited measurement names no tree it is reproducible from.
+        stamp = _record_commit_stamp(record_text)
+        if stamp is None:
+            problems.append(
+                f"{_rel(record_path, repo_root)}: has no **Repo commit** line -- "
+                f"the cited measurement names no tree it is reproducible from")
+        elif is_dirty_stamp(stamp):
+            problems.append(
+                f"{_rel(record_path, repo_root)}: **Repo commit** {stamp!r} "
+                f"stamps a dirty tree -- the cited measurement is not "
+                f"reproducible from any commit; re-characterize on a clean tree")
+
+        # The two stamps must also agree on the commit itself (issue #147): the
+        # writer formats both from one git_provenance() snapshot, so committed
+        # bytes naming different trees mean the sidecar was repointed at
+        # another tree's record. Exact on the full SHA -- no short-vs-full
+        # tolerance; both stamps carry full 40-char SHAs today.
+        record_commit = _stamp_commit(stamp)
+        sidecar_commit = _stamp_commit(prov["repo_commit"])
+        if (record_commit is not None and sidecar_commit is not None
+                and record_commit != sidecar_commit):
+            problems.append(
+                f"{_rel(record_path, repo_root)}: **Repo commit** {stamp!r} "
+                f"but the sidecar's repo_commit is {prov['repo_commit']!r} -- "
+                f"the cited measurement was taken on another tree")
+
         corner = (prov.get("corner") or {}).get("name")
         for cell in claimed:
             measured = [b for b in _measurement_blocks(record_text)
@@ -231,6 +314,15 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
                     f"{_rel(record_path, repo_root)}: measurements of cell {cell!r} "
                     f"were taken on netlist(s) {wrong}, not {cell_netlist!r}")
 
+    # 6. The sidecar's own stamp is reproducible: the writer appends the dirty
+    #    suffix on an uncommitted tree, and a view characterized there is not
+    #    re-derivable from any commit (issue #134).
+    if is_dirty_stamp(prov["repo_commit"]):
+        problems.append(
+            f"{_rel(sidecar_path, repo_root)}: repo_commit {prov['repo_commit']!r} "
+            f"stamps a dirty tree -- the recorded view is not reproducible from "
+            f"any commit; re-characterize on a clean tree")
+
     return problems
 
 
@@ -248,7 +340,8 @@ def main(argv: list[str] | None = None) -> int:
         prog="python3 -m sim.characterize.check_library",
         description="Verify the committed Liberty view agrees with its provenance "
                     "sidecar -- library name, cell set, declared corner, the "
-                    "config it pins and the evidence record it names.")
+                    "config it pins, the evidence record it names, and the "
+                    "provenance stamps both carry (a dirty stamp is reported).")
     ap.add_argument("--lib", type=Path, default=DEFAULT_LIB,
                     help=f"Liberty view to check (default: {_rel(DEFAULT_LIB, REPO_ROOT)})")
     args = ap.parse_args(argv)
@@ -259,7 +352,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"stale: {problem}", file=sys.stderr)
         return 1
     print(f"fresh: {_rel(args.lib.resolve(), REPO_ROOT)} agrees with its provenance "
-          f"sidecar's library, cell set, corner, pinned config and evidence record")
+          f"sidecar's library, cell set, corner, pinned config and evidence "
+          f"record; the provenance stamps are clean")
     return 0
 
 

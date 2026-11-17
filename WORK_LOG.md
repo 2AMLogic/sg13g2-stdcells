@@ -2,6 +2,34 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-17
+
+- **Issue #115** (closed): Report upstream: generate-agents-md.sh is shipped into installed .loom/scripts/, where it cannot run
+
+### 2026-11-16
+
+- **PR #151**: fix: reap characterize_and_record's klt scratch dir via caller-owned workdir
+- **Issue #149** (closed): sim: run_klt leaves an unreaped /tmp scratch dir when called without workdir
+- **PR #155**: docs: point ROADMAP Liberty row at the current characterize record
+- **PR #153**: check_library: flag a sidecar repo_commit that disagrees with the record's stamp
+- **PR #148**: fix: derive the Liberty view name from the characterization corner
+- **Issue #147** (closed): check_library never relates the sidecar's repo_commit to the record stamp, so a sidecar repointed at another tree's record passes
+- **Issue #144** (closed): ROADMAP.md still cites superseded (dirty) record 20261115-171205-3462cc8 in the present tense
+- **Issue #143** (closed): Liberty library name and default view path are hard-coded to tt, so --corner ff|ss cannot produce a correctly-named library view
+- **PR #150**: test: pin characterize_library's capture-before-write provenance ordering
+- **PR #145**: fix: fail check_library on dirty provenance stamps
+- **PR #141**: feat: add --corner selection to the sim.characterize CLI
+- **PR #139**: fix: guard non-object JSON top level in check_attestations --manifest mode
+- **PR #135**: fix: make manifest-pins fail on zero pins and unreadable manifests
+- **PR #98**: fix: regenerate the TT Liberty view's provenance against the current config (T1 #8 [analog] MET)
+- **Issue #140** (closed): Add --corner to the sim.characterize CLI the docs say selects FF/SS
+- **Issue #138** (closed): test_runner_provenance pins the shared-snapshot contract but not the capture-before-write ordering it exists to protect
+- **Issue #137** (closed): check_attestations --manifest tracebacks on a valid-JSON manifest that is not an object
+- **Issue #134** (closed): Committed Liberty evidence on main stamps a dirty tree, and no check can fail on it
+- **Issue #129** (closed): manifest-pins stage passes vacuously when a manifest carries zero object pins
+- **Issue #124** (closed): test_committed_tree_config_pin_is_fresh docstring names a superseded record id
+- **Issue #82** (closed): Liberty view provenance pins a config SHA-256 that no longer matches the tree, blocking T1 item 8
+
 ### 2026-11-15
 
 - **PR #131**: sim/characterize: record the simulator version in evidence records and the Liberty sidecar

@@ -129,6 +129,10 @@ def test_sidecar_names_simulator_beside_klt(tmp_path):
                                  _library_data({"engine": "ngspice", "engine_version": "47"}))
     assert prov["simulator"] == "ngspice-47"
     assert "klt_version" in prov
+    assert prov["library"] == "sg13g2_stdcells_tt_1p20v_25c"
+    ff = runner.provenance_for(config, {"name": "ff"},
+                               _library_data({"engine": "ngspice", "engine_version": "47"}))
+    assert ff["library"] == "sg13g2_stdcells_ff_1p32v_m40c"
 
 
 @pytest.mark.parametrize("simulation", [
@@ -197,15 +201,16 @@ def test_cli_config_lib_without_library_rejected():
 
 
 def test_cli_library_default_corner_uses_default_lib(monkeypatch):
-    # The tt-named default view path is only correct at the default corner.
+    # The tt-named default view path is the derived name at the default corner.
     rc, seen = _main_capture(monkeypatch, ["--library"])
     assert rc == 0
     assert seen["lib"][1]["lib_path"] == runner.DEFAULT_LIB.resolve()
 
 
-def test_cli_library_nondefault_corner_requires_lib():
-    # LIBRARY_NAME/DEFAULT_LIB bake in tt_1p20v_25c; letting --corner ff|ss
-    # write there would overwrite the committed TT view under its TT name.
-    with pytest.raises(SystemExit) as exc:
-        runner.main(["--library", "--corner", "ff"])
-    assert exc.value.code != 0
+def test_cli_library_nondefault_corner_defaults_to_corner_named_lib(monkeypatch):
+    # The default view path is corner-named (issue #143), so --corner ff needs
+    # no explicit --lib to avoid overwriting the committed TT view.
+    rc, seen = _main_capture(monkeypatch, ["--library", "--corner", "ff"])
+    assert rc == 0
+    expected = runner.REPO_ROOT / "views" / "sg13g2_stdcells_ff_1p32v_m40c.lib"
+    assert seen["lib"][1]["lib_path"] == expected.resolve()

@@ -15,9 +15,9 @@ import tempfile
 from pathlib import Path
 
 from ..harness.evidence import CharacterizationExtensions
-from ..harness.report import allocate_record_id, git_provenance
-from .request import (LIBRARY_NAME, CellSpec, build_library_request, build_request,
-                      cells_from_config)
+from ..harness.report import allocate_record_id, commit_stamp, git_provenance
+from .request import (DEFAULT_CORNER, CellSpec, build_library_request, build_request,
+                      cells_from_config, library_view_name)
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
@@ -50,6 +50,9 @@ def run_klt(request: dict, backend: str = "local", workdir: Path | None = None,
 
     Raises :class:`CharacterizeFailed` loudly on a non-zero exit or unparsable output
     (e.g. a missing cell/arc) -- nothing is recorded in that case.
+
+    When ``workdir`` is given, the caller owns scratch cleanup; the ``None``
+    fallback creates a temp dir nothing reaps, so callers should pass ``workdir``.
     """
     scratch = Path(workdir or tempfile.mkdtemp(prefix="klt-characterize-"))
     scratch.mkdir(parents=True, exist_ok=True)
@@ -184,7 +187,7 @@ def render(record_id: str, git: dict, data: dict, exts: list[CharacterizationExt
     if "cells" in data:
         data = {**data, **{k: v for k, v in data["cells"][0].items() if k not in data}}
     lines = [f"# {record_id}", "", "**Kind**: characterization (raw klt characterize measurements)",
-             f"**Repo commit**: {git['commit']}{' (dirty)' if git['dirty'] else ''}", ""]
+             f"**Repo commit**: {commit_stamp(git)}", ""]
     klt_ver = str(data['klt']['version']).removeprefix("klt ")
     lines += [f"**Notes**: klt {klt_ver}, backend {data['backend']}, "
               f"simulator {simulator_str(data)}; "
@@ -221,12 +224,21 @@ def record(data: dict, records_dir: Path = RECORDS_DIR, repo_root: Path = REPO_R
 
 def characterize_and_record(cell: CellSpec, corner: str, pdk_dir, backend: str = "local",
                             records_dir: Path = RECORDS_DIR, **axes) -> Path:
-    response = run_klt(build_request(cell, corner, pdk_dir, **axes), backend=backend)
-    return record(build_record_data(response, cell, backend), records_dir=records_dir)
+    with tempfile.TemporaryDirectory(prefix="sg13g2-char-") as tmp:
+        response = run_klt(build_request(cell, corner, pdk_dir, **axes), backend=backend,
+                           workdir=Path(tmp) / "work")
+        return record(build_record_data(response, cell, backend), records_dir=records_dir)
 
 
 DEFAULT_CONFIG = REPO_ROOT / "layout" / "example_config.json"
-DEFAULT_LIB = REPO_ROOT / "views" / f"{LIBRARY_NAME}.lib"
+
+
+def default_lib_path(corner: str = DEFAULT_CORNER) -> Path:
+    """The corner-named default Liberty view path: ``views/<library_view_name>``."""
+    return REPO_ROOT / "views" / f"{library_view_name(corner)}.lib"
+
+
+DEFAULT_LIB = default_lib_path()
 
 
 def generate_netlists(config: Path, out: Path) -> None:
@@ -242,10 +254,10 @@ def provenance_for(config: Path, corner: dict, data: dict, git: dict | None = No
     git = git or git_provenance(REPO_ROOT)
     rel = os.path.relpath(config, REPO_ROOT)
     return {
-        "library": LIBRARY_NAME,
+        "library": library_view_name(corner["name"]),
         "klt_version": data["klt"]["version"],
         "simulator": simulator_str(data),
-        "repo_commit": git["commit"] + (" (dirty)" if git["dirty"] else ""),
+        "repo_commit": commit_stamp(git),
         "corner": corner,
         "config": rel,
         "config_sha256": hashlib.sha256(Path(config).read_bytes()).hexdigest(),
@@ -254,15 +266,22 @@ def provenance_for(config: Path, corner: dict, data: dict, git: dict | None = No
     }
 
 
-def characterize_library(config: Path, corner: str, pdk_dir, lib_path: Path = DEFAULT_LIB,
+def characterize_library(config: Path, corner: str, pdk_dir, lib_path: Path | None = None,
                          backend: str = "local", records_dir: Path = RECORDS_DIR) -> Path:
-    """Characterize every cell of ``config`` into one committed ``.lib`` + sidecar + record."""
+    """Characterize every cell of ``config`` into one committed ``.lib`` + sidecar + record.
+
+    The view defaults to the corner-named path under ``views/``
+    (:func:`default_lib_path`), and the request's ``library.name`` is the name
+    derived from the same corner -- view name and contents never disagree.
+    """
+    lib_path = lib_path or default_lib_path(corner)
     git = git_provenance(REPO_ROOT)
     with tempfile.TemporaryDirectory(prefix="sg13g2-lib-") as tmp:
         tmp = Path(tmp)
         generate_netlists(config, tmp / "netlists")
         cells = cells_from_config(config, tmp / "netlists")
-        request = build_library_request(cells, corner, pdk_dir)
+        request = build_library_request(cells, corner, pdk_dir,
+                                        library_name=library_view_name(corner))
         response = run_klt(request, backend=backend, workdir=tmp / "work", lib_path=lib_path)
     per_cell = [build_record_data(response, c, backend) for c in cells]
     data = {**per_cell[0], "cells": per_cell,
@@ -276,7 +295,7 @@ def characterize_library(config: Path, corner: str, pdk_dir, lib_path: Path = DE
 
 def main(argv=None) -> int:
     import argparse
-    from .request import DEFAULT_CORNER, SG13G2_INV_1
+    from .request import SG13G2_INV_1
     ap = argparse.ArgumentParser(prog="python3 -m sim.characterize")
     ap.add_argument("--pdk-dir", default=os.environ.get("SG13G2_PDK_PATH") or
                     os.path.join(os.environ.get("PDK_ROOT", ""), "ihp-sg13g2"))
@@ -285,17 +304,17 @@ def main(argv=None) -> int:
     ap.add_argument("--corner", default=DEFAULT_CORNER, choices=list(CHAR_CORNER_PVT),
                     help="characterization corner (default: %(default)s)")
     ap.add_argument("--library", action="store_true",
-                    help=f"characterize every cell of --config into {DEFAULT_LIB.relative_to(REPO_ROOT)}")
+                    help="characterize every cell of --config into the corner-named "
+                         "view under views/")
     ap.add_argument("--config", type=Path, default=None,
                     help=f"cell config, used with --library (default: {DEFAULT_CONFIG.relative_to(REPO_ROOT)})")
     ap.add_argument("--lib", type=Path, default=None,
-                    help=f"Liberty output path, used with --library (default: {DEFAULT_LIB.relative_to(REPO_ROOT)})")
+                    help="Liberty output path, used with --library (default: the "
+                         "corner-named view path under views/)")
     args = ap.parse_args(argv)
     if args.library:
-        if args.corner != DEFAULT_CORNER and args.lib is None:
-            ap.error("--library at a non-default corner needs an explicit --lib; the default view path is tt-named")
         config = args.config or DEFAULT_CONFIG
-        lib = args.lib or DEFAULT_LIB
+        lib = args.lib or default_lib_path(args.corner)
         print(characterize_library(config.resolve(), args.corner, args.pdk_dir,
                                    lib_path=lib.resolve(), backend=args.backend))
         return 0

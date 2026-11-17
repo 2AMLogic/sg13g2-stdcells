@@ -100,6 +100,22 @@ def test_renamed_library_is_drift(tree):
     assert any("some_other_library" in p for p in run(tree))
 
 
+def test_library_name_not_derived_from_sidecar_corner_is_drift(tree):
+    # The live mislabel this check exists for (issue #143): a view characterized
+    # at FF whose declared library name is still the tt-named constant. The
+    # sidecar's library field and corner data both come from the real run, so
+    # no other check can see it -- the declared name must be related to the
+    # name the sidecar's corner derives.
+    _, lib, _ = tree
+    sidecar = Path(str(lib) + ".provenance")
+    corner = json.loads(sidecar.read_text())["corner"]
+    edit_sidecar(lib, corner={**corner, "name": "ff", "process": "mos_ff",
+                              "supply_v": 1.32, "temperature_c": -40.0})
+    problems = run(tree)
+    assert any("sg13g2_stdcells_tt_1p20v_25c" in p and "sg13g2_stdcells_ff_1p32v_m40c" in p
+               for p in problems), problems
+
+
 def test_hand_edited_lib_voltage_is_drift(tree):
     # An attribute tampered in the view itself, library name and cell set
     # untouched: the corner comparison is what catches it (issue #119).
@@ -227,6 +243,133 @@ def test_truncated_sidecar_is_drift(tree):
     assert any("lacks" in p for p in run(tree))
 
 
+def test_dirty_sidecar_stamp_is_drift(tree):
+    # A (dirty) repo_commit is not reproducible from any commit (issue #134).
+    _, lib, _ = tree
+    edit_sidecar(lib, repo_commit=f"{'a' * 40} (dirty)")
+    problems = run(tree)
+    assert any("repo_commit" in p and "(dirty)" in p for p in problems), problems
+
+
+def test_dirty_record_stamp_is_drift(tree):
+    # The measurement the sidecar cites itself stamps a dirty tree (issue #134).
+    _, _, records = tree
+    record = records / REAL_RECORD.name
+    record.write_text("".join(
+        line.rstrip("\n") + " (dirty)\n" if line.startswith("**Repo commit**") else line
+        for line in record.read_text().splitlines(keepends=True)))
+    problems = run(tree)
+    assert any(REAL_RECORD.name in p and "(dirty)" in p for p in problems), problems
+
+
+def test_sidecar_without_repo_commit_is_drift(tree):
+    # Decided explicitly (issue #134): repo_commit is a REQUIRED_KEY, so
+    # provenance without a stamp cannot pass unstated.
+    _, lib, _ = tree
+    prov = json.loads(Path(str(lib) + ".provenance").read_text())
+    del prov["repo_commit"]
+    Path(str(lib) + ".provenance").write_text(
+        json.dumps(prov, indent=2, sort_keys=True) + "\n")
+    assert any("repo_commit" in p for p in run(tree))
+
+
+def test_dirty_stamp_with_trailing_whitespace_is_drift(tree):
+    _, lib, _ = tree
+    edit_sidecar(lib, repo_commit=f"{'a' * 40} (dirty)   ")
+    assert any("(dirty)" in p for p in run(tree))
+
+
+def test_commit_with_dirty_substring_outside_the_suffix_is_not_flagged(tree):
+    # The dirtiness predicate is anchored on the exact " (dirty)" suffix: a
+    # commit string that merely contains "dirty" elsewhere is a clean stamp
+    # (issue #134), so no dirtiness finding joins the one this repointed
+    # sidecar now earns from the commit-agreement check (issue #147).
+    _, lib, _ = tree
+    edit_sidecar(lib, repo_commit=f"dirty-{'a' * 40}")
+    problems = run(tree)
+    assert not any("(dirty)" in p for p in problems), problems
+    assert any("another tree" in p for p in problems), problems
+    assert len(problems) == 1, problems
+
+
+def test_record_without_a_commit_stamp_is_drift(tree):
+    # The cited measurement's stamp is its reproducibility claim; a record
+    # without the line names no tree it is reproducible from (issue #134).
+    _, _, records = tree
+    record = records / REAL_RECORD.name
+    record.write_text("".join(
+        line for line in record.read_text().splitlines(keepends=True)
+        if not line.startswith("**Repo commit**")))
+    assert any("Repo commit" in p for p in run(tree))
+
+
+def test_sidecar_repointed_at_another_trees_record_is_drift(tree):
+    # The sidecar names tree X, the record it cites stamps tree Y: the
+    # provenance chain is internally contradictory and must not report
+    # fresh (issue #147). Exact on the full SHA -- a short SHA is not the
+    # full one and is reported, not tolerated.
+    _, lib, _ = tree
+    edit_sidecar(lib, repo_commit="b" * 40)
+    problems = run(tree)
+    assert any("another tree" in p for p in problems), problems
+    assert len(problems) == 1, problems
+
+
+def test_dirty_suffix_alone_does_not_double_as_a_mismatch(tree):
+    # A sidecar stamp gone dirty on the same commit yields #134's dirtiness
+    # finding only; the commit parts still agree, so #147 adds no duplicate
+    # mismatch finding for the same dirty suffix.
+    _, lib, _ = tree
+    prov = json.loads(Path(str(lib) + ".provenance").read_text())
+    edit_sidecar(lib, repo_commit=prov["repo_commit"] + " (dirty)")
+    problems = run(tree)
+    assert any("repo_commit" in p and "(dirty)" in p for p in problems), problems
+    assert not any("another tree" in p for p in problems), problems
+    assert len(problems) == 1, problems
+
+
+def test_record_without_a_commit_stamp_yields_no_mismatch_finding(tree):
+    # With no record stamp the existing check reports the missing line;
+    # the agreement check stays silent rather than adding a second finding
+    # for a stamp that is not there (issue #147).
+    _, _, records = tree
+    record = records / REAL_RECORD.name
+    record.write_text("".join(
+        line for line in record.read_text().splitlines(keepends=True)
+        if not line.startswith("**Repo commit**")))
+    problems = run(tree)
+    assert any("Repo commit" in p for p in problems), problems
+    assert not any("another tree" in p for p in problems), problems
+
+
+def test_writer_stamp_format_is_what_the_checker_rejects(tree):
+    """The stamp the runner writes is the stamp the checker rejects (issue #134).
+
+    In the spirit of `test_default_paths_match_runner`: writer and checker
+    must read the one stamp definition in `harness.report`, so the `(dirty)`
+    suffix cannot drift apart between the stamps `runner.py` emits (record
+    line, sidecar `repo_commit`) and the predicate `check_library.py` applies.
+    """
+    from sim.characterize import runner
+
+    root, _, _ = tree
+    git = {"commit": "a" * 40, "short": "aaaaaaa", "branch": "main", "dirty": False}
+    dirty = {**git, "dirty": True}
+
+    record_text = runner.render("r", dirty, {"klt": {"version": "klt 0"},
+                                            "backend": "local"}, [])
+    line = next(l for l in record_text.splitlines() if l.startswith("**Repo commit**"))
+    stamp = line.removeprefix("**Repo commit**: ")
+    assert check_library.is_dirty_stamp(stamp)
+    assert not check_library.is_dirty_stamp(runner.commit_stamp(git))
+
+    lib_data = {"klt": {"version": "klt 0"}, "backend": "local",
+                "cells": [{"cell": "c"}], "record_id": "r"}
+    prov = runner.provenance_for(root / "layout" / "example_config.json",
+                                 {"name": "tt"}, lib_data, git=dirty)
+    assert check_library.is_dirty_stamp(prov["repo_commit"])
+
+
 def test_committed_tree_is_fresh():
     """The committed tree IS fresh as of this issue-82 regeneration lap.
 
@@ -245,7 +388,8 @@ def test_default_paths_match_runner():
 
     `runner.py` writes the view and records; `check_library.py` checks them.
     Both must resolve their defaults from the same single sources --
-    `request.LIBRARY_NAME` and this package's own directory -- so a rename in
+    `request.library_view_name` (via `request.LIBRARY_NAME`, the default
+    corner's derived name) and this package's own directory -- so a rename in
     the writer cannot leave the checker reporting on a path nobody produces.
     """
     from sim.characterize import runner
