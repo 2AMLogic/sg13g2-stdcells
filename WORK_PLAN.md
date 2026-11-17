@@ -26,6 +26,7 @@ _None._
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#154**: check_library: an empty provenance stamp reports fresh on both sides
+- **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count
 
 ## In Progress
 
@@ -71,7 +72,7 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
 | Important | 1 |
-| Ready (`loom:issue`) | 1 |
+| Ready (`loom:issue`) | 2 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
