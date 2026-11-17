@@ -342,6 +342,42 @@ def test_record_without_a_commit_stamp_yields_no_mismatch_finding(tree):
     assert not any("another tree" in p for p in problems), problems
 
 
+def test_record_with_a_blank_commit_stamp_is_drift(tree):
+    # A stamp line that is present but empty names no tree either: the blank
+    # capture must read as an absent stamp, not as a stamp that passes
+    # (issue #154). The agreement check abstains -- the sidecar's commit is
+    # compared against nothing.
+    _, _, records = tree
+    record = records / REAL_RECORD.name
+    record.write_text("".join(
+        "**Repo commit**: \n" if line.startswith("**Repo commit**") else line
+        for line in record.read_text().splitlines(keepends=True)))
+    problems = run(tree)
+    assert any(REAL_RECORD.name in p and "Repo commit" in p for p in problems), problems
+    assert not any("another tree" in p for p in problems), problems
+    assert len(problems) == 1, problems
+
+
+def test_sidecar_with_empty_repo_commit_is_drift(tree):
+    # An empty repo_commit passes REQUIRED_KEYS' presence test and
+    # is_dirty_stamp's suffix test, yet names no tree the view is
+    # reproducible from (issue #154).
+    _, lib, _ = tree
+    edit_sidecar(lib, repo_commit="")
+    problems = run(tree)
+    assert any("repo_commit" in p for p in problems), problems
+    assert len(problems) == 1, problems
+
+
+def test_sidecar_with_whitespace_repo_commit_is_drift(tree):
+    # Whitespace-only is as empty as "" once stripped (issue #154).
+    _, lib, _ = tree
+    edit_sidecar(lib, repo_commit="   ")
+    problems = run(tree)
+    assert any("repo_commit" in p for p in problems), problems
+    assert len(problems) == 1, problems
+
+
 def test_writer_stamp_format_is_what_the_checker_rejects(tree):
     """The stamp the runner writes is the stamp the checker rejects (issue #134).
 
