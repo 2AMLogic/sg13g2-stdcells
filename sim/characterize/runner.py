@@ -25,6 +25,12 @@ RECORDS_DIR = HERE / "records"
 
 TABLES = ("cell_rise", "cell_fall", "rise_transition", "fall_transition", "rise_power", "fall_power")
 
+#: Host rule: every batch ``klt sim`` submit -- and a batch ``klt characterize``
+#: submit is one underneath -- must wait up to this long for fleet capacity
+#: instead of failing the step on ``batch_no_capacity``. ``klt`` rejects the
+#: flag on ``--backend local``, so it is added for batch submits only.
+BATCH_CAPACITY_WAIT_S = 600
+
 
 class CharacterizeFailed(RuntimeError):
     pass
@@ -56,6 +62,8 @@ def run_klt(request: dict, backend: str = "local", workdir: Path | None = None,
            "-o", str(scratch / "out"), str(req_path)]
     if lib_path is not None:
         cmd[-1:-1] = ["--lib", str(lib_path)]
+    if backend == "batch":
+        cmd[-1:-1] = ["--wait-for-capacity", str(BATCH_CAPACITY_WAIT_S)]
     proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if proc.returncode != 0:
         raise CharacterizeFailed(
