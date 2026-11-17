@@ -2,6 +2,10 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-17
+
+- **Issue #115** (closed): Report upstream: generate-agents-md.sh is shipped into installed .loom/scripts/, where it cannot run
+
 ### 2026-11-16
 
 - **PR #151**: fix: reap characterize_and_record's klt scratch dir via caller-owned workdir
