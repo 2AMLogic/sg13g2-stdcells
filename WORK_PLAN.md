@@ -31,7 +31,7 @@ Human-approved issues ready for implementation (`loom:issue`).
 
 Issues currently being built (`loom:building`).
 
-- **#142**: sim/characterize: run_klt never passes --wait-for-capacity on a batch klt characterize submit
+_None._
 
 ## PRs Awaiting Review
 
@@ -51,7 +51,6 @@ Issues carrying `loom:curated`.
 
 - **#3**: Gap-to-T1 tracker: sg13g2-stdcells artifact-presence survey *(curated)*
 - **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count *(curated)*
-- **#142**: sim/characterize: run_klt never passes --wait-for-capacity on a batch klt characterize submit *(curated)*
 - **#154**: check_library: an empty provenance stamp reports fresh on both sides *(curated)*
 
 ## Proposed (Architect / Hermit)
@@ -73,10 +72,10 @@ _None._
 | Very important | 0 |
 | Important | 1 |
 | Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 4 |
+| Curated | 3 |
 | Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
