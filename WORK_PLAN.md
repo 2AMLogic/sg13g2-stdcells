@@ -25,7 +25,7 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#115**: Report upstream: generate-agents-md.sh is shipped into installed .loom/scripts/, where it cannot run
+- **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count
 - **#154**: check_library: an empty provenance stamp reports fresh on both sides
 
 ## In Progress
@@ -52,7 +52,6 @@ Issues carrying `loom:curated`.
 
 - **#3**: Gap-to-T1 tracker: sg13g2-stdcells artifact-presence survey *(curated)*
 - **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count *(curated)*
-- **#115**: Report upstream: generate-agents-md.sh is shipped into installed .loom/scripts/, where it cannot run *(curated)*
 - **#142**: sim/characterize: run_klt never passes --wait-for-capacity on a batch klt characterize submit *(curated)*
 - **#154**: check_library: an empty provenance stamp reports fresh on both sides *(curated)*
 
@@ -61,6 +60,7 @@ Issues carrying `loom:curated`.
 - **#59**: Collapse sim/harness/evidence.py to the one record kind in use and drop stale DRAFT corner markers *(hermit)*
 - **#62**: Trim layout/toolchain.json to the fields toolchain_pin.py enforces: drop unread pin fields and stale bootstrap comment *(hermit)*
 - **#69**: Write characterization records in one shape: drop the first-cell copy and per-cell run-level repeats in sim/characterize/runner.py *(hermit)*
+- **#159**: Trim merge-lap narrative from layout/README.md: history already in git, WORK_LOG and the signoff report *(hermit)*
 
 ## Epics
 
@@ -77,7 +77,7 @@ _None._
 | In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 5 |
-| Architect / Hermit proposals | 3 |
+| Curated | 4 |
+| Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
