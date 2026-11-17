@@ -26,6 +26,7 @@ _None._
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#154**: check_library: an empty provenance stamp reports fresh on both sides
+- **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count
 
 ## In Progress
 
@@ -55,10 +56,10 @@ Issues carrying `loom:curated`.
 
 ## Proposed (Architect / Hermit)
 
-- **#59**: Collapse sim/harness/evidence.py to the one record kind in use and drop stale DRAFT corner markers *(hermit)*
-- **#62**: Trim layout/toolchain.json to the fields toolchain_pin.py enforces: drop unread pin fields and stale bootstrap comment *(hermit)*
-- **#69**: Write characterization records in one shape: drop the first-cell copy and per-cell run-level repeats in sim/characterize/runner.py *(hermit)*
-- **#159**: Trim merge-lap narrative from layout/README.md: history already in git, WORK_LOG and the signoff report *(hermit)*
+- **#59**: Collapse sim/harness/evidence.py to the one record kind in use and drop stale DRAFT corner markers *(hermit)* *(held)*
+- **#62**: Trim layout/toolchain.json to the fields toolchain_pin.py enforces: drop unread pin fields and stale bootstrap comment *(hermit)* *(held)*
+- **#69**: Write characterization records in one shape: drop the first-cell copy and per-cell run-level repeats in sim/characterize/runner.py *(hermit)* *(held)*
+- **#159**: Trim merge-lap narrative from layout/README.md: history already in git, WORK_LOG and the signoff report *(hermit)* *(held)*
 
 ## Epics
 
@@ -71,7 +72,7 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
 | Important | 1 |
-| Ready (`loom:issue`) | 1 |
+| Ready (`loom:issue`) | 2 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
