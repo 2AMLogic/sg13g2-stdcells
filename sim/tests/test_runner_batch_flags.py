@@ -18,7 +18,7 @@ import subprocess
 from sim.characterize import runner
 
 
-def run_and_capture(monkeypatch, backend):
+def run_and_capture(monkeypatch, backend, lib_path=None):
     """Stub ``subprocess.run``; return (argv, parsed response) for one ``run_klt`` call."""
     seen = {}
 
@@ -27,7 +27,7 @@ def run_and_capture(monkeypatch, backend):
         return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps({"ok": True}), stderr="")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    response = runner.run_klt({"corner": {"name": "tt"}}, backend=backend)
+    response = runner.run_klt({"corner": {"name": "tt"}}, backend=backend, lib_path=lib_path)
     return seen["cmd"], response
 
 
@@ -42,6 +42,17 @@ def test_batch_flag_lands_before_the_request_path(monkeypatch):
     cmd, _ = run_and_capture(monkeypatch, "batch")
     assert cmd[-1].endswith("request.json")  # positional request path stays last
     assert cmd.index("--wait-for-capacity") < len(cmd) - 1
+
+
+def test_batch_flag_and_lib_both_land_before_the_request_path(monkeypatch, tmp_path):
+    # Both flags insert at the same ``cmd[-1:-1]`` point; the second insertion
+    # must not displace the first past the positional request path. This is the
+    # library + batch combination -- the one ``run_klt`` caller that passes
+    # ``lib_path`` (``characterize_library()``) is also the one that runs batch.
+    cmd, _ = run_and_capture(monkeypatch, "batch", lib_path=tmp_path / "x.lib")
+    assert cmd[-1].endswith("request.json")  # positional request path stays last
+    assert cmd[cmd.index("--lib") + 1].endswith("x.lib")
+    assert cmd[cmd.index("--wait-for-capacity") + 1] == str(runner.BATCH_CAPACITY_WAIT_S)
 
 
 def test_local_submit_has_no_capacity_flag(monkeypatch):
