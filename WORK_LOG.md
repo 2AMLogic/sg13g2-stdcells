@@ -4,6 +4,8 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-17
 
+- **PR #165**: check_library: report an empty provenance stamp instead of passing fresh
+- **Issue #154** (closed): check_library: an empty provenance stamp reports fresh on both sides
 - **PR #146**: fix(sim): pass --wait-for-capacity on batch klt characterize submits
 - **Issue #142** (closed): sim/characterize: run_klt never passes --wait-for-capacity on a batch klt characterize submit
 - **Issue #115** (closed): Report upstream: generate-agents-md.sh is shipped into installed .loom/scripts/, where it cannot run
