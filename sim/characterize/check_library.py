@@ -24,8 +24,10 @@ a citation whose backing command cannot fail is not evidence.
 
 The provenance stamps themselves are checked too: a `repo_commit` marked
 dirty -- on the sidecar or on the record it names -- is a disagreement,
-because a measurement taken on a dirty tree is reproducible from no commit.
-And the two stamps must agree on the commit itself: the writer formats both
+because a measurement taken on a dirty tree is reproducible from no commit;
+so is a stamp that names no commit at all -- a blank record line or an
+empty sidecar value (issue #154). And the two stamps must agree on the
+commit itself: the writer formats both
 from one `git_provenance()` snapshot, so committed bytes naming different
 trees mean a sidecar repointed at another tree's record (issue #147).
 
@@ -121,9 +123,15 @@ def _measurement_blocks(record_text: str) -> list[dict[str, str]]:
 
 
 def _record_commit_stamp(record_text: str) -> str | None:
-    """The record's ``**Repo commit**`` stamp, or None if the line is absent."""
+    """The record's ``**Repo commit**`` stamp, or None when it names no commit.
+
+    A present-but-blank capture reads as None too (issue #154): an empty
+    stamp is no stamp, and the missing-stamp finding is what reports it.
+    """
     found = _RECORD_COMMIT_STAMP_RE.search(record_text)
-    return found.group(1).strip() if found else None
+    if not found:
+        return None
+    return found.group(1).strip() or None
 
 
 def _stamp_commit(stamp) -> str | None:
@@ -132,8 +140,10 @@ def _stamp_commit(stamp) -> str | None:
     Everything before the first whitespace, so the `` (dirty)`` suffix is
     stripped and a dirty stamp compares equal to its clean form -- dirtiness
     is #134's finding, not a mismatch. None when the stamp carries no commit
-    part (missing line, empty or non-string value): the existing checks own
-    that case.
+    part (absent or blank record line, empty or non-string sidecar value):
+    the agreement check abstains there, and the per-side stamp checks are
+    what report the missing stamp (#134's missing-line finding, blank-aware
+    since #154, and step 6's empty-value finding).
     """
     if not isinstance(stamp, str):
         return None
@@ -272,8 +282,8 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
         stamp = _record_commit_stamp(record_text)
         if stamp is None:
             problems.append(
-                f"{_rel(record_path, repo_root)}: has no **Repo commit** line -- "
-                f"the cited measurement names no tree it is reproducible from")
+                f"{_rel(record_path, repo_root)}: has no (or an empty) **Repo commit** "
+                f"stamp -- the cited measurement names no tree it is reproducible from")
         elif is_dirty_stamp(stamp):
             problems.append(
                 f"{_rel(record_path, repo_root)}: **Repo commit** {stamp!r} "
@@ -316,10 +326,20 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
 
     # 6. The sidecar's own stamp is reproducible: the writer appends the dirty
     #    suffix on an uncommitted tree, and a view characterized there is not
-    #    re-derivable from any commit (issue #134).
-    if is_dirty_stamp(prov["repo_commit"]):
+    #    re-derivable from any commit (issue #134). REQUIRED_KEYS tests key
+    #    presence only, so an empty (or non-string) repo_commit passes it while
+    #    naming no tree either; it is reported here rather than folded into
+    #    REQUIRED_KEYS, whose early return would mask every other finding for
+    #    the same sidecar (issue #154).
+    commit = prov["repo_commit"]
+    if not isinstance(commit, str) or not commit.strip():
         problems.append(
-            f"{_rel(sidecar_path, repo_root)}: repo_commit {prov['repo_commit']!r} "
+            f"{_rel(sidecar_path, repo_root)}: repo_commit is empty -- the recorded "
+            f"view names no tree it is reproducible from; re-characterize on a "
+            f"clean tree")
+    elif is_dirty_stamp(commit):
+        problems.append(
+            f"{_rel(sidecar_path, repo_root)}: repo_commit {commit!r} "
             f"stamps a dirty tree -- the recorded view is not reproducible from "
             f"any commit; re-characterize on a clean tree")
 
