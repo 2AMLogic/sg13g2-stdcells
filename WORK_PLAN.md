@@ -23,9 +23,9 @@ _None._
 
 ## Ready
 
-Human-approved issues ready for implementation (`loom:issue`).
+Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-- **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count
+_None._
 
 ## In Progress
 
