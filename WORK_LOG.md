@@ -2,6 +2,10 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-18
+
+- **Issue #159** (closed, not planned): Trim merge-lap narrative from layout/README.md: history already in git, WORK_LOG and the signoff report
+
 ### 2026-11-17
 
 - **PR #165**: check_library: report an empty provenance stamp instead of passing fresh

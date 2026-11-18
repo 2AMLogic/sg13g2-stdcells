@@ -57,7 +57,6 @@ Issues carrying `loom:curated`.
 - **#59**: Collapse sim/harness/evidence.py to the one record kind in use and drop stale DRAFT corner markers *(hermit)* *(held)*
 - **#62**: Trim layout/toolchain.json to the fields toolchain_pin.py enforces: drop unread pin fields and stale bootstrap comment *(hermit)* *(held)*
 - **#69**: Write characterization records in one shape: drop the first-cell copy and per-cell run-level repeats in sim/characterize/runner.py *(hermit)* *(held)*
-- **#159**: Trim merge-lap narrative from layout/README.md: history already in git, WORK_LOG and the signoff report *(hermit)* *(held)*
 
 ## Epics
 
@@ -75,6 +74,6 @@ _None._
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
 | Curated | 2 |
-| Architect / Hermit proposals | 4 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
