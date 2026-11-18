@@ -43,7 +43,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#121**: docs(spec): add decision record on attestation pin granularity (0002)
+- **#121**: docs(spec): add decision record on attestation pin granularity (0002) — closes #110
 
 ## Proposed
 
@@ -70,7 +70,7 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
 | Important | 0 |
-| Ready (`loom:issue`) | 1 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
