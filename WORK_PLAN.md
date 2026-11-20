@@ -51,6 +51,9 @@ Issues carrying `loom:curated`.
 
 - **#3**: Gap-to-T1 tracker: sg13g2-stdcells artifact-presence survey *(curated)*
 - **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count *(curated)*
+- **#169**: layout: place cells that need a diffusion break in gen_layouts.py (XOR/mux, AOI/OAI, AND/OR, even-finger series stacks) *(curated)*
+- **#170**: layout: gen_layouts.py refuses a cell when the complementary device's width does not divide by the larger finger count on the width grid *(curated)*
+- **#171**: layout: gen_layouts.py cannot join two nets in the Metal1 channel of a 3.36 um / 0.42 um-pitch row (buf, folded nand2/nor2, and2) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -73,7 +76,7 @@ _None._
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 2 |
+| Curated | 5 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
