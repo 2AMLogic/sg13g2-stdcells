@@ -19,19 +19,21 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
-_None._
+- **#169**: layout: place cells that need a diffusion break in gen_layouts.py (XOR/mux, AOI/OAI, AND/OR, even-finger series stacks)
+- **#171**: layout: gen_layouts.py cannot join two nets in the Metal1 channel of a 3.36 um / 0.42 um-pitch row (buf, folded nand2/nor2, and2)
 
 ## Ready
 
 Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-_None._
+- **#169**: layout: place cells that need a diffusion break in gen_layouts.py (XOR/mux, AOI/OAI, AND/OR, even-finger series stacks)
+- **#170**: layout: gen_layouts.py refuses a cell when the complementary device's width does not divide by the larger finger count on the width grid
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#171**: layout: gen_layouts.py cannot join two nets in the Metal1 channel of a 3.36 um / 0.42 um-pitch row (buf, folded nand2/nor2, and2)
 
 ## PRs Awaiting Review
 
@@ -54,6 +56,11 @@ Issues carrying `loom:curated`.
 - **#169**: layout: place cells that need a diffusion break in gen_layouts.py (XOR/mux, AOI/OAI, AND/OR, even-finger series stacks) *(curated)*
 - **#170**: layout: gen_layouts.py refuses a cell when the complementary device's width does not divide by the larger finger count on the width grid *(curated)*
 - **#171**: layout: gen_layouts.py cannot join two nets in the Metal1 channel of a 3.36 um / 0.42 um-pitch row (buf, folded nand2/nor2, and2) *(curated)*
+- **#174**: T1 item 6 digital: record not_applicable for the add8 partition by citing the ratified spec table directly, and teach check_attestations.py the form *(curated)*
+- **#175**: T1 item 5 digital: add klt sta and klt functional-verification to the add8 flow and cite both *(curated)*
+- **#179**: T1 item 11 analog: run klt erc supply checks on the four generated cells and cite them with their LVS reports *(curated)*
+- **#180**: T1 item 5 analog: commit klt sim corner evidence for the four generated cells with a declared spec-row set *(curated)*
+- **#182**: T1 item 6 analog: propose a statistical spec row for the cells (decision record 0003) backed by a pilot klt yield campaign *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -71,12 +78,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
-| Important | 0 |
-| Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
-| In Progress (`loom:building`) | 0 |
+| Important | 2 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 2 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 5 |
+| Curated | 10 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
