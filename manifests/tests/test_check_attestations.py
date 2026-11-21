@@ -257,6 +257,73 @@ def test_manifest_pin_match_passes_both_provenance_shapes(tmp_path):
     assert run_manifest(root, manifest) == 0
 
 
+@pytest.fixture
+def item6_documents(tmp_path):
+    spec = b"Status: RATIFIED\r\n"
+    statement = b'{"rows": []}\n'
+    (tmp_path / "spec.md").write_bytes(spec)
+    (tmp_path / "statement.json").write_bytes(statement)
+    return {
+        "spec": {
+            "file": "spec.md",
+            "content_hash": sha(spec),
+            "format": "markdown-table",
+            "id_column": "#",
+        },
+        "statement": {"file": "statement.json", "content_hash": sha(statement)},
+    }
+
+
+def run_item6_manifest(root, documents):
+    manifest = {"evidence": {"6.digital": {"not_applicable": documents}}}
+    return run_manifest(root, write_manifest(root, manifest))
+
+
+def test_not_applicable_document_pins_match(tmp_path, item6_documents, capsys):
+    assert run_item6_manifest(tmp_path, item6_documents) == 0
+    assert "2 evidence pins" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("document", ["spec", "statement"])
+def test_not_applicable_missing_file(tmp_path, item6_documents, document, capsys):
+    rel = item6_documents[document]["file"]
+    (tmp_path / rel).unlink()
+    assert run_item6_manifest(tmp_path, item6_documents) == 2
+    err = capsys.readouterr().err
+    assert f'evidence["6.digital"].not_applicable.{document}' in err
+    assert rel in err
+
+
+@pytest.mark.parametrize("document", ["spec", "statement"])
+def test_not_applicable_changed_document(tmp_path, item6_documents, document, capsys):
+    pin = item6_documents[document]
+    path = tmp_path / pin["file"]
+    path.write_bytes(path.read_bytes() + b"\n")
+    assert run_item6_manifest(tmp_path, item6_documents) == 1
+    err = capsys.readouterr().err
+    assert f'evidence["6.digital"].not_applicable.{document}' in err
+    assert pin["content_hash"] in err
+    assert sha(path.read_bytes()) in err
+
+
+@pytest.mark.parametrize("document", ["spec", "statement"])
+def test_not_applicable_requires_both_documents(
+    tmp_path, item6_documents, document, capsys
+):
+    del item6_documents[document]
+    assert run_item6_manifest(tmp_path, item6_documents) == 2
+    assert f'evidence["6.digital"].not_applicable.{document}' in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("document", ["spec", "statement"])
+def test_not_applicable_malformed_pin(tmp_path, item6_documents, document, capsys):
+    item6_documents[document]["content_hash"] = "deadbeef"
+    assert run_item6_manifest(tmp_path, item6_documents) == 2
+    err = capsys.readouterr().err
+    assert f'evidence["6.digital"].not_applicable.{document}' in err
+    assert "content_hash" in err
+
+
 def test_manifest_pin_mismatch_fails_naming_key_envelope_and_digests(tmp_path, capsys):
     # Negative control: the #116 defect itself -- pin points at a stale
     # aggregate while the envelope is fresh. The failure must name the
