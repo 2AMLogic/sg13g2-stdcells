@@ -445,6 +445,209 @@ class MixedFingerWidths(unittest.TestCase):
         self.assertIn("sd_enc_activ", str(cm.exception))
 
 
+class UnequalFingerCounts(unittest.TestCase):
+    """A gate net whose devices cannot share the larger netlist finger count
+    (the shorter width does not divide on the grid) falls back to each
+    device's own netlist count (issue #170): the gate net's columns become a
+    block of max(n, p) columns, the shorter device occupies only the first
+    few, the remaining block columns carry no channel for it (the diffusion
+    node spans them, the poly clears the strip), and a PMOS device with
+    NMOS-free finger columns gets a second poly bridge above the PMOS strip.
+    No width is ever rounded.
+
+    The three stack shapes the issue measured on the 5 nm grid (740 nm vs
+    three PMOS fingers, 1480 nm vs six, 1120 nm vs three NMOS fingers) refuse
+    on the *next* named limits (channel tracks, a diffusion break), so the
+    placeable fixtures are inverters whose sizing forces the same 3-vs-1
+    blocks in both directions. Their finger heights are multiples of 10 nm,
+    which keeps every contact on the 5 nm manufacturing grid -- a 2-vs-1
+    fallback cannot do that (a width that misses the 10 nm fold is an odd
+    multiple of 5 nm, so its single finger is one too)."""
+
+    NOR3 = {"name": "x_nor3_1", "family": "nor3", "drive": 1,
+            "inputs": ["A", "B", "C"], "outputs": {"Y": "!(A+B+C)"}}
+    NOR3D2 = {"name": "x_nor3_2", "family": "nor3", "drive": 2,
+              "inputs": ["A", "B", "C"], "outputs": {"Y": "!(A+B+C)"}}
+    NAND3 = {"name": "x_nand3_1", "family": "nand3", "drive": 1,
+             "inputs": ["A", "B", "C"], "outputs": {"Y": "!(A*B*C)"}}
+    INVP3 = {"name": "x_inv_p3", "family": "inv", "drive": 1,
+             "inputs": ["A"], "outputs": {"Y": "!A"}}
+    INVN3 = {"name": "x_inv_n3", "family": "inv", "drive": 1,
+             "inputs": ["A"], "outputs": {"Y": "!A"}}
+
+    def cfg5(self, unit_n, unit_p, cell):
+        """5 nm grid, the SG13CMOS5L sizing class from the issue (units and
+        finger caps), one cell."""
+        cfg = copy.deepcopy(CFG)
+        cfg["process"].update(grid_nm=5, unit_n_nm=unit_n, unit_p_nm=unit_p,
+                              finger_max_n=1000, finger_max_p=1200)
+        cfg["cells"] = [copy.deepcopy(cell)]
+        return cfg
+
+    def p3_cfg(self):
+        # PMOS 2430 nm ng=3 (3 x 810 nm) opposite an NMOS 740 nm ng=1: 740
+        # does not divide by 3 x 5, so the counts stay unequal.
+        cfg = self.cfg5(740, 2430, self.INVP3)
+        cfg["layout"].update(n_diff_y0_nm=350, p_diff_top_margin_nm=330)
+        return cfg
+
+    def n3_cfg(self):
+        # NMOS 2100 nm ng=3 (3 x 700 nm) opposite a PMOS 1120 nm ng=1: 1120
+        # does not divide by 3 x 5 either -- the fold in the other direction.
+        cfg = self.cfg5(2100, 1120, self.INVN3)
+        cfg["layout"].update(n_diff_y0_nm=350, p_diff_top_margin_nm=330)
+        return cfg
+
+    def stripes(self, S, lay):
+        """One poly stripe per gate column, left to right (width poly_width_nm,
+        taller than wide; the bridges are wider than tall)."""
+        pw = lay["rules"]["poly_width_nm"]
+        return sorted((b for b in S.boxes if b[0] == "gatpoly"
+                       and b[3] - b[1] == pw and b[4] - b[2] > pw), key=lambda b: b[1])
+
+    def crossings(self, S, lay, strip):
+        """Per gate column: the channel height where its stripe crosses the
+        strip's activ (the transistor width drawn there), else 0."""
+        edge = lay["n_diff_y0_nm"] if strip == "n" else lay["row_height_nm"] - lay["p_diff_top_margin_nm"]
+        i = 2 if strip == "n" else 4  # activ box edge anchored on the strip's outer edge
+        runs = [b for b in S.boxes if b[0] == "activ" and b[i] == edge]
+        out = []
+        for s in self.stripes(S, lay):
+            h = 0
+            for r in runs:
+                if s[1] < r[3] and r[1] < s[3] and s[2] < r[4] and r[2] < s[4]:
+                    h = max(h, r[4] - r[2])
+            out.append(h)
+        return out
+
+    def test_pmos_heavier_fallback_places_with_a_top_bridge(self):
+        cfg = self.p3_cfg()
+        S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        self.assertEqual((W, H), (4 * 420, 3360))  # 3 columns + 1
+        R, lay = cfg["layout"]["rules"], cfg["layout"]
+        p_y1 = H - lay["p_diff_top_margin_nm"]
+        bridges = [b for b in S.boxes if b[0] == "gatpoly" and b[4] - b[2] == R["poly_width_nm"] and b[3] - b[1] > R["poly_width_nm"]]
+        self.assertEqual(len(bridges), 1)
+        self.assertGreaterEqual(bridges[0][2], p_y1 + R["poly_to_activ_nm"])  # above the PMOS strip
+        # the NMOS-free columns' stripes stop above the NMOS diffusion instead
+        # of crossing it, poly_to_activ clear of the tallest run they pass
+        n_y0, ss = lay["n_diff_y0_nm"], self.stripes(S, lay)
+        self.assertEqual(ss[0][2], n_y0 - R["poly_endcap_nm"])      # column 0 crosses both strips
+        for s in ss[1:]:
+            self.assertEqual(s[2], n_y0 + 740 + R["poly_to_activ_nm"])
+
+    def test_nmos_heavier_fallback_places_with_the_low_bridge(self):
+        cfg = self.n3_cfg()
+        S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        self.assertEqual((W, H), (4 * 420, 3360))
+        R, lay = cfg["layout"]["rules"], cfg["layout"]
+        bridges = [b for b in S.boxes if b[0] == "gatpoly" and b[4] - b[2] == R["poly_width_nm"] and b[3] - b[1] > R["poly_width_nm"]]
+        self.assertEqual(len(bridges), 1)  # the usual bridge below the NMOS strip
+        self.assertLessEqual(bridges[0][4], lay["n_diff_y0_nm"] - R["poly_to_activ_nm"])
+        # the PMOS-free columns' stripes stop below the PMOS diffusion
+        p_y1 = H - lay["p_diff_top_margin_nm"]
+        for s in self.stripes(S, lay)[1:]:
+            self.assertEqual(s[4], p_y1 - 1120 - R["poly_to_activ_nm"])
+
+    def test_drawn_width_equals_netlist_width_and_unused_columns_do_not_cross(self):
+        """Read the emitted poly/activ intersections per strip, count them per
+        device and sum their channel widths against gen_netlists' own device
+        list: a tail column that drew a crossing would be an extra transistor
+        even though the fold bookkeeping summed correctly."""
+        sys.path.insert(0, str(LAYOUT.parent / "design"))
+        import gen_netlists as gn
+        for cfg, nfing, pfing in ((self.p3_cfg(), 1, 3), (self.n3_cfg(), 3, 1)):
+            cell, proc, lay = cfg["cells"][0], cfg["process"], cfg["layout"]
+            S, W, H = gl.layout_cell(cell, proc, lay)
+            want = {(d[0], d[2]): (d[4], d[5]) for d in gn.build(cell, proc).devices}
+            self.assertEqual(want, {("n", "A"): (740 if nfing == 1 else 2100, nfing),
+                                    ("p", "A"): (2430 if pfing == 3 else 1120, pfing)})
+            for strip, fingers, per in (("n", nfing, 740 if nfing == 1 else 700),
+                                        ("p", pfing, 810 if pfing == 3 else 1120)):
+                cr = self.crossings(S, lay, strip)
+                self.assertEqual(cr, [per] * fingers + [0] * (3 - fingers), strip)
+                self.assertEqual(sum(cr), want[("n" if strip == "n" else "p", "A")][0])
+
+    def test_tail_columns_introduce_no_node_transition(self):
+        """The shorter device's block columns carry its tail diffusion node:
+        the strip's activ stays one run across the whole block, so the unused
+        columns neither break the chain nor add a source/drain edge."""
+        cfg = self.p3_cfg()
+        S, _, _ = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        lay = cfg["layout"]
+        for strip in ("n", "p"):
+            edge = lay["n_diff_y0_nm"] if strip == "n" else lay["row_height_nm"] - lay["p_diff_top_margin_nm"]
+            i = 2 if strip == "n" else 4
+            runs = [b for b in S.boxes if b[0] == "activ" and b[i] == edge]
+            self.assertEqual(len(runs), 1, f"{strip} strip is not one run")
+
+    def test_three_finger_complement_refuses_on_the_next_named_limit(self):
+        """740 nm NMOS opposite three PMOS fingers: the fold succeeds, the
+        named refusal moves past it (the cell needs three channel tracks)."""
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(self.cfg5(740, 1120, self.NOR3))
+        msg = str(cm.exception)
+        self.assertIn("x_nor3_1", msg)
+        self.assertIn("channel tracks", msg)
+        self.assertNotIn("cannot be drawn as", msg)
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d) / "c.json"
+            p.write_text(json.dumps(self.cfg5(740, 1120, self.NOR3)))
+            r = run("--config", str(p))
+            self.assertEqual(r.returncode, 3)
+            self.assertIn("channel tracks", r.stderr)
+            self.assertFalse((pathlib.Path(d) / "gds").exists())
+
+    def test_six_finger_complement_needs_a_diffusion_break(self):
+        """1480 nm NMOS (ng=2) opposite six PMOS fingers: an even-finger
+        series stack still cannot share its diffusion."""
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(self.cfg5(740, 1120, self.NOR3D2))
+        msg = str(cm.exception)
+        self.assertIn("x_nor3_2", msg)
+        self.assertIn("diffusion", msg)
+        self.assertNotIn("cannot be drawn as", msg)
+
+    def test_pmos_fold_direction_refuses_on_the_next_named_limit(self):
+        """1120 nm PMOS opposite three NMOS fingers (the nand3 shape)."""
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(self.cfg5(740, 1120, self.NAND3))
+        msg = str(cm.exception)
+        self.assertIn("x_nand3_1", msg)
+        self.assertIn("channel tracks", msg)
+        self.assertNotIn("cannot be drawn as", msg)
+
+    def test_demo_nor4_1_names_its_next_limit_at_10_nm(self):
+        """The demo catalog cell, original 10 nm settings: the equal-fold
+        refusal is gone and the (pre-existing) even-finger series limit is
+        what remains."""
+        cfg = copy.deepcopy(CFG)
+        cfg["process"].update(l_nm=100, unit_n_nm=500, unit_p_nm=800,
+                              nmos_model="demo_nmos", pmos_model="demo_pmos")
+        cfg["cells"] = [{"name": "demo_nor4_1", "family": "nor4", "drive": 1,
+                         "inputs": ["A", "B", "C", "D"], "outputs": {"Y": "!(A+B+C+D)"}}]
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(cfg)
+        msg = str(cm.exception)
+        self.assertIn("demo_nor4_1", msg)
+        self.assertIn("diffusion", msg)
+        self.assertNotIn("cannot be drawn as", msg)
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d) / "c.json"
+            p.write_text(json.dumps(cfg))
+            r = run("--config", str(p))
+            self.assertEqual(r.returncode, 3)
+            self.assertIn("demo_nor4_1", r.stderr)
+            self.assertIn("diffusion", r.stderr)
+
+    def test_unequal_count_output_is_byte_deterministic(self):
+        for cfg in (self.p3_cfg(), self.n3_cfg()):
+            name = cfg["cells"][0]["name"]
+            a = gl.generate(cfg)
+            self.assertEqual(a[name + ".gds"], gl.generate(copy.deepcopy(cfg))[name + ".gds"])
+            self.assertTrue(read_gds_boxes(a[name + ".gds"]))
+
+
 def notch_layers(cfg=CFG):
     """The per-strip layer tables the notch predicate checks, from the config:
     activ on both strips, psd and the n-well on the PMOS strip only (the deck
