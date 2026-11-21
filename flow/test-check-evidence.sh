@@ -49,4 +49,33 @@ reject build/sta.json "$t/fv-fail.json" "a failing functional-verification run"
 reject "" build/fv.json "a partial pair (no STA report)"
 reject "$t/missing.json" build/fv.json "an unreadable STA report"
 reject build/sta.json "$t/missing.json" "an unreadable FV report"
+jq '(.corners[0]).worst_slack_ns="-1"' build/sta.json > "$t/sta-strsetup.json"
+reject "$t/sta-strsetup.json" build/fv.json "string-valued setup slack"
+jq '(.corners[0]).worst_hold_slack_ns="-1"' build/sta.json > "$t/sta-strhold.json"
+reject "$t/sta-strhold.json" build/fv.json "string-valued hold slack"
+jq 'del(.corners[0].worst_hold_slack_ns)' build/sta.json > "$t/sta-nohold.json"
+reject "$t/sta-nohold.json" build/fv.json "a missing hold-slack field"
+: > "$t/empty.json"
+reject "$t/empty.json" build/fv.json "an empty STA file"
+reject build/sta.json "$t/empty.json" "an empty FV file"
+jq '.tests[0].status="failed"' build/fv.json > "$t/fv-testfailed.json"
+reject build/sta.json "$t/fv-testfailed.json" "a failed test under a passing summary"
+jq '.tests[0].status="skipped" | .passed_count=0 | .skipped_count=1' build/fv.json > "$t/fv-allskipped.json"
+reject build/sta.json "$t/fv-allskipped.json" "an all-skipped envelope"
+jq '.test_count="0"' build/fv.json > "$t/fv-strcount.json"
+reject build/sta.json "$t/fv-strcount.json" "a string-valued test_count"
+# Argument forms: empty optional paths and a wrong count must not pass.
+base=(request-par.json build/par.out.json build/lvs.out.json build/erc.json)
+for extra in "" "|" "|build/fv.json" "build/sta.json|"; do
+  IFS='|' read -r a b <<<"$extra"
+  if [ -z "$extra" ]; then args=("${base[@]}" ""); else args=("${base[@]}" "$a" "$b"); fi
+  if ./check-evidence.sh "${args[@]}" 2>/dev/null; then
+    echo "FAIL: check accepted optional arguments [$extra]" >&2; exit 1
+  fi
+  echo "PASS: optional arguments [$extra] rejected"
+done
+if ./check-evidence.sh "${base[@]}" build/sta.json 2>/dev/null; then
+  echo "FAIL: check accepted five arguments" >&2; exit 1
+fi
+echo "PASS: five arguments rejected"
 echo "all evidence edge cases hold"
