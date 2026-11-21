@@ -31,6 +31,16 @@ commit itself: the writer formats both
 from one `git_provenance()` snapshot, so committed bytes naming different
 trees mean a sidecar repointed at another tree's record (issue #147).
 
+The PDK pin gets the same treatment (issue #178): the sidecar must carry a
+`pdk` object (`name` + full-SHA `revision`, the IHP-Open-PDK commit the
+runners capture before anything is written), the record must carry its own
+`**PDK**: <name> @ <revision>` header stamp, and the two must agree -- the
+writer threads one `pdk_provenance()` snapshot through both, so committed
+bytes naming different revisions mean a sidecar (or record) repointed at
+another PDK's measurement. A sidecar or record with no PDK pin at all is
+the same finding as a missing commit stamp: it names no PDK revision the
+tables are reproducible against.
+
 What it deliberately does not catch: a hand-edited `.lib` whose library name,
 cell set and declared corner still agree with the sidecar. The sidecar
 records no hash of the `.lib` itself, so the delay tables are not pinned and
@@ -65,6 +75,9 @@ _RECORD_FIELD_RE = re.compile(r"^- \*\*(Cell|Corner|Netlist provenance)\*\*: (.*
 # The record's provenance stamp is a top-of-file `**Repo commit**: <sha>[ (dirty)]`
 # line, not a `- **Key**: value` bullet, so _RECORD_FIELD_RE does not match it.
 _RECORD_COMMIT_STAMP_RE = re.compile(r"^\*\*Repo commit\*\*: (.*)$", re.MULTILINE)
+# Same shape for the PDK pin the runner writes beside it:
+# `**PDK**: <name> @ <full sha>`.
+_RECORD_PDK_STAMP_RE = re.compile(r"^\*\*PDK\*\*: (.+?) @ ([0-9a-f]+)$", re.MULTILINE)
 _SPICE_PATH_RE = re.compile(r"\S+\.spice\b")
 # The generated operating_conditions group is flat (attributes only, no
 # nested groups), so the body is matched as a run of non-`}` characters.
@@ -77,7 +90,12 @@ _NOM_ATTR_RE = re.compile(
     r"^\s*nom_(?P<key>process|temperature|voltage)\s*:\s*(?P<value>[^;]+);", re.MULTILINE)
 
 REQUIRED_KEYS = ("library", "corner", "config", "config_sha256", "cells",
-                 "evidence_record", "repo_commit")
+                 "evidence_record", "repo_commit", "pdk")
+
+#: A full commit SHA (SHA-1 40 hex, or a SHA-256 repository's 64) -- the shape
+#: both PDK pins carry. Anything else is reported as a shape finding, not
+#: silently compared.
+_HEX_SHA_RE = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 
 
 def cells_in_lib(text: str) -> list[str]:
@@ -151,12 +169,46 @@ def _stamp_commit(stamp) -> str | None:
     return parts[0] if parts else None
 
 
+def _sidecar_pdk_pin(prov: dict) -> tuple[str | None, str | None]:
+    """The sidecar's ``pdk`` pin as ``(name, revision)``.
+
+    Each side is None when the sidecar names none of it: the pin is absent,
+    not a string-keyed object, or empty. A revision that is present but not
+    a full hex SHA is returned as-is -- the shape finding (not the agreement
+    check) is what reports it, so its message can name the bad value.
+    """
+    pdk = prov.get("pdk")
+    if not isinstance(pdk, dict):
+        return None, None
+    name = pdk.get("name")
+    revision = pdk.get("revision")
+    name = name if isinstance(name, str) and name.strip() else None
+    revision = revision if isinstance(revision, str) and revision.strip() else None
+    return name, revision
+
+
+def _record_pdk_stamp(record_text: str) -> tuple[str | None, str | None] | None:
+    """The record's ``**PDK**: <name> @ <revision>`` stamp.
+
+    None when the record carries no PDK stamp at all -- the same finding
+    shape as a missing commit stamp. ``(name, revision)`` otherwise, each
+    side the raw captured text (a malformed revision is the shape finding's
+    to report, with the value named).
+    """
+    found = _RECORD_PDK_STAMP_RE.search(record_text)
+    if not found:
+        return None
+    return found.group(1).strip(), found.group(2)
+
+
 def check(lib_path: Path, repo_root: Path = REPO_ROOT,
           records_dir: Path | None = None) -> list[str]:
     """Return a list of human-readable drift findings; empty means fresh."""
     records_dir = records_dir if records_dir is not None else RECORDS_DIR
     problems: list[str] = []
     sidecar_path = Path(str(lib_path) + ".provenance")
+    record_pdk: tuple[str | None, str | None] | None = None
+    record_path: Path | None = None
 
     if not lib_path.is_file():
         return [f"{_rel(lib_path, repo_root)}: Liberty view is missing"]
@@ -304,6 +356,23 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
                 f"but the sidecar's repo_commit is {prov['repo_commit']!r} -- "
                 f"the cited measurement was taken on another tree")
 
+        # The PDK pin gets the same per-side and agreement treatment (issue
+        # #178): the runner threads one pdk_provenance() snapshot into both
+        # the record header and the sidecar, so a record without a PDK stamp
+        # names no PDK its tables are reproducible against, and stamps that
+        # disagree mean one side was repointed at another PDK's measurement.
+        record_pdk = _record_pdk_stamp(record_text)
+        if record_pdk is None:
+            problems.append(
+                f"{_rel(record_path, repo_root)}: has no **PDK** stamp -- the "
+                f"cited measurement names no PDK revision it was measured "
+                f"against; re-characterize with a pinned IHP-Open-PDK checkout")
+        elif not _HEX_SHA_RE.fullmatch(record_pdk[1]):
+            problems.append(
+                f"{_rel(record_path, repo_root)}: **PDK** stamp revision "
+                f"{record_pdk[1]!r} is not a full commit SHA -- the cited "
+                f"measurement's PDK pin is not a pin")
+
         corner = (prov.get("corner") or {}).get("name")
         for cell in claimed:
             measured = [b for b in _measurement_blocks(record_text)
@@ -343,6 +412,35 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
             f"stamps a dirty tree -- the recorded view is not reproducible from "
             f"any commit; re-characterize on a clean tree")
 
+    # 7. The sidecar's PDK pin: present, well-shaped, and -- when the record
+    #    branch above read the record -- the same pin the record stamps.
+    #    REQUIRED_KEYS tests key presence only, so an empty or non-object
+    #    value is reported here (the #154 lesson: no early return masking
+    #    every other finding for the same sidecar).
+    pdk_name, pdk_revision = _sidecar_pdk_pin(prov)
+    if pdk_name is None:
+        problems.append(
+            f"{_rel(sidecar_path, repo_root)}: pdk names no PDK (no non-empty "
+            f"name) -- the recorded view names no PDK it was measured "
+            f"against; re-characterize with a pinned IHP-Open-PDK checkout")
+    if pdk_revision is None:
+        problems.append(
+            f"{_rel(sidecar_path, repo_root)}: pdk names no revision -- the "
+            f"recorded view is not pinned to any PDK commit; re-characterize "
+            f"with a pinned IHP-Open-PDK checkout")
+    elif not _HEX_SHA_RE.fullmatch(pdk_revision):
+        problems.append(
+            f"{_rel(sidecar_path, repo_root)}: pdk revision {pdk_revision!r} "
+            f"is not a full commit SHA -- the PDK pin is not a pin")
+    if record_pdk is not None and pdk_name is not None and pdk_revision is not None:
+        record_name, record_revision = record_pdk
+        if (record_revision != pdk_revision or record_name != pdk_name):
+            problems.append(
+                f"{_rel(record_path, repo_root)}: **PDK** stamp names "
+                f"{record_name!r} @ {record_revision}, but the sidecar pins "
+                f"{pdk_name!r} @ {pdk_revision} -- the cited measurement was "
+                f"taken against another PDK revision")
+
     return problems
 
 
@@ -360,8 +458,9 @@ def main(argv: list[str] | None = None) -> int:
         prog="python3 -m sim.characterize.check_library",
         description="Verify the committed Liberty view agrees with its provenance "
                     "sidecar -- library name, cell set, declared corner, the "
-                    "config it pins, the evidence record it names, and the "
-                    "provenance stamps both carry (a dirty stamp is reported).")
+                    "config it pins, the evidence record it names, the PDK pin "
+                    "both carry, and the provenance stamps (a dirty stamp is "
+                    "reported).")
     ap.add_argument("--lib", type=Path, default=DEFAULT_LIB,
                     help=f"Liberty view to check (default: {_rel(DEFAULT_LIB, REPO_ROOT)})")
     args = ap.parse_args(argv)
@@ -372,8 +471,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"stale: {problem}", file=sys.stderr)
         return 1
     print(f"fresh: {_rel(args.lib.resolve(), REPO_ROOT)} agrees with its provenance "
-          f"sidecar's library, cell set, corner, pinned config and evidence "
-          f"record; the provenance stamps are clean")
+          f"sidecar's library, cell set, corner, pinned config, evidence "
+          f"record and PDK pin; the provenance stamps are clean")
     return 0
 
 
