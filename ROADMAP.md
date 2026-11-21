@@ -46,12 +46,11 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   holds the `add8` baseline on the stock `sg13g2_stdcell` only: synthesis,
   place-and-route with all three power gates, gate-level LVS `match`, routed
   GDS and a clean `klt drc` (#9, #41).
-- **Evidence grade.** `manifests/signoff-report.txt` (`klt signoff --manifest`):
-  tier none, **T1 11/22 items met**. Met: items 1-4 on both partitions, item 9
-  digital and item 10 on both partitions. Unmet: items 5-8 and 11 on both
-  partitions and item 9 analog — all `no_evidence` except item 11 digital
-  (`supply_spec_incomplete`). Tracker: #3, whose body still quotes the earlier
-  3/22.
+- **Evidence grade.** See the committed
+  [`manifests/signoff-report.txt`](manifests/signoff-report.txt)
+  (`klt signoff --manifest`) — it contains the evidence tier, the T1 item
+  total and the per-item results for each partition. Tracker: #3 collects
+  the remaining follow-up work.
 
 ### What the layout generator can place today
 
