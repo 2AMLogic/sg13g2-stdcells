@@ -1,0 +1,9 @@
+* sg13g2_nand2_1 function testbench (sim.item5, spec row 9): logical
+* function at the rails -- inputs step through all 4 input
+* combinations, output sampled 2 ns into each state.
+.include ../../../../layout/lvs/netlists/sg13g2_nand2_1.spice
+Vdd VDD 0 DC 1.2
+Vss VSS 0 DC 0
+Vin_A in_A 0 PWL(2e-11 0.0 3e-09 0.0 3.02e-09 0.0 6e-09 0.0 6.02e-09 1.2 9e-09 1.2 9.019999999999999e-09 1.2 1.2e-08 1.2)
+Vin_B in_B 0 PWL(2e-11 0.0 3e-09 0.0 3.02e-09 1.2 6e-09 1.2 6.02e-09 0.0 9e-09 0.0 9.019999999999999e-09 1.2 1.2e-08 1.2)
+XDUT in_A in_B y_dut_Y VDD VSS sg13g2_nand2_1
