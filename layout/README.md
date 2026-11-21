@@ -351,6 +351,88 @@ Run from the repo root (klt gets cwd-relative paths). The runner first checks
 codes: `0` all `match`; `1` tooling error or `--check` drift; `2` invalid
 config; `4` reports written but a cell is not `match`.
 
+#### Re-verifying the committed reports (issue #198)
+
+`--check` re-hashes, through whatever `klt` is first on `PATH`, the layout,
+the reference netlist and the bundled `sg13g2` deck each report pins -- so
+whether the committed evidence re-verifies is a property of the install, not
+only of the tree: a klt build bundling a different deck than the recorded
+`provenance.deck.content_hash` drifts on all four reports on a clean tree.
+Each report names the toolchain it was minted with --
+`provenance.klt_reinstall_spec` (a PEP 508 install requirement for klt) and
+`provenance.klayout_version` (the engine wheel). Read them out of any report
+(all four carry the same pair), install that exact toolchain into a
+throwaway venv -- never into a host-wide install -- and put its `bin` first
+on `PATH`, since the runner and `layout/toolchain_pin.py` both shell out to
+`klt` by name:
+
+```
+python3 -c "import json; p = json.load(open('layout/lvs/sg13g2_inv_1.json'))['provenance']; print(p['klt_reinstall_spec'], p['klayout_version'])"
+
+uv venv /tmp/lvs-verify
+uv pip install --python /tmp/lvs-verify/bin/python \
+  'klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@2a9c52b27ce7986b4372ae5d73129dac4773e02c' \
+  'klayout==0.30.13'
+/tmp/lvs-verify/bin/klt --version    # the recorded klt: 0.9.2.dev1022+g2a9c52b27ce7
+
+PATH=/tmp/lvs-verify/bin:$PATH \
+  python3 layout/run_lvs.py --config layout/example_config.json --check    # exit 0
+git diff --exit-code -- layout/gds layout/lvs    # the check wrote nothing
+```
+
+Installing `klayout==<provenance.klayout_version>` alongside the spec pins
+the engine wheel too. A newer klt is not disqualified: on
+`0.9.3.dev3+gd5d57daf9a14` (klayout `0.30.13`) the same runner check also
+exits 0 with every hash `[OK]`, plus one informational
+`[DRIFT] provenance.klt_version` line per report, and
+`layout/toolchain_pin.py` checks subcommands rather than versions, so the
+capability pin does not force the recorded build. Both installs verified at
+`aeb7c25`.
+
+**Reading a failure.** The runner's per-cell lines truncate `klt`'s stdout to
+200 characters (`do_check` in `layout/run_lvs.py`; the absolute report path
+eats about half the budget on its own), which on a drifting install cuts the
+output mid-field and hides *which* field drifted. Run the check on one report
+directly for the full diagnostic:
+
+```
+klt lvs --check layout/lvs/sg13g2_inv_1.json
+```
+
+On a host-wide install (`klt 0.9.3.dev2586+g9bac82596e2f`, klayout
+`0.30.12`, clean tree at `aeb7c25`) that prints:
+
+```
+status: drifted
+  [OK] environment.layout_sha256
+  [OK] environment.reference_sha256
+  [DRIFTED] provenance.deck.content_hash
+      expected: sha256:cf6dfead…
+      actual:   sha256:eaaf2989…
+  [DRIFT] provenance.klt_version: 0.9.2.dev1022+g2a9c52b27ce7 (report) vs 0.9.3.dev2586+g9bac82596e2f (current)
+  [DRIFT] provenance.klayout_version: 0.30.13 (report) vs 0.30.12 (current)
+```
+
+and exits `3` (the runner folds that into its exit `1`). The prefix is the
+signal:
+
+* `[DRIFT]` (singular) is an informational **tool-version** difference
+  (`provenance.klt_version`, `provenance.klayout_version`): the checking
+  install is not the minting one. It appears in passing runs too -- the
+  `0.9.3.dev3` build above graded `status: match`, exit `0` -- so it never
+  fails a check on its own.
+* `[DRIFTED]` is a failing field, with expected vs actual on the two lines
+  under it. In the example the failing field is
+  `provenance.deck.content_hash`: that install bundles a different `sg13g2`
+  deck than the report recorded, while both input hashes are still `[OK]`,
+  so the committed GDS and reference netlist are intact and the *deck* is
+  what moved -- re-verify under the recorded build (the recipe above)
+  before suspecting the evidence. A `[DRIFTED]` on
+  `environment.layout_sha256` or `environment.reference_sha256` instead is a
+  real input drift: the committed bytes are not what the report graded, and
+  the answer is a re-mint -- a new record, never an edit, the same
+  append-only discipline as the supersession chains below.
+
 The request sends `options.combine_devices: true`, recorded in each report's
 `options` block. It is there because this generator *folds*: a device of F
 fingers is F parallel transistors on one gate net in the layout, where the
