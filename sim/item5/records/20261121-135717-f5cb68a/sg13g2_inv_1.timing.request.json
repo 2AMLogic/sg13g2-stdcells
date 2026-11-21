@@ -1,0 +1,1530 @@
+{
+  "netlist": "sg13g2_inv_1.timing.spice",
+  "corners": {
+    "process": [
+      "mos_tt"
+    ],
+    "supply_v": {
+      "Vdd": [
+        1.2
+      ]
+    },
+    "temperature_c": [
+      25.0
+    ]
+  },
+  "models": {
+    "lib": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOSlv.lib"
+  },
+  "options": {
+    "osdi_preload": [
+      "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi"
+    ]
+  },
+  "analysis": {
+    "kind": "tran",
+    "args": "1e-12 8e-09 0 1e-12"
+  },
+  "measurements": [
+    {
+      "name": "A_s0p02_l0p001_cell_rise",
+      "spice": ".meas tran A_s0p02_l0p001_cell_rise TRIG v(in_A_s0p02_l0p001) VAL=0.6 FALL=1 TARG v(y_A_s0p02_l0p001) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 2.0667808e-11,
+        "max": 2.1511392e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p001_cell_fall",
+      "spice": ".meas tran A_s0p02_l0p001_cell_fall TRIG v(in_A_s0p02_l0p001) VAL=0.6 RISE=1 TARG v(y_A_s0p02_l0p001) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 1.9958484000000002e-11,
+        "max": 2.0773116000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p001_rise_transition",
+      "spice": ".meas tran A_s0p02_l0p001_rise_transition TRIG v(y_A_s0p02_l0p001) VAL=0.24 RISE=1 TARG v(y_A_s0p02_l0p001) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.2094768e-11,
+        "max": 1.2588432000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p001_fall_transition",
+      "spice": ".meas tran A_s0p02_l0p001_fall_transition TRIG v(y_A_s0p02_l0p001) VAL=0.96 FALL=1 TARG v(y_A_s0p02_l0p001) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 9.82646e-12,
+        "max": 1.022754e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p001_in_slew_rise",
+      "spice": ".meas tran A_s0p02_l0p001_in_slew_rise TRIG v(in_A_s0p02_l0p001) VAL=0.24 RISE=1 TARG v(in_A_s0p02_l0p001) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p001_in_slew_fall",
+      "spice": ".meas tran A_s0p02_l0p001_in_slew_fall TRIG v(in_A_s0p02_l0p001) VAL=0.96 FALL=1 TARG v(in_A_s0p02_l0p001) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p003_cell_rise",
+      "spice": ".meas tran A_s0p02_l0p003_cell_rise TRIG v(in_A_s0p02_l0p003) VAL=0.6 FALL=1 TARG v(y_A_s0p02_l0p003) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 2.8705082000000005e-11,
+        "max": 2.9876718000000003e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p003_cell_fall",
+      "spice": ".meas tran A_s0p02_l0p003_cell_fall TRIG v(in_A_s0p02_l0p003) VAL=0.6 RISE=1 TARG v(y_A_s0p02_l0p003) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 2.703771e-11,
+        "max": 2.814129e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p003_rise_transition",
+      "spice": ".meas tran A_s0p02_l0p003_rise_transition TRIG v(y_A_s0p02_l0p003) VAL=0.24 RISE=1 TARG v(y_A_s0p02_l0p003) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 2.2756972e-11,
+        "max": 2.3685828000000003e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p003_fall_transition",
+      "spice": ".meas tran A_s0p02_l0p003_fall_transition TRIG v(y_A_s0p02_l0p003) VAL=0.96 FALL=1 TARG v(y_A_s0p02_l0p003) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.8492894e-11,
+        "max": 1.9247706000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p003_in_slew_rise",
+      "spice": ".meas tran A_s0p02_l0p003_in_slew_rise TRIG v(in_A_s0p02_l0p003) VAL=0.24 RISE=1 TARG v(in_A_s0p02_l0p003) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p003_in_slew_fall",
+      "spice": ".meas tran A_s0p02_l0p003_in_slew_fall TRIG v(in_A_s0p02_l0p003) VAL=0.96 FALL=1 TARG v(in_A_s0p02_l0p003) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p01_cell_rise",
+      "spice": ".meas tran A_s0p02_l0p01_cell_rise TRIG v(in_A_s0p02_l0p01) VAL=0.6 FALL=1 TARG v(y_A_s0p02_l0p01) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 5.5654788e-11,
+        "max": 5.7926412000000004e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p01_cell_fall",
+      "spice": ".meas tran A_s0p02_l0p01_cell_fall TRIG v(in_A_s0p02_l0p01) VAL=0.6 RISE=1 TARG v(y_A_s0p02_l0p01) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 5.0504496000000004e-11,
+        "max": 5.2565904000000006e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p01_rise_transition",
+      "spice": ".meas tran A_s0p02_l0p01_rise_transition TRIG v(y_A_s0p02_l0p01) VAL=0.24 RISE=1 TARG v(y_A_s0p02_l0p01) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 6.080478600000001e-11,
+        "max": 6.3286614e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p01_fall_transition",
+      "spice": ".meas tran A_s0p02_l0p01_fall_transition TRIG v(y_A_s0p02_l0p01) VAL=0.96 FALL=1 TARG v(y_A_s0p02_l0p01) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.9604856e-11,
+        "max": 5.1629544e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p01_in_slew_rise",
+      "spice": ".meas tran A_s0p02_l0p01_in_slew_rise TRIG v(in_A_s0p02_l0p01) VAL=0.24 RISE=1 TARG v(in_A_s0p02_l0p01) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p01_in_slew_fall",
+      "spice": ".meas tran A_s0p02_l0p01_in_slew_fall TRIG v(in_A_s0p02_l0p01) VAL=0.96 FALL=1 TARG v(in_A_s0p02_l0p01) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p03_cell_rise",
+      "spice": ".meas tran A_s0p02_l0p03_cell_rise TRIG v(in_A_s0p02_l0p03) VAL=0.6 FALL=1 TARG v(y_A_s0p02_l0p03) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 1.3111224e-10,
+        "max": 1.3646375999999999e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p03_cell_fall",
+      "spice": ".meas tran A_s0p02_l0p03_cell_fall TRIG v(in_A_s0p02_l0p03) VAL=0.6 RISE=1 TARG v(y_A_s0p02_l0p03) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 1.1609668e-10,
+        "max": 1.2083532e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p03_rise_transition",
+      "spice": ".meas tran A_s0p02_l0p03_rise_transition TRIG v(y_A_s0p02_l0p03) VAL=0.24 RISE=1 TARG v(y_A_s0p02_l0p03) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.6953608e-10,
+        "max": 1.7645592000000003e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p03_fall_transition",
+      "spice": ".meas tran A_s0p02_l0p03_fall_transition TRIG v(y_A_s0p02_l0p03) VAL=0.96 FALL=1 TARG v(y_A_s0p02_l0p03) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.3851810000000002e-10,
+        "max": 1.4417190000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p03_in_slew_rise",
+      "spice": ".meas tran A_s0p02_l0p03_in_slew_rise TRIG v(in_A_s0p02_l0p03) VAL=0.24 RISE=1 TARG v(in_A_s0p02_l0p03) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p03_in_slew_fall",
+      "spice": ".meas tran A_s0p02_l0p03_in_slew_fall TRIG v(in_A_s0p02_l0p03) VAL=0.96 FALL=1 TARG v(in_A_s0p02_l0p03) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p1_cell_rise",
+      "spice": ".meas tran A_s0p02_l0p1_cell_rise TRIG v(in_A_s0p02_l0p1) VAL=0.6 FALL=1 TARG v(y_A_s0p02_l0p1) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 3.941207200000001e-10,
+        "max": 4.1020728000000006e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p1_cell_fall",
+      "spice": ".meas tran A_s0p02_l0p1_cell_fall TRIG v(in_A_s0p02_l0p1) VAL=0.6 RISE=1 TARG v(y_A_s0p02_l0p1) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 3.4474342000000003e-10,
+        "max": 3.5881458000000006e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p1_rise_transition",
+      "spice": ".meas tran A_s0p02_l0p1_rise_transition TRIG v(y_A_s0p02_l0p1) VAL=0.24 RISE=1 TARG v(y_A_s0p02_l0p1) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 5.501024199999999e-10,
+        "max": 5.7255558e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p1_fall_transition",
+      "spice": ".meas tran A_s0p02_l0p1_fall_transition TRIG v(y_A_s0p02_l0p1) VAL=0.96 FALL=1 TARG v(y_A_s0p02_l0p1) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.4971514000000004e-10,
+        "max": 4.6807086e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p1_in_slew_rise",
+      "spice": ".meas tran A_s0p02_l0p1_in_slew_rise TRIG v(in_A_s0p02_l0p1) VAL=0.24 RISE=1 TARG v(in_A_s0p02_l0p1) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p1_in_slew_fall",
+      "spice": ".meas tran A_s0p02_l0p1_in_slew_fall TRIG v(in_A_s0p02_l0p1) VAL=0.96 FALL=1 TARG v(in_A_s0p02_l0p1) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p001_cell_rise",
+      "spice": ".meas tran A_s0p05_l0p001_cell_rise TRIG v(in_A_s0p05_l0p001) VAL=0.6 FALL=1 TARG v(y_A_s0p05_l0p001) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 3.120173e-11,
+        "max": 3.2475270000000004e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p001_cell_fall",
+      "spice": ".meas tran A_s0p05_l0p001_cell_fall TRIG v(in_A_s0p05_l0p001) VAL=0.6 RISE=1 TARG v(y_A_s0p05_l0p001) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 3.0911356e-11,
+        "max": 3.2173043999999997e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p001_rise_transition",
+      "spice": ".meas tran A_s0p05_l0p001_rise_transition TRIG v(y_A_s0p05_l0p001) VAL=0.24 RISE=1 TARG v(y_A_s0p05_l0p001) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.9183206e-11,
+        "max": 1.9966194000000003e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p001_fall_transition",
+      "spice": ".meas tran A_s0p05_l0p001_fall_transition TRIG v(y_A_s0p05_l0p001) VAL=0.96 FALL=1 TARG v(y_A_s0p05_l0p001) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.6155398000000002e-11,
+        "max": 1.6814802e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p001_in_slew_rise",
+      "spice": ".meas tran A_s0p05_l0p001_in_slew_rise TRIG v(in_A_s0p05_l0p001) VAL=0.24 RISE=1 TARG v(in_A_s0p05_l0p001) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p001_in_slew_fall",
+      "spice": ".meas tran A_s0p05_l0p001_in_slew_fall TRIG v(in_A_s0p05_l0p001) VAL=0.96 FALL=1 TARG v(in_A_s0p05_l0p001) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p003_cell_rise",
+      "spice": ".meas tran A_s0p05_l0p003_cell_rise TRIG v(in_A_s0p05_l0p003) VAL=0.6 FALL=1 TARG v(y_A_s0p05_l0p003) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 4.1224386e-11,
+        "max": 4.2907014000000005e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p003_cell_fall",
+      "spice": ".meas tran A_s0p05_l0p003_cell_fall TRIG v(in_A_s0p05_l0p003) VAL=0.6 RISE=1 TARG v(y_A_s0p05_l0p003) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 3.9988116e-11,
+        "max": 4.1620283999999997e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p003_rise_transition",
+      "spice": ".meas tran A_s0p05_l0p003_rise_transition TRIG v(y_A_s0p05_l0p003) VAL=0.24 RISE=1 TARG v(y_A_s0p05_l0p003) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 2.6223918000000004e-11,
+        "max": 2.7294282000000003e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p003_fall_transition",
+      "spice": ".meas tran A_s0p05_l0p003_fall_transition TRIG v(y_A_s0p05_l0p003) VAL=0.96 FALL=1 TARG v(y_A_s0p05_l0p003) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 2.1860664e-11,
+        "max": 2.2752936000000004e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p003_in_slew_rise",
+      "spice": ".meas tran A_s0p05_l0p003_in_slew_rise TRIG v(in_A_s0p05_l0p003) VAL=0.24 RISE=1 TARG v(in_A_s0p05_l0p003) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p003_in_slew_fall",
+      "spice": ".meas tran A_s0p05_l0p003_in_slew_fall TRIG v(in_A_s0p05_l0p003) VAL=0.96 FALL=1 TARG v(in_A_s0p05_l0p003) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p01_cell_rise",
+      "spice": ".meas tran A_s0p05_l0p01_cell_rise TRIG v(in_A_s0p05_l0p01) VAL=0.6 FALL=1 TARG v(y_A_s0p05_l0p01) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 6.813499e-11,
+        "max": 7.091601000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p01_cell_fall",
+      "spice": ".meas tran A_s0p05_l0p01_cell_fall TRIG v(in_A_s0p05_l0p01) VAL=0.6 RISE=1 TARG v(y_A_s0p05_l0p01) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 6.356809200000002e-11,
+        "max": 6.616270800000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p01_rise_transition",
+      "spice": ".meas tran A_s0p05_l0p01_rise_transition TRIG v(y_A_s0p05_l0p01) VAL=0.24 RISE=1 TARG v(y_A_s0p05_l0p01) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 6.0804982e-11,
+        "max": 6.328681800000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p01_fall_transition",
+      "spice": ".meas tran A_s0p05_l0p01_fall_transition TRIG v(y_A_s0p05_l0p01) VAL=0.96 FALL=1 TARG v(y_A_s0p05_l0p01) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.9608678e-11,
+        "max": 5.1633522000000004e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p01_in_slew_rise",
+      "spice": ".meas tran A_s0p05_l0p01_in_slew_rise TRIG v(in_A_s0p05_l0p01) VAL=0.24 RISE=1 TARG v(in_A_s0p05_l0p01) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p01_in_slew_fall",
+      "spice": ".meas tran A_s0p05_l0p01_in_slew_fall TRIG v(in_A_s0p05_l0p01) VAL=0.96 FALL=1 TARG v(in_A_s0p05_l0p01) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p03_cell_rise",
+      "spice": ".meas tran A_s0p05_l0p03_cell_rise TRIG v(in_A_s0p05_l0p03) VAL=0.6 FALL=1 TARG v(y_A_s0p05_l0p03) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 1.4379736e-10,
+        "max": 1.4966664e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p03_cell_fall",
+      "spice": ".meas tran A_s0p05_l0p03_cell_fall TRIG v(in_A_s0p05_l0p03) VAL=0.6 RISE=1 TARG v(y_A_s0p05_l0p03) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 1.2936686e-10,
+        "max": 1.3464714000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p03_rise_transition",
+      "spice": ".meas tran A_s0p05_l0p03_rise_transition TRIG v(y_A_s0p05_l0p03) VAL=0.24 RISE=1 TARG v(y_A_s0p05_l0p03) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.6953608e-10,
+        "max": 1.7645592000000003e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p03_fall_transition",
+      "spice": ".meas tran A_s0p05_l0p03_fall_transition TRIG v(y_A_s0p05_l0p03) VAL=0.96 FALL=1 TARG v(y_A_s0p05_l0p03) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.3851712e-10,
+        "max": 1.4417088000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p03_in_slew_rise",
+      "spice": ".meas tran A_s0p05_l0p03_in_slew_rise TRIG v(in_A_s0p05_l0p03) VAL=0.24 RISE=1 TARG v(in_A_s0p05_l0p03) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p03_in_slew_fall",
+      "spice": ".meas tran A_s0p05_l0p03_in_slew_fall TRIG v(in_A_s0p05_l0p03) VAL=0.96 FALL=1 TARG v(in_A_s0p05_l0p03) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p1_cell_rise",
+      "spice": ".meas tran A_s0p05_l0p1_cell_rise TRIG v(in_A_s0p05_l0p1) VAL=0.6 FALL=1 TARG v(y_A_s0p05_l0p1) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 4.0696362000000006e-10,
+        "max": 4.2357438000000004e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p1_cell_fall",
+      "spice": ".meas tran A_s0p05_l0p1_cell_fall TRIG v(in_A_s0p05_l0p1) VAL=0.6 RISE=1 TARG v(y_A_s0p05_l0p1) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 3.5814786000000003e-10,
+        "max": 3.7276614e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p1_rise_transition",
+      "spice": ".meas tran A_s0p05_l0p1_rise_transition TRIG v(y_A_s0p05_l0p1) VAL=0.24 RISE=1 TARG v(y_A_s0p05_l0p1) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 5.501024199999999e-10,
+        "max": 5.7255558e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p1_fall_transition",
+      "spice": ".meas tran A_s0p05_l0p1_fall_transition TRIG v(y_A_s0p05_l0p1) VAL=0.96 FALL=1 TARG v(y_A_s0p05_l0p1) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.4971514000000004e-10,
+        "max": 4.6807086e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p1_in_slew_rise",
+      "spice": ".meas tran A_s0p05_l0p1_in_slew_rise TRIG v(in_A_s0p05_l0p1) VAL=0.24 RISE=1 TARG v(in_A_s0p05_l0p1) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p1_in_slew_fall",
+      "spice": ".meas tran A_s0p05_l0p1_in_slew_fall TRIG v(in_A_s0p05_l0p1) VAL=0.96 FALL=1 TARG v(in_A_s0p05_l0p1) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p001_cell_rise",
+      "spice": ".meas tran A_s0p1_l0p001_cell_rise TRIG v(in_A_s0p1_l0p001) VAL=0.6 FALL=1 TARG v(y_A_s0p1_l0p001) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 4.1859131999999995e-11,
+        "max": 4.3567668e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p001_cell_fall",
+      "spice": ".meas tran A_s0p1_l0p001_cell_fall TRIG v(in_A_s0p1_l0p001) VAL=0.6 RISE=1 TARG v(y_A_s0p1_l0p001) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 4.2851578e-11,
+        "max": 4.4600622e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p001_rise_transition",
+      "spice": ".meas tran A_s0p1_l0p001_rise_transition TRIG v(y_A_s0p1_l0p001) VAL=0.24 RISE=1 TARG v(y_A_s0p1_l0p001) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 2.9525538e-11,
+        "max": 3.073066200000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p001_fall_transition",
+      "spice": ".meas tran A_s0p1_l0p001_fall_transition TRIG v(y_A_s0p1_l0p001) VAL=0.96 FALL=1 TARG v(y_A_s0p1_l0p001) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 2.5876018e-11,
+        "max": 2.6932182000000004e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p001_in_slew_rise",
+      "spice": ".meas tran A_s0p1_l0p001_in_slew_rise TRIG v(in_A_s0p1_l0p001) VAL=0.24 RISE=1 TARG v(in_A_s0p1_l0p001) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p001_in_slew_fall",
+      "spice": ".meas tran A_s0p1_l0p001_in_slew_fall TRIG v(in_A_s0p1_l0p001) VAL=0.96 FALL=1 TARG v(in_A_s0p1_l0p001) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p003_cell_rise",
+      "spice": ".meas tran A_s0p1_l0p003_cell_rise TRIG v(in_A_s0p1_l0p003) VAL=0.6 FALL=1 TARG v(y_A_s0p1_l0p003) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 5.7123612e-11,
+        "max": 5.945518800000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p003_cell_fall",
+      "spice": ".meas tran A_s0p1_l0p003_cell_fall TRIG v(in_A_s0p1_l0p003) VAL=0.6 RISE=1 TARG v(y_A_s0p1_l0p003) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 5.669447e-11,
+        "max": 5.900853e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p003_rise_transition",
+      "spice": ".meas tran A_s0p1_l0p003_rise_transition TRIG v(y_A_s0p1_l0p003) VAL=0.24 RISE=1 TARG v(y_A_s0p1_l0p003) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 3.8635618e-11,
+        "max": 4.0212582e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p003_fall_transition",
+      "spice": ".meas tran A_s0p1_l0p003_fall_transition TRIG v(y_A_s0p1_l0p003) VAL=0.96 FALL=1 TARG v(y_A_s0p1_l0p003) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 3.3449458e-11,
+        "max": 3.4814742e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p003_in_slew_rise",
+      "spice": ".meas tran A_s0p1_l0p003_in_slew_rise TRIG v(in_A_s0p1_l0p003) VAL=0.24 RISE=1 TARG v(in_A_s0p1_l0p003) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p003_in_slew_fall",
+      "spice": ".meas tran A_s0p1_l0p003_in_slew_fall TRIG v(in_A_s0p1_l0p003) VAL=0.96 FALL=1 TARG v(in_A_s0p1_l0p003) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p01_cell_rise",
+      "spice": ".meas tran A_s0p1_l0p01_cell_rise TRIG v(in_A_s0p1_l0p01) VAL=0.6 FALL=1 TARG v(y_A_s0p1_l0p01) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 8.937649000000001e-11,
+        "max": 9.302451000000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p01_cell_fall",
+      "spice": ".meas tran A_s0p1_l0p01_cell_fall TRIG v(in_A_s0p1_l0p01) VAL=0.6 RISE=1 TARG v(y_A_s0p1_l0p01) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 8.577891e-11,
+        "max": 8.928009e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p01_rise_transition",
+      "spice": ".meas tran A_s0p1_l0p01_rise_transition TRIG v(y_A_s0p1_l0p01) VAL=0.24 RISE=1 TARG v(y_A_s0p1_l0p01) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 6.5853158e-11,
+        "max": 6.854104200000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p01_fall_transition",
+      "spice": ".meas tran A_s0p1_l0p01_fall_transition TRIG v(y_A_s0p1_l0p01) VAL=0.96 FALL=1 TARG v(y_A_s0p1_l0p01) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 5.485893e-11,
+        "max": 5.7098070000000006e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p01_in_slew_rise",
+      "spice": ".meas tran A_s0p1_l0p01_in_slew_rise TRIG v(in_A_s0p1_l0p01) VAL=0.24 RISE=1 TARG v(in_A_s0p1_l0p01) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p01_in_slew_fall",
+      "spice": ".meas tran A_s0p1_l0p01_in_slew_fall TRIG v(in_A_s0p1_l0p01) VAL=0.96 FALL=1 TARG v(in_A_s0p1_l0p01) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p03_cell_rise",
+      "spice": ".meas tran A_s0p1_l0p03_cell_rise TRIG v(in_A_s0p1_l0p03) VAL=0.6 FALL=1 TARG v(y_A_s0p1_l0p03) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 1.6507218000000002e-10,
+        "max": 1.7180982000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p03_cell_fall",
+      "spice": ".meas tran A_s0p1_l0p03_cell_fall TRIG v(in_A_s0p1_l0p03) VAL=0.6 RISE=1 TARG v(y_A_s0p1_l0p03) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 1.5160208e-10,
+        "max": 1.5778992e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p03_rise_transition",
+      "spice": ".meas tran A_s0p1_l0p03_rise_transition TRIG v(y_A_s0p1_l0p03) VAL=0.24 RISE=1 TARG v(y_A_s0p1_l0p03) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.6953706000000003e-10,
+        "max": 1.7645694000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p03_fall_transition",
+      "spice": ".meas tran A_s0p1_l0p03_fall_transition TRIG v(y_A_s0p1_l0p03) VAL=0.96 FALL=1 TARG v(y_A_s0p1_l0p03) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.3851810000000002e-10,
+        "max": 1.4417190000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p03_in_slew_rise",
+      "spice": ".meas tran A_s0p1_l0p03_in_slew_rise TRIG v(in_A_s0p1_l0p03) VAL=0.24 RISE=1 TARG v(in_A_s0p1_l0p03) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p03_in_slew_fall",
+      "spice": ".meas tran A_s0p1_l0p03_in_slew_fall TRIG v(in_A_s0p1_l0p03) VAL=0.96 FALL=1 TARG v(in_A_s0p1_l0p03) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p1_cell_rise",
+      "spice": ".meas tran A_s0p1_l0p1_cell_rise TRIG v(in_A_s0p1_l0p1) VAL=0.6 FALL=1 TARG v(y_A_s0p1_l0p1) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 4.2838838000000003e-10,
+        "max": 4.4587362000000003e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p1_cell_fall",
+      "spice": ".meas tran A_s0p1_l0p1_cell_fall TRIG v(in_A_s0p1_l0p1) VAL=0.6 RISE=1 TARG v(y_A_s0p1_l0p1) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 3.8050852000000004e-10,
+        "max": 3.9603948e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p1_rise_transition",
+      "spice": ".meas tran A_s0p1_l0p1_rise_transition TRIG v(y_A_s0p1_l0p1) VAL=0.24 RISE=1 TARG v(y_A_s0p1_l0p1) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 5.501024199999999e-10,
+        "max": 5.7255558e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p1_fall_transition",
+      "spice": ".meas tran A_s0p1_l0p1_fall_transition TRIG v(y_A_s0p1_l0p1) VAL=0.96 FALL=1 TARG v(y_A_s0p1_l0p1) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.4971416000000007e-10,
+        "max": 4.680698400000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p1_in_slew_rise",
+      "spice": ".meas tran A_s0p1_l0p1_in_slew_rise TRIG v(in_A_s0p1_l0p1) VAL=0.24 RISE=1 TARG v(in_A_s0p1_l0p1) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p1_in_slew_fall",
+      "spice": ".meas tran A_s0p1_l0p1_in_slew_fall TRIG v(in_A_s0p1_l0p1) VAL=0.96 FALL=1 TARG v(in_A_s0p1_l0p1) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p001_cell_rise",
+      "spice": ".meas tran A_s0p2_l0p001_cell_rise TRIG v(in_A_s0p2_l0p001) VAL=0.6 FALL=1 TARG v(y_A_s0p2_l0p001) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 5.485697e-11,
+        "max": 5.709603e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p001_cell_fall",
+      "spice": ".meas tran A_s0p2_l0p001_cell_fall TRIG v(in_A_s0p2_l0p001) VAL=0.6 RISE=1 TARG v(y_A_s0p2_l0p001) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 5.8776774e-11,
+        "max": 6.117582600000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p001_rise_transition",
+      "spice": ".meas tran A_s0p2_l0p001_rise_transition TRIG v(y_A_s0p2_l0p001) VAL=0.24 RISE=1 TARG v(y_A_s0p2_l0p001) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 4.5491404e-11,
+        "max": 4.7348196e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p001_fall_transition",
+      "spice": ".meas tran A_s0p2_l0p001_fall_transition TRIG v(y_A_s0p2_l0p001) VAL=0.96 FALL=1 TARG v(y_A_s0p2_l0p001) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.1251728e-11,
+        "max": 4.2935472000000006e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p001_in_slew_rise",
+      "spice": ".meas tran A_s0p2_l0p001_in_slew_rise TRIG v(in_A_s0p2_l0p001) VAL=0.24 RISE=1 TARG v(in_A_s0p2_l0p001) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p001_in_slew_fall",
+      "spice": ".meas tran A_s0p2_l0p001_in_slew_fall TRIG v(in_A_s0p2_l0p001) VAL=0.96 FALL=1 TARG v(in_A_s0p2_l0p001) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p003_cell_rise",
+      "spice": ".meas tran A_s0p2_l0p003_cell_rise TRIG v(in_A_s0p2_l0p003) VAL=0.6 FALL=1 TARG v(y_A_s0p2_l0p003) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 7.772478000000001e-11,
+        "max": 8.089722000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p003_cell_fall",
+      "spice": ".meas tran A_s0p2_l0p003_cell_fall TRIG v(in_A_s0p2_l0p003) VAL=0.6 RISE=1 TARG v(y_A_s0p2_l0p003) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 7.974554e-11,
+        "max": 8.300046000000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p003_rise_transition",
+      "spice": ".meas tran A_s0p2_l0p003_rise_transition TRIG v(y_A_s0p2_l0p003) VAL=0.24 RISE=1 TARG v(y_A_s0p2_l0p003) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 5.9199252e-11,
+        "max": 6.1615548e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p003_fall_transition",
+      "spice": ".meas tran A_s0p2_l0p003_fall_transition TRIG v(y_A_s0p2_l0p003) VAL=0.96 FALL=1 TARG v(y_A_s0p2_l0p003) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 5.2895892000000006e-11,
+        "max": 5.5054908e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p003_in_slew_rise",
+      "spice": ".meas tran A_s0p2_l0p003_in_slew_rise TRIG v(in_A_s0p2_l0p003) VAL=0.24 RISE=1 TARG v(in_A_s0p2_l0p003) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p003_in_slew_fall",
+      "spice": ".meas tran A_s0p2_l0p003_in_slew_fall TRIG v(in_A_s0p2_l0p003) VAL=0.96 FALL=1 TARG v(in_A_s0p2_l0p003) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p01_cell_rise",
+      "spice": ".meas tran A_s0p2_l0p01_cell_rise TRIG v(in_A_s0p2_l0p01) VAL=0.6 FALL=1 TARG v(y_A_s0p2_l0p01) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 1.2641608e-10,
+        "max": 1.3157592000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p01_cell_fall",
+      "spice": ".meas tran A_s0p2_l0p01_cell_fall TRIG v(in_A_s0p2_l0p01) VAL=0.6 RISE=1 TARG v(y_A_s0p2_l0p01) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 1.2405036e-10,
+        "max": 1.2911364000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p01_rise_transition",
+      "spice": ".meas tran A_s0p2_l0p01_rise_transition TRIG v(y_A_s0p2_l0p01) VAL=0.24 RISE=1 TARG v(y_A_s0p2_l0p01) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 8.8553192e-11,
+        "max": 9.216760799999999e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p01_fall_transition",
+      "spice": ".meas tran A_s0p2_l0p01_fall_transition TRIG v(y_A_s0p2_l0p01) VAL=0.96 FALL=1 TARG v(y_A_s0p2_l0p01) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 7.7189994e-11,
+        "max": 8.0340606e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p01_in_slew_rise",
+      "spice": ".meas tran A_s0p2_l0p01_in_slew_rise TRIG v(in_A_s0p2_l0p01) VAL=0.24 RISE=1 TARG v(in_A_s0p2_l0p01) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p01_in_slew_fall",
+      "spice": ".meas tran A_s0p2_l0p01_in_slew_fall TRIG v(in_A_s0p2_l0p01) VAL=0.96 FALL=1 TARG v(in_A_s0p2_l0p01) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p03_cell_rise",
+      "spice": ".meas tran A_s0p2_l0p03_cell_rise TRIG v(in_A_s0p2_l0p03) VAL=0.6 FALL=1 TARG v(y_A_s0p2_l0p03) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 2.0793738000000002e-10,
+        "max": 2.1642462000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p03_cell_fall",
+      "spice": ".meas tran A_s0p2_l0p03_cell_fall TRIG v(in_A_s0p2_l0p03) VAL=0.6 RISE=1 TARG v(y_A_s0p2_l0p03) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 1.9642042000000001e-10,
+        "max": 2.0443758000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p03_rise_transition",
+      "spice": ".meas tran A_s0p2_l0p03_rise_transition TRIG v(y_A_s0p2_l0p03) VAL=0.24 RISE=1 TARG v(y_A_s0p2_l0p03) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.7432142000000002e-10,
+        "max": 1.8143658000000004e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p03_fall_transition",
+      "spice": ".meas tran A_s0p2_l0p03_fall_transition TRIG v(y_A_s0p2_l0p03) VAL=0.96 FALL=1 TARG v(y_A_s0p2_l0p03) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.4407077999999998e-10,
+        "max": 1.4995122000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p03_in_slew_rise",
+      "spice": ".meas tran A_s0p2_l0p03_in_slew_rise TRIG v(in_A_s0p2_l0p03) VAL=0.24 RISE=1 TARG v(in_A_s0p2_l0p03) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p03_in_slew_fall",
+      "spice": ".meas tran A_s0p2_l0p03_in_slew_fall TRIG v(in_A_s0p2_l0p03) VAL=0.96 FALL=1 TARG v(in_A_s0p2_l0p03) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p1_cell_rise",
+      "spice": ".meas tran A_s0p2_l0p1_cell_rise TRIG v(in_A_s0p2_l0p1) VAL=0.6 FALL=1 TARG v(y_A_s0p2_l0p1) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 4.713212e-10,
+        "max": 4.905588e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p1_cell_fall",
+      "spice": ".meas tran A_s0p2_l0p1_cell_fall TRIG v(in_A_s0p2_l0p1) VAL=0.6 RISE=1 TARG v(y_A_s0p2_l0p1) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 4.2531804000000004e-10,
+        "max": 4.4267796000000003e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p1_rise_transition",
+      "spice": ".meas tran A_s0p2_l0p1_rise_transition TRIG v(y_A_s0p2_l0p1) VAL=0.24 RISE=1 TARG v(y_A_s0p2_l0p1) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 5.5010144e-10,
+        "max": 5.725545600000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p1_fall_transition",
+      "spice": ".meas tran A_s0p2_l0p1_fall_transition TRIG v(y_A_s0p2_l0p1) VAL=0.96 FALL=1 TARG v(y_A_s0p2_l0p1) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.4971318e-10,
+        "max": 4.6806882e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p1_in_slew_rise",
+      "spice": ".meas tran A_s0p2_l0p1_in_slew_rise TRIG v(in_A_s0p2_l0p1) VAL=0.24 RISE=1 TARG v(in_A_s0p2_l0p1) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p1_in_slew_fall",
+      "spice": ".meas tran A_s0p2_l0p1_in_slew_fall TRIG v(in_A_s0p2_l0p1) VAL=0.96 FALL=1 TARG v(in_A_s0p2_l0p1) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p001_cell_rise",
+      "spice": ".meas tran A_s0p4_l0p001_cell_rise TRIG v(in_A_s0p4_l0p001) VAL=0.6 FALL=1 TARG v(y_A_s0p4_l0p001) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 6.989007200000001e-11,
+        "max": 7.274272800000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p001_cell_fall",
+      "spice": ".meas tran A_s0p4_l0p001_cell_fall TRIG v(in_A_s0p4_l0p001) VAL=0.6 RISE=1 TARG v(y_A_s0p4_l0p001) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 7.9773764e-11,
+        "max": 8.3029836e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p001_rise_transition",
+      "spice": ".meas tran A_s0p4_l0p001_rise_transition TRIG v(y_A_s0p4_l0p001) VAL=0.24 RISE=1 TARG v(y_A_s0p4_l0p001) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 6.968917200000001e-11,
+        "max": 7.253362800000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p001_fall_transition",
+      "spice": ".meas tran A_s0p4_l0p001_fall_transition TRIG v(y_A_s0p4_l0p001) VAL=0.96 FALL=1 TARG v(y_A_s0p4_l0p001) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 6.5047696e-11,
+        "max": 6.7702704e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p001_in_slew_rise",
+      "spice": ".meas tran A_s0p4_l0p001_in_slew_rise TRIG v(in_A_s0p4_l0p001) VAL=0.24 RISE=1 TARG v(in_A_s0p4_l0p001) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p001_in_slew_fall",
+      "spice": ".meas tran A_s0p4_l0p001_in_slew_fall TRIG v(in_A_s0p4_l0p001) VAL=0.96 FALL=1 TARG v(in_A_s0p4_l0p001) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p003_cell_rise",
+      "spice": ".meas tran A_s0p4_l0p003_cell_rise TRIG v(in_A_s0p4_l0p003) VAL=0.6 FALL=1 TARG v(y_A_s0p4_l0p003) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 1.0296663999999999e-10,
+        "max": 1.0716936000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p003_cell_fall",
+      "spice": ".meas tran A_s0p4_l0p003_cell_fall TRIG v(in_A_s0p4_l0p003) VAL=0.6 RISE=1 TARG v(y_A_s0p4_l0p003) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 1.1063513999999999e-10,
+        "max": 1.1515086e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p003_rise_transition",
+      "spice": ".meas tran A_s0p4_l0p003_rise_transition TRIG v(y_A_s0p4_l0p003) VAL=0.24 RISE=1 TARG v(y_A_s0p4_l0p003) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 9.058022400000001e-11,
+        "max": 9.427737600000002e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p003_fall_transition",
+      "spice": ".meas tran A_s0p4_l0p003_fall_transition TRIG v(y_A_s0p4_l0p003) VAL=0.96 FALL=1 TARG v(y_A_s0p4_l0p003) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 8.3283634e-11,
+        "max": 8.668296600000001e-11
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p003_in_slew_rise",
+      "spice": ".meas tran A_s0p4_l0p003_in_slew_rise TRIG v(in_A_s0p4_l0p003) VAL=0.24 RISE=1 TARG v(in_A_s0p4_l0p003) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p003_in_slew_fall",
+      "spice": ".meas tran A_s0p4_l0p003_in_slew_fall TRIG v(in_A_s0p4_l0p003) VAL=0.96 FALL=1 TARG v(in_A_s0p4_l0p003) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p01_cell_rise",
+      "spice": ".meas tran A_s0p4_l0p01_cell_rise TRIG v(in_A_s0p4_l0p01) VAL=0.6 FALL=1 TARG v(y_A_s0p4_l0p01) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 1.7595116000000002e-10,
+        "max": 1.8313284000000003e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p01_cell_fall",
+      "spice": ".meas tran A_s0p4_l0p01_cell_fall TRIG v(in_A_s0p4_l0p01) VAL=0.6 RISE=1 TARG v(y_A_s0p4_l0p01) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 1.7772398000000003e-10,
+        "max": 1.8497802000000004e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p01_rise_transition",
+      "spice": ".meas tran A_s0p4_l0p01_rise_transition TRIG v(y_A_s0p4_l0p01) VAL=0.24 RISE=1 TARG v(y_A_s0p4_l0p01) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 1.3441974000000002e-10,
+        "max": 1.3990626000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p01_fall_transition",
+      "spice": ".meas tran A_s0p4_l0p01_fall_transition TRIG v(y_A_s0p4_l0p01) VAL=0.96 FALL=1 TARG v(y_A_s0p4_l0p01) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.2026364e-10,
+        "max": 1.2517236e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p01_in_slew_rise",
+      "spice": ".meas tran A_s0p4_l0p01_in_slew_rise TRIG v(in_A_s0p4_l0p01) VAL=0.24 RISE=1 TARG v(in_A_s0p4_l0p01) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p01_in_slew_fall",
+      "spice": ".meas tran A_s0p4_l0p01_in_slew_fall TRIG v(in_A_s0p4_l0p01) VAL=0.96 FALL=1 TARG v(in_A_s0p4_l0p01) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p03_cell_rise",
+      "spice": ".meas tran A_s0p4_l0p03_cell_rise TRIG v(in_A_s0p4_l0p03) VAL=0.6 FALL=1 TARG v(y_A_s0p4_l0p03) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 2.9125110000000004e-10,
+        "max": 3.031389e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p03_cell_fall",
+      "spice": ".meas tran A_s0p4_l0p03_cell_fall TRIG v(in_A_s0p4_l0p03) VAL=0.6 RISE=1 TARG v(y_A_s0p4_l0p03) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 2.8257222000000005e-10,
+        "max": 2.9410578000000005e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p03_rise_transition",
+      "spice": ".meas tran A_s0p4_l0p03_rise_transition TRIG v(y_A_s0p4_l0p03) VAL=0.24 RISE=1 TARG v(y_A_s0p4_l0p03) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 2.102198e-10,
+        "max": 2.1880020000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p03_fall_transition",
+      "spice": ".meas tran A_s0p4_l0p03_fall_transition TRIG v(y_A_s0p4_l0p03) VAL=0.96 FALL=1 TARG v(y_A_s0p4_l0p03) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 1.8035038000000002e-10,
+        "max": 1.8771162000000002e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p03_in_slew_rise",
+      "spice": ".meas tran A_s0p4_l0p03_in_slew_rise TRIG v(in_A_s0p4_l0p03) VAL=0.24 RISE=1 TARG v(in_A_s0p4_l0p03) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p03_in_slew_fall",
+      "spice": ".meas tran A_s0p4_l0p03_in_slew_fall TRIG v(in_A_s0p4_l0p03) VAL=0.96 FALL=1 TARG v(in_A_s0p4_l0p03) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p1_cell_rise",
+      "spice": ".meas tran A_s0p4_l0p1_cell_rise TRIG v(in_A_s0p4_l0p1) VAL=0.6 FALL=1 TARG v(y_A_s0p4_l0p1) VAL=0.6 RISE=1",
+      "limits": {
+        "min": 5.5744066e-10,
+        "max": 5.801933400000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p1_cell_fall",
+      "spice": ".meas tran A_s0p4_l0p1_cell_fall TRIG v(in_A_s0p4_l0p1) VAL=0.6 RISE=1 TARG v(y_A_s0p4_l0p1) VAL=0.6 FALL=1",
+      "limits": {
+        "min": 5.152497000000001e-10,
+        "max": 5.362803000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p1_rise_transition",
+      "spice": ".meas tran A_s0p4_l0p1_rise_transition TRIG v(y_A_s0p4_l0p1) VAL=0.24 RISE=1 TARG v(y_A_s0p4_l0p1) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 5.502102200000001e-10,
+        "max": 5.726677800000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p1_fall_transition",
+      "spice": ".meas tran A_s0p4_l0p1_fall_transition TRIG v(y_A_s0p4_l0p1) VAL=0.96 FALL=1 TARG v(y_A_s0p4_l0p1) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 4.5033744e-10,
+        "max": 4.6871856e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p1_in_slew_rise",
+      "spice": ".meas tran A_s0p4_l0p1_in_slew_rise TRIG v(in_A_s0p4_l0p1) VAL=0.24 RISE=1 TARG v(in_A_s0p4_l0p1) VAL=0.96 RISE=1",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p1_in_slew_fall",
+      "spice": ".meas tran A_s0p4_l0p1_in_slew_fall TRIG v(in_A_s0p4_l0p1) VAL=0.96 FALL=1 TARG v(in_A_s0p4_l0p1) VAL=0.24 FALL=1",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "unit": "s",
+      "spec_row": "9"
+    }
+  ]
+}
