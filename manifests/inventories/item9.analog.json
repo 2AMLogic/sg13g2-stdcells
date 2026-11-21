@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
+  "t1_item": 9,
+  "description": "Analog partition testbenches: the characterization bench behind the committed TT/1.20V/25C Liberty view -- the pure klt characterize request builder, the runner that drives klt and appends the append-only evidence record (capturing the IHP-Open-PDK revision of the --pdk-dir checkout before anything is written), the freshness checker that re-derives the committed view's provenance claims, the harness modules they import, the netlist generator and the config every measurement is made from. The attested cold start (sh sim/characterize/cold_start.sh) is honestly lighter than the bench: it runs the request-construction tests (python3 -m unittest sim.characterize.tests.test_request) and the freshness checker (python3 -m sim.characterize.check_library) -- both tool-free, stdlib Python only, and the checker fails on any stale or tampered committed artifact (config bytes, record, PDK pin, provenance stamps). It does NOT re-run the characterization itself: that needs klt, ngspice and an IHP-Open-PDK git checkout at the pinned commit, and is recorded in documented_argv below and spelled out, PDK checkout included, in README.md 'Reproducing the characterization'. Later benches (klt sim, klt pex -- issues #180/#181) extend this inventory instead of adding a second one.",
+  "testbenches": [
+    "sim/characterize/cold_start.sh",
+    "sim/characterize/tests/test_request.py",
+    "sim/characterize/request.py",
+    "sim/characterize/runner.py",
+    "sim/characterize/__main__.py",
+    "sim/characterize/check_library.py",
+    "sim/harness/corners.py",
+    "sim/harness/evidence.py",
+    "sim/harness/report.py",
+    "design/gen_netlists.py",
+    "layout/example_config.json"
+  ],
+  "cold_start": {
+    "argv": ["sh", "sim/characterize/cold_start.sh"],
+    "timeout_s": 1800,
+    "documented_argv": ["python3", "-m", "sim.characterize", "--library", "--pdk-dir", "<IHP-Open-PDK git checkout at commit 5cccb161f7492697cfa52eb14dc03beb00bdca9e>/ihp-sg13g2"]
+  },
+  "pins": {
+    "pdk": {
+      "name": "IHP-Open-PDK",
+      "revision": "5cccb161f7492697cfa52eb14dc03beb00bdca9e"
+    },
+    "tools": {
+      "klt": "0.9.3.dev2575+g6bd18bbc8637",
+      "ngspice": "47"
+    }
+  }
+}

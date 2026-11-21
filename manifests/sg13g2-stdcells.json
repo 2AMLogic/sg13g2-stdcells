@@ -44,7 +44,11 @@
     },
     "8.analog": {
       "file": "manifests/envelopes/item8.analog.attest.json",
-      "content_hash": "sha256:1910e308982aec47919dc6ba9d323533e1486ab4f1bfdc24e8a51d400ce61dea"
+      "content_hash": "sha256:191c3c82a8bb01e2491602b530ac0b2b9f62a13f7ccef7027ff3a1cd47b0aecb"
+    },
+    "9.analog": {
+      "file": "manifests/envelopes/item9.analog.attest.json",
+      "content_hash": "sha256:6eeb0589342109571879d90bbc9863051c47993d5066160a3ffcf07615668333"
     },
     "9.digital": {
       "file": "manifests/envelopes/item9.digital.attest.json",
