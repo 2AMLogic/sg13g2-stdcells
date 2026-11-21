@@ -1,0 +1,7 @@
+{
+  "engine": "icarus",
+  "sources": ["../rtl/add8.v"],
+  "hdl_toplevel": "add8",
+  "testbench": {"module": "test_add8", "testcase": null},
+  "options": {"coverage": false, "trace": false, "timescale": ["1ns", "1ps"]}
+}
