@@ -55,15 +55,18 @@ and are re-derived from those files rather than restated here where they move.
 - **LVS matched**, `klt lvs`: every report in `layout/lvs/` reads
   `status: "match"`, `error_count: 0`, `body_verification.status: "verified"`.
 - **Pre-layout SPICE characterization**:
-  `sim/characterize/records/20261115-220740-13dc481.md` (the record the
+  `sim/characterize/records/20261121-045231-9214168.md` (the record the
   committed Liberty view cites; superseded originals
-  `20261115-171205-3462cc8.md`, `20261115-105337-921b1a8.md`,
-  `20261114-222806-f1cf294.md` and `20261107-222836-6ee1577.md` — the full
-  chain is whatever `sim/characterize/records/` holds), raw per-arc delay,
-  transition and energy tables from `klt characterize`, recorded as
+  `20261115-220740-13dc481.md`, `20261115-171205-3462cc8.md`,
+  `20261115-105337-921b1a8.md`, `20261114-222806-f1cf294.md` and
+  `20261107-222836-6ee1577.md` — the full chain is whatever
+  `sim/characterize/records/` holds), raw per-arc delay, transition and
+  energy tables from `klt characterize`, recorded as
   `Data provenance: simulated` (supersedes, append-only, the records above
   after #73's and #104's config edits and successive main-branch updates
-  staled the view's provenance pin — see #82).
+  staled the view's provenance pin — see #82; this one is the first pinned
+  to an IHP-Open-PDK commit, #178 — its measured tables are byte-identical
+  to the previous view's).
 - **One Liberty view**: `views/sg13g2_stdcells_tt_1p20v_25c.lib`, real
   `klt characterize` output covering all four cells at TT / 1.20 V / 25 C (spec
   row 9) — a single corner, combinational arcs only. It is not itself the
@@ -193,6 +196,54 @@ Which flow record CI gates on is the `FLOW_RECORD` line of that script.
 
 T1 item 10 inventory: README present (this file), license present
 ([LICENSE](LICENSE)), CI present (`.github/workflows/ci.yml`).
+
+## Reproducing the characterization
+
+The committed Liberty view `views/sg13g2_stdcells_tt_1p20v_25c.lib` and the
+record behind it are real `klt characterize` output, reproducible from a
+clean checkout with three prerequisites this repo does not vendor: `klt`,
+`ngspice` (>= 44, for the PDK's OSDI v0.4 PSP103 models), and a git checkout
+of [IHP-Open-PDK](https://github.com/IHP-GmbH/IHP-Open-PDK) at the pinned
+commit. The runner refuses to measure against anything else: it captures the
+checkout's commit before anything is written — a directory that is not a
+clean IHP-Open-PDK checkout fails the run, and the revision it captures is
+recorded in the evidence record's `**PDK**` header line and the view's
+`.lib.provenance` sidecar, so the tree always states which PDK produced it.
+
+The pinned commit is the one the current sidecar names (IHP-Open-PDK
+release v0.3.0):
+
+```
+5cccb161f7492697cfa52eb14dc03beb00bdca9e
+```
+
+Check it out and build the OSDI models it ships as sources (the release
+tarball/clone has no prebuilt `.osdi`; the PDK's own installer compiles them
+into `libs.tech/ngspice/osdi/`, and that path is a build artifact, not PDK
+content — keep the checkout clean by excluding it, e.g. via
+`.git/info/exclude`):
+
+```
+git clone https://github.com/IHP-GmbH/IHP-Open-PDK.git
+cd IHP-Open-PDK && git checkout 5cccb161f7492697cfa52eb14dc03beb00bdca9e
+# compile ihp-sg13g2/libs.tech/verilog-a with OpenVAF into
+# ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi (psp103_nqs, r3_cmc and
+# mosvar alongside it if you want the PDK's full set), then:
+echo "ihp-sg13g2/libs.tech/ngspice/osdi/" >> .git/info/exclude
+```
+
+Then, from this repo's root (one corner per invocation; FF/SS go through
+`--backend batch`, never a local loop):
+
+```
+python3 -m sim.characterize --library --pdk-dir <IHP-Open-PDK>/ihp-sg13g2
+```
+
+This rewrites the view and its sidecar and appends a new record — records
+are append-only, so the previous ones stay. The tool-free cold start the T1
+item 9 analog inventory attests (`sh sim/characterize/cold_start.sh`) is the
+lighter check: request-construction tests plus the freshness checker, no
+klt, ngspice or PDK; the invocation above is what actually re-measures.
 
 ## License
 
