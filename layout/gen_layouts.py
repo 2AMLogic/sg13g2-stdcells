@@ -22,7 +22,16 @@ Placement model (deliberately small; anything outside it is a named failure):
     of F fingers is F adjacent columns alternating source/drain, joined by a
     poly bridge below the NMOS diffusion and given one gate contact. The NMOS
     and PMOS device on one gate net are drawn with the same finger count (the
-    larger; a device with fewer netlist fingers is folded, same total width);
+    larger; a device with fewer netlist fingers is folded, same total width)
+    when that count divides both widths on the grid; otherwise each keeps its
+    own netlist count and the gate net's columns become a block of
+    max(n, p) columns with the shorter device on the first few only -- its
+    remaining block columns carry no channel for it, just the diffusion node
+    spanning the block, and the poly there clears that strip instead of
+    crossing it (a poly edge over node diffusion would be a parasitic
+    channel). A PMOS device whose fingers include such NMOS-free columns gets
+    a second poly bridge above the PMOS strip, since its stripes cannot all
+    reach the one below the NMOS diffusion;
   * a strip may hold devices of different drawn finger widths: it is one merged
     polygon whose outer edge is fixed (the NMOS strip grows up, the PMOS strip
     grows down) and whose channel-facing edge steps at the device boundary. A
@@ -250,26 +259,38 @@ def layout_cell(cell, proc, lay):
     ndevs = [(i, k, d, g, s, w, ng) for (i, k, d, g, s, w, ng) in devs if k == "n"]
     pdevs = [(i, k, d, g, s, w, ng) for (i, k, d, g, s, w, ng) in devs if k == "p"]
     # Fingers per gate net: a poly column crosses both strips, so the NMOS and
-    # PMOS device on one gate net are drawn with the same finger count, the larger
-    # of the two. A device with fewer netlist fingers is folded (same total W).
+    # PMOS device on one gate net default to the same drawn finger count, the
+    # larger of the two netlist counts (a device with fewer fingers is folded,
+    # same total W). When the larger count divides some device's width off the
+    # grid, that gate net drops the common count instead and each device keeps
+    # its own netlist count, which divides by construction
+    # (design/gen_netlists.py sizes ng that way), so a width is never rounded
+    # to make a fold fit and layout and netlist agree by construction.
     grid = gn.grid_nm(proc)
     fingers = {}
     for d in devs:
         fingers[d[3]] = max(fingers.get(d[3], 1), d[6])
+    foldable = {g: all(d[5] % (k * grid) == 0 for d in devs if d[3] == g) for g, k in fingers.items()}
 
     def fold(d):
-        k = fingers[d[3]]
+        k = fingers[d[3]] if foldable[d[3]] else d[6]
         if d[5] % (k * grid):
             raise PlaceError(f"{d[1]}MOS device of {d[5]} nm on gate {d[3]} cannot be drawn as {k} fingers on the {grid} nm grid")
         return d[:6] + (k, d[6])  # drawn finger count, then the netlist one (for messages)
 
     ndevs, pdevs = [fold(d) for d in ndevs], [fold(d) for d in pdevs]
     nord, pord = order_strips(ndevs, pdevs)
-    cols = [(j, k) for j, (i, _, _) in enumerate(nord) for k in range(ndevs[i][6])]  # column -> (position in order, finger)
-    pcols = [(j, k) for j, (i, _, _) in enumerate(pord) for k in range(pdevs[i][6])]
+    # One column block per gate net, wide enough for the longer device; the
+    # shorter one occupies only its first columns of the block. Both strips
+    # share the block grid: order_strips aligned the gate-net sequences, so
+    # position j names the same gate net on both. Column c is that strip's
+    # device's finger iff cols[c][1] is below its drawn count.
+    sizes = [max(ndevs[i][6], pdevs[i][6]) for (i, _, _), _ in zip(nord, pord)]
+    cols = [(j, k) for j, n in enumerate(sizes) for k in range(n)]  # column -> (position in order, column in block)
+    pcols = list(cols)
     N = len(cols)
-    if N != len(pcols):
-        raise PlaceError("NMOS and PMOS strips have different column counts")
+    nfing = [d[6] for d in (ndevs[i] for i, _, _ in nord)]  # drawn NMOS fingers per position
+    pfing = [d[6] for d in (pdevs[i] for i, _, _ in pord)]  # drawn PMOS fingers per position
     # Height profile: devices of different drawn finger widths share a strip, so
     # the strip's channel-facing edge steps from column to column. A valley in
     # it is a re-entrant notch in the merged activ/implant/well polygon, and the
@@ -314,11 +335,16 @@ def layout_cell(cell, proc, lay):
         raise PlaceError("gate pitch too small for a contact between two gates")
     S = Shapes()
 
-    # Node nets for each strip: node j sits between device j-1 and j.
+    # Node nets for each strip: node j sits between device j-1 and j. A
+    # device's F fingers alternate l, r, l, ...; the rest of its block (when
+    # the opposite strip's device is longer) introduces no source/drain
+    # transition, so those nodes hold the device's tail net.
     def nodes(order, devs_):
         nets = [order[0][1]]
-        for i, l, r in order:  # F fingers alternate l, r, l, ...; the next device starts on the last node
-            nets += [r if f % 2 == 0 else l for f in range(devs_[i][6])]
+        for j, (i, l, r) in enumerate(order):
+            f = devs_[i][6]
+            tail = r if f % 2 else l
+            nets += [(r if k % 2 else l) if k < f else tail for k in range(1, sizes[j] + 1)]
         return nets
 
     nn, pn = nodes(nord, ndevs), nodes(pord, pdevs)
@@ -329,14 +355,24 @@ def layout_cell(cell, proc, lay):
     ext = R["poly_endcap_nm"]
     # Fingers of one device are joined by a poly bridge below the NMOS diffusion,
     # poly_to_activ clear of it; only those columns grow down to the bridge.
+    # A PMOS device whose fingers include columns its NMOS counterpart does not
+    # occupy cannot use that bridge -- those stripes must clear the NMOS
+    # diffusion instead of crossing it -- so it gets a second bridge above the
+    # PMOS strip, poly_to_activ clear of it in the other direction.
     bridge_y1 = n_y0 - R["poly_to_activ_nm"]
     bridge_y0 = bridge_y1 - pw
-    dev_cols = {}  # position in order -> [column indices]
-    for c, (pos, _) in enumerate(cols):
-        dev_cols.setdefault(pos, []).append(c)
+    tbridge_y0 = p_y1 + R["poly_to_activ_nm"]
+    tbridge_y1 = tbridge_y0 + pw
+    top_bridge = [pos for pos in range(len(nord)) if pfing[pos] > 1 and nfing[pos] < pfing[pos]]
+    block_cols = {}  # position in order -> [all block columns] (gate-net pad candidates)
+    dev_cols = {}    # position in order -> [the NMOS device's finger columns] (bridge columns)
+    for c, (pos, k) in enumerate(cols):
+        block_cols.setdefault(pos, []).append(c)
+        if k < nfing[pos]:
+            dev_cols.setdefault(pos, []).append(c)
     multi = any(len(cs) > 1 for cs in dev_cols.values())
     poly_y0 = min(n_y0 - ext, bridge_y0) if multi else n_y0 - ext
-    poly_y1 = p_y1 + ext
+    poly_y1 = p_y1 + (max(ext, R["poly_to_activ_nm"] + pw) if top_bridge else ext)
 
     # Well/substrate tap bands, one per rail. Without them extraction puts the
     # NMOS body on the deck-synthesized substrate net and the PMOS body on an
@@ -380,13 +416,32 @@ def layout_cell(cell, proc, lay):
                 S.box("psd", x0 - sd, p_y1 - h - sd, x1 + sd, p_y1 + sd)
                 S.box("nwell", x0 - nwe, p_y1 - h - nwe, x1 + nwe, well_y1 + R["nwell_enc_nactiv_nm"])
 
-    # Poly columns: one stripe per gate, crossing both strips.
+    # Poly columns: one stripe per gate column, crossing whichever strip holds
+    # a finger there. A stripe whose column the other strip's device does not
+    # occupy must clear that strip's diffusion instead of crossing it (a poly
+    # edge over node diffusion would be a parasitic channel): it stops
+    # poly_to_activ past the tallest run its width passes, and the endcap/
+    # bridge below still serves the columns that do cross.
+    def _clear_y(c, runs, edge):
+        x0, x1 = gate_x[c] - pw // 2, gate_x[c] + pw // 2
+        h = max(hh for c0, c1, hh in runs if node_x[c0] - act_hang < x1 and x0 < node_x[c1 + 1] + act_hang)
+        return edge(h)
+
+    nruns, pruns = _runs(nprof), _runs(pprof)
     for c in range(N):
-        bridged = len(dev_cols[cols[c][0]]) > 1
-        S.box("gatpoly", gate_x[c] - pw // 2, min(n_y0 - ext, bridge_y0) if bridged else n_y0 - ext, gate_x[c] + pw // 2, poly_y1)
+        pos, k = cols[c]
+        if k < nfing[pos]:  # an NMOS finger: crosses the NMOS strip
+            y0 = min(n_y0 - ext, bridge_y0) if len(dev_cols[pos]) > 1 else n_y0 - ext
+        else:  # PMOS-only column: stop above the NMOS diffusion
+            y0 = _clear_y(c, nruns, lambda h: n_y0 + h + R["poly_to_activ_nm"])
+        y1 = poly_y1 if k < pfing[pos] else _clear_y(c, pruns, lambda h: p_y1 - h - R["poly_to_activ_nm"])
+        S.box("gatpoly", gate_x[c] - pw // 2, y0, gate_x[c] + pw // 2, y1)
     for cs in dev_cols.values():
         if len(cs) > 1:
             S.box("gatpoly", gate_x[cs[0]] - pw // 2, bridge_y0, gate_x[cs[-1]] + pw // 2, bridge_y1)
+    for pos in top_bridge:
+        b0 = block_cols[pos][0]
+        S.box("gatpoly", gate_x[b0] - pw // 2, tbridge_y0, gate_x[b0 + pfing[pos] - 1] + pw // 2, tbridge_y1)
 
     # Tap bands: activ + the tie implant + one contact per node column. The
     # contact is centred in the band, which puts it on the rail for a cell whose
@@ -499,7 +554,7 @@ def layout_cell(cell, proc, lay):
     # Gate pads: one per device (its fingers are bridged), poly + contact + M1, on
     # the first finger/side whose M1 and poly neighbours leave room.
     for pos, g in enumerate(gates):
-        mine = dev_cols[pos]
+        mine = block_cols[pos]
         placed = None
         for j in mine:
             for sgn in (-1, 1):
