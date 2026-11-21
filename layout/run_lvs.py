@@ -17,7 +17,10 @@ klt relative to the current directory, so run from the repo root.
 
 `--check` runs `klt lvs --check` (cheap mode: re-hash the layout and reference
 netlist recorded in each report) and fails on stale/missing/stray reports or
-netlists that differ from a fresh regeneration.
+netlists that are not fresh: the reference netlists are checked with the
+generator's own `--check` (design/gen_netlists.py) — the same freshness gate
+CI runs — so a missing, edited, stray or line-ending-rewritten netlist fails
+here exactly as it fails there, and both drifts are reported in one run.
 
 Exit codes: 0 every cell `match`; 1 tooling error (klt missing a command in
 layout/toolchain.json, klt failed) or `--check` drift; 2 invalid config;
@@ -30,7 +33,6 @@ import os
 import pathlib
 import subprocess
 import sys
-import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -89,6 +91,15 @@ def gen_netlists(config, outdir):
                            "--out", str(outdir)], capture_output=True, text=True)
 
 
+def check_netlists(config, outdir):
+    return subprocess.run([sys.executable, str(GEN_NETLISTS), "--config", str(config),
+                           "--out", str(outdir), "--check"], capture_output=True, text=True)
+
+
+def check_report(report_path):
+    return subprocess.run(["klt", "lvs", "--check", str(report_path)], capture_output=True, text=True)
+
+
 def run_klt_lvs(request, report_path):
     return subprocess.run(["klt", "lvs", "-", "--format", "json", "-o", str(report_path)],
                           input=json.dumps(request), capture_output=True, text=True)
@@ -96,23 +107,18 @@ def run_klt_lvs(request, report_path):
 
 def do_check(cells, out, netlists, config):
     bad = []
-    with tempfile.TemporaryDirectory() as tmp:
-        r = gen_netlists(config, tmp)
-        if r.returncode != 0:
-            print(r.stderr, file=sys.stderr)
-            return 1
-        for cell in cells:
-            fresh = pathlib.Path(tmp) / f"{cell}.spice"
-            have = pathlib.Path(netlists) / f"{cell}.spice"
-            if not have.exists() or have.read_bytes() != fresh.read_bytes():
-                bad.append(f"{cell}: reference netlist missing or differs from generator output")
-            rep = pathlib.Path(out) / f"{cell}.json"
-            if not rep.exists():
-                bad.append(f"{cell}: report {rep} missing")
-                continue
-            c = subprocess.run(["klt", "lvs", "--check", str(rep)], capture_output=True, text=True)
-            if c.returncode != 0:
-                bad.append(f"{cell}: klt lvs --check exit {c.returncode}: {c.stdout.strip()[:200]}")
+    r = check_netlists(config, netlists)
+    if r.returncode != 0:
+        bad.append("netlists: reference netlists not fresh (generator diagnostics above)")
+        print(r.stderr, end="", file=sys.stderr)
+    for cell in cells:
+        rep = pathlib.Path(out) / f"{cell}.json"
+        if not rep.exists():
+            bad.append(f"{cell}: report {rep} missing")
+            continue
+        c = check_report(rep)
+        if c.returncode != 0:
+            bad.append(f"{cell}: klt lvs --check exit {c.returncode}: {c.stdout.strip()[:200]}")
     stray = sorted(p.name for p in pathlib.Path(out).glob("*.json") if p.stem not in cells)
     bad += [f"stray report {s}" for s in stray]
     for b in bad:
