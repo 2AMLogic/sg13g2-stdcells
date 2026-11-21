@@ -48,6 +48,24 @@
       "flow/records/20261104-df96543/erc.json",
       "flow/records/20261104-df96543/lvs.json",
       "flow/records/20261104-df96543/place-and-route.json"
+    ],
+    "11.analog": [
+      [
+        "layout/erc/sg13g2_inv_1.json",
+        "layout/lvs/sg13g2_inv_1.json"
+      ],
+      [
+        "layout/erc/sg13g2_inv_2.json",
+        "layout/lvs/sg13g2_inv_2.json"
+      ],
+      [
+        "layout/erc/sg13g2_inv_4.json",
+        "layout/lvs/sg13g2_inv_4.json"
+      ],
+      [
+        "layout/erc/sg13g2_nand2_1.json",
+        "layout/lvs/sg13g2_nand2_1.json"
+      ]
     ]
   }
 }
