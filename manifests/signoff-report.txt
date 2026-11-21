@@ -3,7 +3,7 @@ partition boundary:
   analog: transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS
   digital: add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline
 tier: none
-T1: 12/22 items met
+T1: 13/22 items met
 
 [MET  ] T1 #1 [analog] Design sources
         cite: manifests/envelopes/item1.analog.attest.json (kind=generic, status=pass, content_hash=sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f, exit_status=0)
@@ -80,8 +80,13 @@ T1: 12/22 items met
         cite: manifests/envelopes/item10.attest.json (kind=generic, status=pass, content_hash=sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
         bound: T1 item #10 -> manifests/inventories/item10.json (content_hash=sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16)
-[UNMET] T1 #11 [analog] Power delivery (structural)
-        reason: no_evidence
+[MET  ] T1 #11 [analog] Power delivery (structural)
+        groups: 4/4 cited groups graded met
+        cite: layout/erc/sg13g2_inv_1.json (kind=erc, status=not_checked, content_hash=sha256:91c226f6336a7fb8ef2245c00f25f297c098d8368a445de84fe7df8c1bd95dc0, exit_status=0)
+        input: re-hashed the artifact this envelope names -- matches
+        also: layout/lvs/sg13g2_inv_1.json (kind=lvs, status=match)
+        power delivery: supplies=VDD, VSS, pdn=no (no P&R cited), power_connectivity=unchecked
+        well side rested on the caller's word (asserted region, or a box-selected class): 1 (erc.missing_tie:["substrate_tap"])
 [UNMET] T1 #11 [digital] Power delivery (structural)
         reason: supply_spec_incomplete
 [UNMET] T2 #- T2 — signoff-validated
@@ -91,5 +96,5 @@ T1: 12/22 items met
 [UNMET] T4 #- T4 — production-validated
         reason: tier_not_supported
 
-source: docs/design-evidence-tiers.md (content_hash=sha256:d9287ec9dc6107e560e00b1a8b7a670f757722713b5c651dee3d2cbde058490a)
-build: klt 0.9.3.dev16+gdcf18e2e0c03
+source: docs/design-evidence-tiers.md (content_hash=sha256:124f9763fc8f06f19efbea7a2762cd6b0da15822c692f4c38c6a867453984130)
+build: klt 0.9.3.dev2575+g6bd18bbc8637

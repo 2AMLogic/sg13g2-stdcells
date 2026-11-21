@@ -1,0 +1,68 @@
+{
+  "_comment": [
+    "ERC supply spec for the generated cells (layout/example_config.json,",
+    "issue #179): the four sg13g2_* streams route Metal1 only (spec row 3,",
+    "8-track single-row cells), so the stackup stops at GatPoly + Cont +",
+    "Metal1. Layer numbers are the config's layout.layers map: gatpoly 5/0,",
+    "cont 6/0, metal1 8/0 with its 8/25 label layer, activ 1/0, nsd 7/0,",
+    "psd 14/0, nwell 31/0.",
+    "",
+    "Supplies are the config's process.vdd_net / process.vss_net names,",
+    "drawn as the row-edge Metal1 rails (layout/gen_layouts.py). One island",
+    "per supply is the default nets[].islands expectation.",
+    "",
+    "ties[] names the two tap bands layout/gen_layouts.py draws per cell",
+    "(issue #73): the n-well tap is activ nsd inside the drawn n-well",
+    "(31/0) wired to the VDD rail; the substrate tap is activ psd outside",
+    "every n-well -- a native p-substrate with no drawn tub layer, so the",
+    "region is the n-well complement (well_layer null + well_complement_of)",
+    "-- wired to the VSS rail. tap_requires carries the implant boolean on",
+    "both: a bare activ tap_layer would match every device source/drain",
+    "diffusion in the same region and grade as degenerate",
+    "(degenerate_tap_declaration), while activ-intersect-implant is the",
+    "real mask the generator draws."
+  ],
+  "stackup": [
+    {
+      "name": "GatPoly",
+      "layer": "5/0",
+      "role": "gate",
+      "active_layer": "1/0"
+    },
+    {
+      "name": "Metal1",
+      "layer": "8/0",
+      "label_layer": "8/25"
+    }
+  ],
+  "vias": [
+    {
+      "name": "Cont",
+      "layer": "6/0",
+      "between": ["GatPoly", "Metal1"]
+    }
+  ],
+  "nets": [
+    {"name": "VDD", "kind": "supply"},
+    {"name": "VSS", "kind": "supply"}
+  ],
+  "ties": [
+    {
+      "name": "nwell_tap",
+      "well_layer": "31/0",
+      "tap_layer": "1/0",
+      "tap_requires": ["7/0"],
+      "connect_to": "Metal1",
+      "net": "VDD"
+    },
+    {
+      "name": "substrate_tap",
+      "well_layer": null,
+      "well_complement_of": ["31/0"],
+      "tap_layer": "1/0",
+      "tap_requires": ["14/0"],
+      "connect_to": "Metal1",
+      "net": "VSS"
+    }
+  ]
+}
