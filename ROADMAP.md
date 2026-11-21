@@ -42,16 +42,29 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   cells at TT / 1.20 V / 25 C, emitted by `klt characterize` (#40), with a
   provenance sidecar and the record `sim/characterize/records/20261115-220740-13dc481.md`.
   It carries no `area` attribute.
+- **Corner verification (T1 item 5 analog, row 9): met.** Eight `klt sim`
+  envelopes (`sim/item5/records/20261121-135717-f5cb68a/`, issue #180) cover
+  the row at its target corner: per cell, the logical function at the rails
+  (all input combinations, settled output within 10 mV of the rail the
+  Liberty function demands) and delay plus rise/fall transition at every
+  (input transition, output load) point of the committed view's 5x5 grid,
+  each agreeing with the tabulated value at the same slew and load to within
+  2 % (worst observed 0.058 %). Every measurement is limit-checked and
+  `spec_row`-tagged `9`, so the report's row coverage is derived, and the
+  item's declared row set is row 9 alone (the other eleven rows are graded
+  elsewhere or not electrical — disposition in PR #180's description).
 - **Benchmark (rows 10-12): not started on this library.** `flow/records/`
   holds the `add8` baseline on the stock `sg13g2_stdcell` only: synthesis,
   place-and-route with all three power gates, gate-level LVS `match`, routed
   GDS and a clean `klt drc` (#9, #41).
 - **Evidence grade.** `manifests/signoff-report.txt` (`klt signoff --manifest`):
-  tier none, **T1 11/22 items met**. Met: items 1-4 on both partitions, item 9
-  digital and item 10 on both partitions. Unmet: items 5-8 and 11 on both
-  partitions and item 9 analog — all `no_evidence` except item 11 digital
-  (`supply_spec_incomplete`). Tracker: #3, whose body still quotes the earlier
-  3/22.
+  tier none, **T1 13/22 items met** (updated 2026-11-21 for item 5 analog,
+  #180; the previous edition of this list said 11/22 and predated the item 9
+  analog and item 8 analog citations). Met: items 1-4 on both partitions,
+  item 5 analog, item 8 analog, item 9 digital and item 10 on both
+  partitions. Unmet: item 5 digital, items 6 analog, 7 and 11 on both
+  partitions, items 8 digital and 9 analog — `no_evidence` except item 11
+  digital (`supply_spec_incomplete`). Tracker: #3.
 
 ### What the layout generator can place today
 
@@ -133,9 +146,11 @@ each item's own done-criterion, not against whether its issue closed.
   these cells need a different topology?
 - **Rows 10-12 benchmark** against the re-characterized baseline. Which
   combinational designs beyond `add8`? The spec leaves that to the benchmark issue.
-- **T1 items 5-7** (corner verification, statistical evidence, post-layout
-  verification). What does each accept as evidence for a cell library
-  rather than a block?
+- **T1 items 6-7** (statistical evidence, post-layout verification). What
+  does each accept as evidence for a cell library rather than a block?
+  Item 5 analog left this list: its row set is row 9, covered by the
+  `sim/item5/` envelopes (#180); item 5 digital is separate and still
+  `no_evidence` (tracked by #175).
 - **Stretch corners** (FF, SS) and **sequential cells** (stretch row 6); the
   latter waits on setup/hold support in `klt characterize`, per the spec.
 
