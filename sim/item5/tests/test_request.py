@@ -140,6 +140,32 @@ def test_function_netlist_states():
     assert "_cl " not in text
 
 
+def test_function_netlist_pwl_holds_states():
+    # regression: a state's value must HOLD until the next boundary (a hold
+    # point at the boundary), not interpolate into a 3 ns ramp -- the input
+    # is 0 V and 1.2 V at the sample instants, never mid-ramp
+    text = build_function_netlist(NAND2, "ref.spice", 1.2)
+    pwl_a = text.split("Vin_A in_A 0 PWL(")[1].split(")")[0]
+    times = [float(tok) for i, tok in enumerate(pwl_a.split()) if i % 2 == 0]
+    assert times == sorted(times) and len(set(times)) == len(times)
+    # A (first input, slowest-varying) = 0,0,1,1 across the four states
+    values = [float(tok) for i, tok in enumerate(pwl_a.split()) if i % 2 == 1]
+    assert values[0] == 0.0 and values[1] == 0.0
+    assert 1.2 in values and values.count(1.2) >= 2
+    # the value sampled at each mid-state instant equals a rail exactly
+    at = [1.5e-9, 4.5e-9, 7.5e-9, 10.5e-9]
+    for t in at:
+        v = _pwl_value(times, values, t)
+        assert v in (0.0, 1.2), (t, v)
+
+
+def _pwl_value(times, values, t):
+    for (t0, v0), (t1, v1) in zip(zip(times, values), zip(times[1:], values[1:])):
+        if t0 <= t <= t1 and v0 == v1:
+            return v0
+    raise AssertionError(f"t={t} falls on a transition")
+
+
 # -------------------------------------------------------------- requests
 
 def test_timing_request_measurements_and_limits(view):
@@ -165,6 +191,20 @@ def test_timing_request_negative_unate_edges(view):
     # output rise by the input FALL edge (negative_unate, as the view declares)
     assert "VAL=0.6 RISE=1 TARG v(y_A_s0p1_l0p01) VAL=0.6 FALL=1" in fall["spice"]
     assert "VAL=0.6 FALL=1 TARG v(y_A_s0p1_l0p01) VAL=0.6 RISE=1" in rise["spice"]
+
+
+def test_stimulus_self_check_edges(view):
+    # regression: a falling edge crosses the HIGH slew threshold first, so the
+    # fall self-check must TRIG on 0.96 and TARG on 0.24 (a fixed lo->hi order
+    # measures a negative duration and fails its own limit)
+    req = build_timing_request(INV1, arcs_for(INV1), view, "/pdk")
+    r = next(m for m in req["measurements"] if m["name"] == "A_s0p1_l0p01_in_slew_rise")
+    f = next(m for m in req["measurements"] if m["name"] == "A_s0p1_l0p01_in_slew_fall")
+    assert "TRIG v(in_A_s0p1_l0p01) VAL=0.24 RISE=1 TARG v(in_A_s0p1_l0p01) VAL=0.96" in r["spice"]
+    assert "TRIG v(in_A_s0p1_l0p01) VAL=0.96 FALL=1 TARG v(in_A_s0p1_l0p01) VAL=0.24" in f["spice"]
+    assert r["limits"] == f["limits"]
+    assert r["limits"]["min"] == pytest.approx(0.1e-9 * 0.98)
+    assert r["limits"]["max"] == pytest.approx(0.1e-9 * 1.02)
 
 
 def test_timing_request_corner_is_row9_target(view):

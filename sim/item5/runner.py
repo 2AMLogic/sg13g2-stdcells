@@ -170,7 +170,8 @@ def run_all(pdk_dir: str | Path, backend: str = "local",
                 grade = _grade(report, expected_map(cell, arcs, view, _config_supply(config)),
                                f"{cell.name}.{kind}")
                 grade.update({"cell": cell.name, "kind": kind,
-                              "file": os.path.relpath(f"{base.name}.report.json", REPO_ROOT),
+                              "file": os.path.relpath(
+                                  rec_dir / f"{base.name}.report.json", REPO_ROOT),
                               "content_hash": report["provenance"]["input"]["content_hash"],
                               "corner_id": report["corners"][0]["corner_id"],
                               "engine": f"{report['environment']['engine']}-"

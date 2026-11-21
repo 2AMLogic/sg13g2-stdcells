@@ -394,12 +394,18 @@ def build_function_netlist(cell: CellSpec, cell_netlist_ref: str, supply_v: floa
         f"Vss {cell.gnd} 0 DC 0",
     ]
     for pin_idx, pin in enumerate(cell.inputs):
-        pts = [f"0 {_num(states[0][pin_idx])}"]
+        pts = []
+        prev = None
         for k, state in enumerate(states):
             t = k * STATE_S
-            pts.append(f"{_num(t)} {_num(state[pin_idx])}")
-            pts.append(f"{_num(t + EDGE_S)} {_num(state[pin_idx])}")
-        lines.append(f"Vin_{pin} in_{pin} 0 PWL(" + " ".join(pts) + ")")
+            v = state[pin_idx] * supply_v
+            if k > 0:
+                pts.append((t, prev))  # hold the previous state up to its boundary
+            pts.append((t + EDGE_S, v))  # then step to this state's value
+            prev = v
+        pts.append((len(states) * STATE_S, prev))  # clean flat tail
+        pts_txt = " ".join(f"{_num(t)} {_num(v)}" for t, v in pts)
+        lines.append(f"Vin_{pin} in_{pin} 0 PWL({pts_txt})")
     outs = [f"y_dut_{pin}" for pin in cell.outputs]
     conns = [f"in_{pin}" for pin in cell.inputs] + outs + [cell.vdd, cell.gnd]
     lines.append("XDUT " + " ".join(conns) + f" {cell.name}")
@@ -500,12 +506,14 @@ def build_timing_request(cell: CellSpec, arcs: list[Arc], view: LibertyView,
                 })
                 # stimulus self-check: the applied ramp's threshold-to-threshold
                 # duration is the tabulated input transition, both edges
-                for meas_edge in ("rise", "fall"):
+                # (a falling edge crosses the high threshold first)
+                for meas_edge, trig_v, targ_v in (("rise", v_lo, v_hi),
+                                                  ("fall", v_hi, v_lo)):
                     measurements.append({
                         "name": f"{tag}_in_slew_{meas_edge}",
                         "spice": f".meas tran {tag}_in_slew_{meas_edge} "
-                                 f"TRIG v({vin}) VAL={v_lo:.6g} {meas_edge.upper()}=1 "
-                                 f"TARG v({vin}) VAL={v_hi:.6g} {meas_edge.upper()}=1",
+                                 f"TRIG v({vin}) VAL={trig_v:.6g} {meas_edge.upper()}=1 "
+                                 f"TARG v({vin}) VAL={targ_v:.6g} {meas_edge.upper()}=1",
                         "limits": _limits(slew_s, tol),
                         **common,
                     })
