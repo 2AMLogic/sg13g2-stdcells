@@ -3,7 +3,7 @@ partition boundary:
   analog: transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS
   digital: add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline
 tier: none
-T1: 12/22 items met, 1 not_applicable
+T1: 13/22 items met, 1 not_applicable
 
 [MET  ] T1 #1 [analog] Design sources
         cite: manifests/envelopes/item1.analog.attest.json (kind=generic, status=pass, content_hash=sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f, exit_status=0)
@@ -75,12 +75,14 @@ T1: 12/22 items met, 1 not_applicable
 [UNMET] T1 #7 [digital] Post-layout verification
         reason: no_evidence
 [MET  ] T1 #8 [analog] Characterization report
-        cite: manifests/envelopes/item8.analog.attest.json (kind=generic, status=pass, content_hash=sha256:1910e308982aec47919dc6ba9d323533e1486ab4f1bfdc24e8a51d400ce61dea, exit_status=0)
+        cite: manifests/envelopes/item8.analog.attest.json (kind=generic, status=pass, content_hash=sha256:191c3c82a8bb01e2491602b530ac0b2b9f62a13f7ccef7027ff3a1cd47b0aecb, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
 [UNMET] T1 #8 [digital] Characterization report
         reason: no_evidence
-[UNMET] T1 #9 [analog] Testbenches shipped
-        reason: no_evidence
+[MET  ] T1 #9 [analog] Testbenches shipped
+        cite: manifests/envelopes/item9.analog.attest.json (kind=generic, status=pass, content_hash=sha256:6eeb0589342109571879d90bbc9863051c47993d5066160a3ffcf07615668333, exit_status=0)
+        input: re-hashed the artifact this envelope names -- matches
+        bound: T1 item #9 -> manifests/inventories/item9.analog.json (content_hash=sha256:6eeb0589342109571879d90bbc9863051c47993d5066160a3ffcf07615668333)
 [MET  ] T1 #9 [digital] Testbenches shipped
         cite: manifests/envelopes/item9.digital.attest.json (kind=generic, status=pass, content_hash=sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
@@ -104,5 +106,5 @@ T1: 12/22 items met, 1 not_applicable
 [UNMET] T4 #- T4 — production-validated
         reason: tier_not_supported
 
-source: docs/design-evidence-tiers.md (content_hash=sha256:d9287ec9dc6107e560e00b1a8b7a670f757722713b5c651dee3d2cbde058490a)
-build: klt 0.9.3.dev16+gdcf18e2e0c03
+source: docs/design-evidence-tiers.md (content_hash=sha256:124f9763fc8f06f19efbea7a2762cd6b0da15822c692f4c38c6a867453984130)
+build: klt 0.9.3.dev2575+g6bd18bbc8637
