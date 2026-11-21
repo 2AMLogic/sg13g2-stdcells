@@ -10,6 +10,7 @@ import unittest
 
 LAYOUT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(LAYOUT))
+import gen_controls as gc  # noqa: E402
 import gen_layouts as gl  # noqa: E402
 
 CONFIG = LAYOUT / "example_config.json"
@@ -529,8 +530,9 @@ class NotchPredicate(unittest.TestCase):
 class ForcedNotch(unittest.TestCase):
     """End-to-end refusal and admission, with a strip's drawn profile forced
     the way issue #86's original measurement forced it (no reachable cell
-    notches, so the profile cannot arise on its own). The same forcing is how
-    the recorded controls in layout/drc/controls/ were produced."""
+    notches, so the profile cannot arise on its own). The forcing is the
+    control generator's own `forced_strip_profile` -- the code the recorded
+    controls in layout/drc/controls/ were produced with."""
 
     AND2 = {"name": "x_and2_1", "family": "and2", "drive": 1,
             "inputs": ["A", "B"], "outputs": {"X": "(A*B)"}}
@@ -542,18 +544,10 @@ class ForcedNotch(unittest.TestCase):
         return cfg
 
     def force(self, strip, prof, notch_off=False):
-        """Patch _strip_profile to hand back `prof` for `strip`'s devices --
+        """The shared forcing (`gen_controls.forced_strip_profile`), entered
+        for the rest of the test: `prof` handed back for `strip`'s devices --
         and, for drawing a refused notch (the DRC controls), the check itself."""
-        real_prof, real_hit = gl._strip_profile, gl._notch_violation
-
-        def patched_prof(order, devs_, cols_):
-            p = real_prof(order, devs_, cols_)
-            return list(prof) if devs_[0][1] == strip else p
-
-        gl._strip_profile = patched_prof
-        gl._notch_violation = (lambda *a: None) if notch_off else real_hit
-        self.addCleanup(setattr, gl, "_strip_profile", real_prof)
-        self.addCleanup(setattr, gl, "_notch_violation", real_hit)
+        self.enterContext(gc.forced_strip_profile(strip, prof, notch_off))
 
     def test_pmos_notch_refused_naming_cell_strip_layer_and_numbers(self):
         cfg = self.forced_cfg(pitch=840)
