@@ -458,11 +458,7 @@ class UnequalFingerCounts(unittest.TestCase):
     The three stack shapes the issue measured on the 5 nm grid (740 nm vs
     three PMOS fingers, 1480 nm vs six, 1120 nm vs three NMOS fingers) refuse
     on the *next* named limits (channel tracks, a diffusion break), so the
-    placeable fixtures are inverters whose sizing forces the same 3-vs-1
-    blocks in both directions. Their finger heights are multiples of 10 nm,
-    which keeps every contact on the 5 nm manufacturing grid -- a 2-vs-1
-    fallback cannot do that (a width that misses the 10 nm fold is an odd
-    multiple of 5 nm, so its single finger is one too)."""
+    inverter fixtures exercise 3-vs-1 and 2-vs-1 blocks in both directions."""
 
     NOR3 = {"name": "x_nor3_1", "family": "nor3", "drive": 1,
             "inputs": ["A", "B", "C"], "outputs": {"Y": "!(A+B+C)"}}
@@ -548,6 +544,60 @@ class UnequalFingerCounts(unittest.TestCase):
         p_y1 = H - lay["p_diff_top_margin_nm"]
         for s in self.stripes(S, lay)[1:]:
             self.assertEqual(s[4], p_y1 - 1120 - R["poly_to_activ_nm"])
+
+    def test_reordered_pmos_blocks_reach_the_contact_height_limit(self):
+        cell = {"name": "x_and", "family": "and2", "drive": 1,
+                "inputs": ["A", "B"], "outputs": {"Y": "!(!A+!B)"}}
+        cfg = self.cfg5(350, 1440, cell)
+        # Gates A, B, B_b, A_b need 2, 2, 3, 3 columns. Indexing both
+        # device lists by the NMOS order truncates the final PMOS bridge.
+        with self.assertRaisesRegex(gl.PlaceError, r"diffusion 175 nm tall is too short for a contact: NMOS on gate A "):
+            gl.generate(cfg)
+
+    def test_poly_stop_clears_adjacent_diffusion_on_both_strips(self):
+        buf = {"name": "x_buf", "family": "buf", "drive": 2,
+               "inputs": ["A"], "outputs": {"Y": "A"}}
+        for n, p in ((500, 2430), (2430, 500)):
+            cfg = self.cfg5(n, p, buf)
+            lay = cfg["layout"]
+            # The third stripe is beside a step from 500 to 1000 nm.
+            # Its lateral gap to the tall run is 60 nm or exactly 70 nm.
+            for pitch, height in ((550, 1000), (570, 500)):
+                with self.subTest(n=n, p=p, pitch=pitch):
+                    lay.update(gate_pitch_nm=pitch, row_height_nm=4200, channel_tracks=2)
+                    shapes, _, _ = layout_of(buf, cfg)
+                    stripe = self.stripes(shapes, lay)[2]
+                    gap = lay["rules"]["poly_to_activ_nm"]
+                    if n < p:
+                        self.assertEqual(stripe[2], lay["n_diff_y0_nm"] + height + gap)
+                    else:
+                        self.assertEqual(stripe[4], lay["row_height_nm"] - lay["p_diff_top_margin_nm"] - height - gap)
+
+    def test_two_finger_fallback_contacts_fit_on_the_grid(self):
+        for n, p, row, stack in ((745, 1760, 3360, [470, 810]),
+                                 (1700, 1125, 4200, [2885, 3225, 3565])):
+            with self.subTest(n=n, p=p):
+                cell = self.INVP3 if n < p else self.INVN3
+                cfg = self.cfg5(n, p, cell)
+                lay = cfg["layout"]
+                lay.update(row_height_nm=row, n_diff_y0_nm=350, p_diff_top_margin_nm=330)
+                data = gl.generate(cfg)[cell["name"] + ".gds"]
+                contacts = [(xs, ys) for layer, dt, xs, ys in read_gds_boxes(data)
+                            if [layer, dt] == lay["layers"]["cont"]]
+                grid = cfg["process"]["grid_nm"]
+                self.assertTrue(all(v % grid == 0 for xs, ys in contacts for v in xs + ys))
+                # All cuts of the first node in the odd-height strip survive
+                # snapping, centred within one grid step of equal enclosure.
+                lo, hi = (350, 350 + n) if n < p else (row - 330 - p, row - 330)
+                self.assertEqual(sorted(min(ys) for xs, ys in contacts
+                                        if min(xs) == 130 and lo <= min(ys) < hi), stack)
+
+    def test_fallback_refuses_when_no_grid_point_meets_contact_enclosure(self):
+        cfg = self.cfg5(305, 1760, self.INVP3)
+        cfg["layout"]["rules"]["activ_enc_cont_nm"] = 72
+        # A 160 nm cut would fit at y=472 or 473, both off the 5 nm grid.
+        with self.assertRaisesRegex(gl.PlaceError, r"cannot enclose a 160 nm contact on the 5 nm grid"):
+            gl.generate(cfg)
 
     def test_drawn_width_equals_netlist_width_and_unused_columns_do_not_cross(self):
         """Read the emitted poly/activ intersections per strip, count them per

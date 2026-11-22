@@ -95,8 +95,8 @@ netlist count** (issue #170): the gate net's columns become a block of
 `max(n, p)` columns with the shorter device on the first `min(n, p)` of them.
 Its remaining block columns carry no channel for it -- the diffusion node that
 spans the block, introducing no source/drain transition -- and the poly stripe
-there clears that strip's diffusion (`poly_to_activ_nm` past the tallest run it
-passes) instead of crossing it, so it draws no parasitic channel. A PMOS device
+there stops `poly_to_activ_nm` beyond the tallest diffusion run within that
+horizontal clearance of the stripe, including a step on either side. A PMOS device
 whose fingers include such NMOS-free columns cannot reach the bridge below the
 NMOS diffusion with them, so its fingers are joined by a second poly bridge
 *above* the PMOS strip (`poly_to_activ_nm` clear of it); that bridge is the only
@@ -226,7 +226,8 @@ reports the grid diagnostic any more; each names the next physical limit:
 | cell | fallback (drawn) | next limit |
 |---|---|---|
 | `demo_nor4_1` | NMOS 1 x 500 vs PMOS 4 x 800 | PMOS even-finger series stack needs a diffusion break |
-| `s5l_nor3_1` / `or3_1` / `or3_2` | NMOS 1 x 740 vs PMOS 3 x 1120 | 3 channel tracks needed, 1 allowed |
+| `s5l_nor3_1` | NMOS 1 x 740 vs PMOS 3 x 1120 | 3 channel tracks needed, 1 allowed |
+| `s5l_or3_1` / `s5l_or3_2` | NMOS 1 x 740 vs PMOS 3 x 1120 | 4 channel tracks needed (`X`, `X_i`, `n1`, `n2`), 1 allowed |
 | `s5l_nor3_2` | NMOS 2 x 740 vs PMOS 6 x 1120 | PMOS even-finger series stack needs a diffusion break |
 | `s5l_nand3_1` | PMOS 1 x 1120 vs NMOS 3 x 740 | 3 channel tracks needed, 1 allowed |
 | `s5l_and3_1` / `and3_2` / `nand3b_1` | PMOS 1 x 1120 vs NMOS 3 x 740 | 4 channel tracks needed, 1 allowed |
@@ -262,10 +263,16 @@ with this repo's `layout/example_config.json` rules on the 5 nm grid:
   runner's `-o` contract -- the committed `layout/lvs/` reports likewise
   record a newer-than-pin klt in their provenance).
 
-The fixtures' finger heights are multiples of 10 nm so every contact lands on
-the 5 nm manufacturing grid -- a 2-vs-1 fallback cannot do that (a width that
-misses the 10 nm fold is an odd multiple of 5 nm), which is why the placeable
-fixtures are 3-vs-1 and not 2-vs-1.
+In a fallback, the generator fits each diffusion contact stack between its
+enclosures in whole grid steps. When the ideal centre lies halfway between
+steps, the lower position wins. Two-finger inverter fixtures at 745/1760 nm
+and 1700/1125 nm place on the 5 nm grid. Both match their netlists in LVS
+and pass SG13G2 DRC (klt source `068b0c1da0e8`, KLayout 0.30.13). The deck
+at `6bd18bbc8637`, which checks `cont.ongrid.1`, also reports zero violations.
+
+The drive-2 buffer clearance regression (500/2430 nm, 550 nm pitch, 4200 nm
+row, two tracks) passes both DRC decks. Its internal gate still fails LVS with
+a split net, also reproduced on a common-fold buffer on `main`. [Issue #201](https://github.com/2AMLogic/sg13g2-stdcells/issues/201)
 
 ### Well and substrate taps
 

@@ -285,12 +285,12 @@ def layout_cell(cell, proc, lay):
     # share the block grid: order_strips aligned the gate-net sequences, so
     # position j names the same gate net on both. Column c is that strip's
     # device's finger iff cols[c][1] is below its drawn count.
-    sizes = [max(ndevs[i][6], pdevs[i][6]) for (i, _, _), _ in zip(nord, pord)]
+    nfing = [ndevs[i][6] for i, _, _ in nord]
+    pfing = [pdevs[i][6] for i, _, _ in pord]
+    sizes = [max(n, p) for n, p in zip(nfing, pfing)]
     cols = [(j, k) for j, n in enumerate(sizes) for k in range(n)]  # column -> (position in order, column in block)
     pcols = list(cols)
     N = len(cols)
-    nfing = [d[6] for d in (ndevs[i] for i, _, _ in nord)]  # drawn NMOS fingers per position
-    pfing = [d[6] for d in (pdevs[i] for i, _, _ in pord)]  # drawn PMOS fingers per position
     # Height profile: devices of different drawn finger widths share a strip, so
     # the strip's channel-facing edge steps from column to column. A valley in
     # it is a re-entrant notch in the merged activ/implant/well polygon, and the
@@ -420,12 +420,13 @@ def layout_cell(cell, proc, lay):
     # a finger there. A stripe whose column the other strip's device does not
     # occupy must clear that strip's diffusion instead of crossing it (a poly
     # edge over node diffusion would be a parasitic channel): it stops
-    # poly_to_activ past the tallest run its width passes, and the endcap/
-    # bridge below still serves the columns that do cross.
-    def _clear_y(c, runs, edge):
-        x0, x1 = gate_x[c] - pw // 2, gate_x[c] + pw // 2
-        h = max(hh for c0, c1, hh in runs if node_x[c0] - act_hang < x1 and x0 < node_x[c1 + 1] + act_hang)
-        return edge(h)
+    # poly_to_activ past the tallest run within that distance of either edge.
+    poly_gap = R["poly_to_activ_nm"]
+
+    def clearance_height(c, runs):
+        x0, x1 = gate_x[c] - pw // 2 - poly_gap, gate_x[c] + pw // 2 + poly_gap
+        return max(h for c0, c1, h in runs
+                   if node_x[c0] - act_hang < x1 and x0 < node_x[c1 + 1] + act_hang)
 
     nruns, pruns = _runs(nprof), _runs(pprof)
     for c in range(N):
@@ -433,8 +434,8 @@ def layout_cell(cell, proc, lay):
         if k < nfing[pos]:  # an NMOS finger: crosses the NMOS strip
             y0 = min(n_y0 - ext, bridge_y0) if len(dev_cols[pos]) > 1 else n_y0 - ext
         else:  # PMOS-only column: stop above the NMOS diffusion
-            y0 = _clear_y(c, nruns, lambda h: n_y0 + h + R["poly_to_activ_nm"])
-        y1 = poly_y1 if k < pfing[pos] else _clear_y(c, pruns, lambda h: p_y1 - h - R["poly_to_activ_nm"])
+            y0 = n_y0 + clearance_height(c, nruns) + poly_gap
+        y1 = poly_y1 if k < pfing[pos] else p_y1 - clearance_height(c, pruns) - poly_gap
         S.box("gatpoly", gate_x[c] - pw // 2, y0, gate_x[c] + pw // 2, y1)
     for cs in dev_cols.values():
         if len(cs) > 1:
@@ -467,16 +468,30 @@ def layout_cell(cell, proc, lay):
 
     # Contacts per node (stacked inside the diffusion) and the M1 stub on them.
     mw = R["m1_width_nm"]
-    pitch_c = R["cont_nm"] + R["cont_space_nm"]
+    # Preserve common-fold geometry. In a fallback the single-finger strip
+    # can be an odd number of grid steps tall, so snap the stack inside it.
+    cont = R["cont_nm"]
+    enc = R["activ_enc_cont_nm"]
+    pitch_c = cont + R["cont_space_nm"]
+    common_fold = nfing == pfing
 
     def contact_ys(y0, y1, what):
-        room = y1 - y0 - 2 * R["activ_enc_cont_nm"] - R["cont_nm"]
+        room = y1 - y0 - 2 * enc - cont
         if room < 0:
             raise PlaceError(f"diffusion {y1 - y0} nm tall is too short for a contact: {what}")
-        k = room // pitch_c + 1
-        span = (k - 1) * pitch_c
-        base = (y0 + y1) // 2 - span // 2 - half_c
-        return [base + t * pitch_c for t in range(k)]
+        if common_fold:
+            k = room // pitch_c + 1
+            base = (y0 + y1) // 2 - ((k - 1) * pitch_c) // 2 - half_c
+            return [base + t * pitch_c for t in range(k)]
+        # Use grid steps for both the enclosed bottom edges and the pitch.
+        lo = (y0 + enc + grid - 1) // grid
+        hi = (y1 - enc - cont) // grid
+        if hi < lo or cont % grid:
+            raise PlaceError(f"diffusion {y0}..{y1} nm cannot enclose a {cont} nm contact on the {grid} nm grid: {what}")
+        pitch_steps = (pitch_c + grid - 1) // grid
+        intervals, slack = divmod(hi - lo, pitch_steps)
+        base = lo + slack // 2
+        return [(base + t * pitch_steps) * grid for t in range(intervals + 1)]
 
     net_m1 = {}  # net -> list of (rect, side)
     for strip, nets, order, devs_, cols_, prof, side in (
