@@ -433,6 +433,8 @@ signal:
   the answer is a re-mint -- a new record, never an edit, the same
   append-only discipline as the supersession chains below.
 
+#### The recorded result (issues #42, #73)
+
 The request sends `options.combine_devices: true`, recorded in each report's
 `options` block. It is there because this generator *folds*: a device of F
 fingers is F parallel transistors on one gate net in the layout, where the
