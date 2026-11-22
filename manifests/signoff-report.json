@@ -10,20 +10,21 @@
   "t1_item_count": 22,
   "build_t1_item_count": 22,
   "t1_met_count": 13,
+  "t1_not_applicable_count": 1,
   "unmet_reason_counts": {
-    "no_evidence": 8,
+    "no_evidence": 7,
     "supply_spec_incomplete": 1
   },
   "source_doc": "docs/design-evidence-tiers.md",
-  "source_doc_content_hash": "sha256:124f9763fc8f06f19efbea7a2762cd6b0da15822c692f4c38c6a867453984130",
+  "source_doc_content_hash": "sha256:ba75f62abe97f76ef9b9aafc32fc3791845ef55647236ec51bd4fe9344e9da15",
   "build": {
-    "version": "0.9.3.dev2575+g6bd18bbc8637",
-    "package_version": "0.9.3.dev2575+g6bd18bbc8637",
-    "git_commit": "6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
+    "version": "0.9.3.dev2843+g1a0d5954284b",
+    "package_version": "0.9.3.dev2843+g1a0d5954284b",
+    "git_commit": "1a0d5954284b329ad1440bdf07baa4ba709cd037",
     "git_tag": null,
     "dirty": false,
     "is_release": false,
-    "grading_ruleset_id": "sha256:42c8906e70d464c2d07319a3a374d7730147bdde99abeb263ad301b3d0e511b5"
+    "grading_ruleset_id": "sha256:fdbc12ef2a90c187836ff5945612a01c51ccbb3b79f43aaf7d1ae229e5c422d5"
   },
   "items": [
     {
@@ -562,10 +563,86 @@
         "**Add the missing statistical row(s)** to the block's spec through a decision record the operator ratifies, then supply Monte Carlo evidence (`klt yield`) for them. Where the PDK has no mismatch models, assumed mismatch is acceptable, labelled as such in the evidence.",
         "**Declare item 6 a gap** for the analog partition. The digital partition of the same block may still use `not_applicable`. **Declared gaps keep blocking T1** (issue #5858, operator ruling 2026-11-17): a settled, hash-justified gap does *not* satisfy the roll-up, on any item or partition. `_T1_SATISFIED_STATUSES` is not widened and ruling #4183 above is untouched, so `tier: \"T1\"` still means every *applicable* row is evidenced. A gap is not a permanent state: a row that cannot be evidenced today is a statement about today's tools and inputs, and a request to build what is missing, either a klayout-tools feature or a new EDA project. A declared gap therefore names the open issue that would close it, and a gap with no such link is a signoff finding. A row that is unevidenceable for a reason no tool could ever fix is a different case, closer to `not_applicable`, and goes back to the operator rather than being declared a gap. The hash-justified declaration and the separate count and listing of declared gaps belong to #5599. **Several statistical rows, only some evidenced** (issue #2908): item 6 is a claim about *every* statistical row, so a manifest may declare the row set under `spec_rows.\"6\"` and cite one `klt yield` report per row set (`rows` on each citation). Item 6 grades `met` only when every declared row is covered by a passing citation against a ratified target. A row with no citation (`uncovered_rows`), a row declared a `gap` (`declared_gaps` \u2014 pending work that a named issue should close, never a permanent pass; issue #5599 adds a justified form carrying a hash-bound rationale artifact and the issue that would close the gap, and an operator ruling on #5858, 2026-11-17 settled that a gap keeps blocking T1), or a row declared `ratified: false` (`unratified_rows`, evidence against a proposed limit is provisional) grades `unmet` / `partial_coverage`, never `met`. Without a declaration the item grades as before; a `not_applicable` entry contradicts a declared row set and is `invalid_evidence`."
       ],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "not_applicable",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": null,
+      "not_applicable": {
+        "spec": {
+          "file": "spec/0001-target-specification.md",
+          "content_hash": "sha256:ba6ab55b1ad6c96ae911c49c33101b32fd57e04031874b1e620036b5c0813ea3",
+          "status": "ratified",
+          "row_count": 12,
+          "format": "markdown-table",
+          "id_column": "#"
+        },
+        "statement": {
+          "file": "manifests/item6-na-statement.json",
+          "content_hash": "sha256:5fe58d59cd80677e5788eb2cc9d132ebfcdc465a449f515f5ad4a05d9848c280",
+          "rows": [
+            {
+              "id": "1",
+              "class": "geometry",
+              "reason": "The row height is a fixed layout dimension of 3.36 um (8 tracks)."
+            },
+            {
+              "id": "2",
+              "class": "geometry",
+              "reason": "The routing grid specifies a fixed pitch of 0.42 um on each axis."
+            },
+            {
+              "id": "3",
+              "class": "geometry",
+              "reason": "Layer inspection determines whether all intra-cell routing uses Metal1."
+            },
+            {
+              "id": "4",
+              "class": "geometry",
+              "reason": "Each pin location is checked against the specified routing grid."
+            },
+            {
+              "id": "5",
+              "class": "cell count",
+              "reason": "Counting the combinational cells in the library determines whether it reaches the target or stretch count."
+            },
+            {
+              "id": "6",
+              "class": "cell count",
+              "reason": "The target excludes sequential cells and the stretch specifies a count of eight."
+            },
+            {
+              "id": "7",
+              "class": "physical verification",
+              "reason": "The DRC verdict depends on whether the SG13G2 deck reports a violation on the given layout."
+            },
+            {
+              "id": "8",
+              "class": "physical verification",
+              "reason": "LVS compares the extracted layout netlist with the schematic and returns a match verdict."
+            },
+            {
+              "id": "9",
+              "class": "corner coverage",
+              "reason": "The Liberty views are required at named process, voltage and temperature points, with TT at target and FF and SS added at stretch."
+            },
+            {
+              "id": "10",
+              "class": "benchmark ratio",
+              "reason": "The area bound compares post-synthesis cell area for add8 mapped with each library under the same flow and constraints."
+            },
+            {
+              "id": "11",
+              "class": "benchmark ratio",
+              "reason": "The energy bound compares total post-synthesis energy over one fixed seeded vector set at TT, using the same clock period and power tool for both libraries."
+            },
+            {
+              "id": "12",
+              "class": "benchmark ratio",
+              "reason": "The period bound compares worst input-to-output path delays at each specified corner using the same virtual clock and I/O constraints for both post-synthesis netlists."
+            }
+          ]
+        }
+      }
     },
     {
       "tier": "T1",
@@ -573,7 +650,7 @@
       "title": "Post-layout verification",
       "partition": "analog",
       "partition_boundary": "transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS",
-      "text": "the spec suite re-run against the netlist extracted from the layout, not only the drawn schematic (#252). Parasitic extraction has landed (#217, `klt extract --parasitics`); a `klt pex` report's `extraction.model` field is the machine-checkable statement of what the extracted netlist's lumped-RC model does and does not account for (quasi-static, vertical-overlap coupling only, issue #760 \u2014 see `docs/cli/pex.md` \u2192 \"Top-level fields\"). A `klt pex` JSON report \u2014 the per-corner, per-spec-row schematic-vs-extracted delta \u2014 is the machine-checkable evidence for this item, and the *only* evidence `klt signoff`'s tier-verdict mode accepts for it: unlike every other item, item 7 rejects a passing citation of any other kind, since a clean DRC or a pre-layout schematic sim proves nothing about post-layout behaviour (#871). `klt pex` (Epic #709, issue #801) is implemented \u2014 see `docs/cli/pex.md` for its full contract and `docs/cli/signoff.md`'s \"Item 7 is kind-restricted\" section for how `klt signoff` binds to it. Epic #709 Phase 1c (#803) is the first end-to-end proof of this item on a real analog canary (`blocks/sky130-ota-5t` / `examples/design-pipeline/`, see that directory's README \"S10 pex delta proof\" section) \u2014 every `delta[]` row is explainable directly from the extracted netlist's own added R/C, not merely reported, including the (measured, not assumed) no-degradation rows that canary's current topology produces.",
+      "text": "the spec suite re-run against the netlist extracted from the layout, not only the drawn schematic (#252). Parasitic extraction has landed (#217, `klt extract --parasitics`); a `klt pex` report's `extraction.model` field is the machine-checkable statement of what the extracted netlist's lumped-RC model does and does not account for (quasi-static, vertical-overlap coupling only, issue #760 \u2014 see `docs/cli/pex.md` \u2192 \"Top-level fields\"). A `klt pex` JSON report \u2014 the per-corner, per-spec-row schematic-vs-extracted delta \u2014 is the machine-checkable evidence for this item, and the *only* evidence `klt signoff`'s tier-verdict mode accepts for it: unlike every other item, item 7 rejects a passing citation of any other kind, since a clean DRC or a pre-layout schematic sim proves nothing about post-layout behaviour (#871). `klt pex` (Epic #709, issue #801) is implemented \u2014 see `docs/cli/pex.md` for its full contract and `docs/cli/signoff.md`'s \"Item 7 is kind-restricted\" section for how `klt signoff` binds to it. Epic #709 Phase 1c (#803) is the first end-to-end proof of this item on a real analog canary (`blocks/sky130-ota-5t` / `examples/design-pipeline/`, see that directory's README \"S10 pex delta proof\" section) \u2014 every `delta[]` row is explainable directly from the extracted netlist's own added R/C, not merely reported, including the (measured, not assumed) no-degradation rows that canary's current topology produces. For a block whose core device family only the PDK's own LVS runset recognises (the case `klt pex --engine klayout-runset` exists for, #6559), the citation must carry parasitics: `klt signoff` refuses a `parasitics_carried: false` leg with `no_parasitics` (#6606) \u2014 the merged route (`klt pex --engine klayout-runset --deck <curated>`, which attaches the curated deck's parasitics to the runset devices through the measured geometric net correspondence of `docs/design/runset-pex-net-correspondence.md`) is the runset-engine shape that grades.",
       "notes": [
         "A `klt pex` citation is only as good as the **device-body bias** of the netlist it ran on (#1983). A device body left on an anonymous, deck-synthesized net has no DC bias path at all, which makes a resimulation of that extracted netlist *physically wrong, not merely imprecise* (`docs/cli/extract.md` \u2192 \"Coverage\") \u2014 the run converges and reports numbers, and those numbers are not comparable to the schematic leg they are being diffed against. A `klt pex` report states the condition in its own `body_bias` block (`docs/cli/pex.md`), and `klt signoff` surfaces it verbatim on this item's citation (`citation.body_bias`). **It does not grade on it**: an item-7 citation whose `body_bias.status` is `\"unbiased\"` still renders `met`, because the condition is a deck-coverage property some PDKs produce on every layout they extract, not a defect this command can adjudicate. So a claim citing item 7 must read that field and state whether its post-layout numbers were measured on a properly-biased netlist \u2014 claimant-enforced, exactly like item 3's DRC-coverage disclosure. The same discipline applies upstream at item 4: `klt lvs`'s `body_verification` block says whether the compare verified the body ties at all, and `\"unchecked\"` (a pre-extracted netlist) is not `\"verified\"`."
       ],

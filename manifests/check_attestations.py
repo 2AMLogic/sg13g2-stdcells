@@ -24,12 +24,14 @@ With --manifest FILE the script instead checks a block manifest's evidence
 pins (issue #116): every evidence entry that is a {file, content_hash} object
 pins the provenance.input.content_hash of the envelope it names -- the
 single-file digest for the path shape, the input-set aggregate for the paths
-shape (exactly the field the per-file walk above skips). Bare path strings
-and lists of them record locations without a pin and are skipped. The
-envelope directory is not walked in this mode; envelope-vs-tree checking is
-the default run. Issue #116's defect was a re-minted envelope whose manifest
-pin was never re-pointed, so the committed signoff count disagreed with what
-the grader computed, and no CI stage could see it.
+shape (exactly the field the per-file walk above skips). For item 6's
+not_applicable form, the spec and statement pins each hash the raw bytes
+of the named document. Bare path strings and lists of them record locations
+without a pin and are skipped. The default run walks the envelope directory
+and checks the envelopes against the tree. Issue #116's defect was a
+re-minted envelope whose manifest pin was never re-pointed, so the committed
+signoff count disagreed with what the grader computed, and no CI stage could
+see it.
 
 An envelope that cannot be parsed, or that records no comparable hash at all,
 is an error, never a silent pass. The same holds in --manifest mode: a
@@ -201,12 +203,41 @@ def envelope_input_hash(envelope, envelope_name):
     return _parse_content_hash(inp["content_hash"], envelope_name, "provenance.input")
 
 
+def _parse_file_pin(entry, manifest_name, where):
+    if (
+        not isinstance(entry, dict)
+        or "file" not in entry
+        or "content_hash" not in entry
+    ):
+        raise EnvelopeError(
+            f"{manifest_name}: {where}: object entries must carry both 'file' and 'content_hash'"
+        )
+    rel = entry["file"]
+    if not isinstance(rel, str) or not rel:
+        raise EnvelopeError(f"{manifest_name}: {where}: 'file' is not a path string")
+    return rel, _parse_content_hash(entry["content_hash"], manifest_name, where)
+
+
+def _document_pin_mismatch(entry, manifest_name, where, repo_root):
+    rel, pin = _parse_file_pin(entry, manifest_name, where)
+    try:
+        content = (repo_root / rel).read_bytes()
+    except (OSError, ValueError) as exc:
+        raise EnvelopeError(
+            f"{manifest_name}: {where}: cannot read {rel} ({exc})"
+        ) from exc
+    actual = hashlib.sha256(content).hexdigest()
+    if actual != pin:
+        return f"{manifest_name}: {where} pins sha256:{pin} but {rel} hashes to sha256:{actual}"
+    return None
+
+
 def manifest_pin_findings(manifest, manifest_name, repo_root):
     """Return (checked, errors, failures) for the manifest's evidence pins.
 
     checked counts the pins compared; an error is a structural problem
-    (missing/unparseable envelope, malformed pin) and exits 2; a failure is
-    a pin that disagrees with the envelope it names and exits 1.
+    (unreadable evidence, malformed pin or envelope) and exits 2. A failure
+    is a pin that disagrees with the evidence it names and exits 1.
     """
     errors = []
     failures = []
@@ -230,18 +261,28 @@ def manifest_pin_findings(manifest, manifest_name, repo_root):
                 f"paths, or a {{file, content_hash}} object, got {type(entry).__name__}"
             )
             continue
-        if "file" not in entry or "content_hash" not in entry:
-            errors.append(
-                f"{manifest_name}: {where}: object entries must carry both "
-                "'file' and 'content_hash'"
-            )
-            continue
-        rel = entry["file"]
-        if not isinstance(rel, str) or not rel:
-            errors.append(f"{manifest_name}: {where}: 'file' is not a path string")
+        if key in ("6", "6.digital") and "not_applicable" in entry:
+            form = entry["not_applicable"]
+            if not isinstance(form, dict):
+                errors.append(
+                    f"{manifest_name}: {where}.not_applicable: expected an object"
+                )
+                continue
+            for document in ("spec", "statement"):
+                location = f"{where}.not_applicable.{document}"
+                try:
+                    mismatch = _document_pin_mismatch(
+                        form.get(document), manifest_name, location, repo_root
+                    )
+                except EnvelopeError as exc:
+                    errors.append(str(exc))
+                    continue
+                checked += 1
+                if mismatch:
+                    failures.append(mismatch)
             continue
         try:
-            pin = _parse_content_hash(entry["content_hash"], manifest_name, where)
+            rel, pin = _parse_file_pin(entry, manifest_name, where)
         except EnvelopeError as exc:
             errors.append(str(exc))
             continue
@@ -281,7 +322,7 @@ def main(argv=None):
                         help="directory of *.json envelopes (default: manifests/envelopes)")
     parser.add_argument("--manifest", type=Path, default=None,
                         help="check the evidence pins of this block manifest "
-                             "against the envelopes they name, instead of "
+                             "against the envelopes or documents they name, instead of "
                              "walking the envelope directory (envelope-vs-tree "
                              "checking is skipped in this mode)")
     parser.add_argument("--repo-root", type=Path, default=DEFAULT_REPO_ROOT,
@@ -319,7 +360,7 @@ def main(argv=None):
                   file=sys.stderr)
             return 2
         print(f"check_attestations: {checked} evidence pins in {args.manifest.name} "
-              f"match the envelopes they name")
+              f"match the evidence they name")
         return 0
 
     envelopes = sorted(args.envelope_dir.glob("*.json"))

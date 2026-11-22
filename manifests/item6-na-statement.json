@@ -1,0 +1,64 @@
+{
+  "rows": [
+    {
+      "id": "1",
+      "class": "geometry",
+      "reason": "The row height is a fixed layout dimension of 3.36 um (8 tracks)."
+    },
+    {
+      "id": "2",
+      "class": "geometry",
+      "reason": "The routing grid specifies a fixed pitch of 0.42 um on each axis."
+    },
+    {
+      "id": "3",
+      "class": "geometry",
+      "reason": "Layer inspection determines whether all intra-cell routing uses Metal1."
+    },
+    {
+      "id": "4",
+      "class": "geometry",
+      "reason": "Each pin location is checked against the specified routing grid."
+    },
+    {
+      "id": "5",
+      "class": "cell count",
+      "reason": "Counting the combinational cells in the library determines whether it reaches the target or stretch count."
+    },
+    {
+      "id": "6",
+      "class": "cell count",
+      "reason": "The target excludes sequential cells and the stretch specifies a count of eight."
+    },
+    {
+      "id": "7",
+      "class": "physical verification",
+      "reason": "The DRC verdict depends on whether the SG13G2 deck reports a violation on the given layout."
+    },
+    {
+      "id": "8",
+      "class": "physical verification",
+      "reason": "LVS compares the extracted layout netlist with the schematic and returns a match verdict."
+    },
+    {
+      "id": "9",
+      "class": "corner coverage",
+      "reason": "The Liberty views are required at named process, voltage and temperature points, with TT at target and FF and SS added at stretch."
+    },
+    {
+      "id": "10",
+      "class": "benchmark ratio",
+      "reason": "The area bound compares post-synthesis cell area for add8 mapped with each library under the same flow and constraints."
+    },
+    {
+      "id": "11",
+      "class": "benchmark ratio",
+      "reason": "The energy bound compares total post-synthesis energy over one fixed seeded vector set at TT, using the same clock period and power tool for both libraries."
+    },
+    {
+      "id": "12",
+      "class": "benchmark ratio",
+      "reason": "The period bound compares worst input-to-output path delays at each specified corner using the same virtual clock and I/O constraints for both post-synthesis netlists."
+    }
+  ]
+}
