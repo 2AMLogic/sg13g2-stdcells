@@ -41,11 +41,13 @@ CONTROLS = pathlib.Path(__file__).resolve().parent / "drc" / "controls"
 INV4 = "sg13g2_inv_4"
 AND2 = {"family": "and2", "drive": 1, "inputs": ["A", "B"], "outputs": {"X": "(A*B)"}}
 
-# One row per committed control, in recording order (#86, then #114):
-# `stem` is the committed filename (`.gds` appended); `cell` the base cell;
-# `layout` the overrides on the shipped config's layout block; `force` the
-# strip drawn with a forced height profile; `notch_off` whether
-# `_notch_violation` was stubbed off so the refused notch is drawn.
+# One row per committed control, in recording order (#86, then #114, then
+# #169): `stem` is the committed filename (`.gds` appended); `cell` the base
+# cell; `layout` the overrides on the shipped config's layout block; `force`
+# the strip drawn with a forced height profile; `notch_off` whether
+# `_notch_violation` was stubbed off so the refused notch is drawn; `breaks`
+# a (strip, order position) pair forcing a diffusion break there, patching
+# `order_strips` instead of the profile.
 TABLE = [
     {"stem": "notch-nmos-p420-refused", "cell": INV4, "layout": {},
      "force": ("n", [500, 320, 500, 500]), "notch_off": True},
@@ -57,6 +59,8 @@ TABLE = [
      "force": ("p", [800, 500, 800]), "notch_off": True},
     {"stem": "notch-pmos-p600-merged", "cell": INV4, "layout": {"gate_pitch_nm": 600},
      "force": ("p", [800, 500, 800, 800]), "notch_off": False},
+    {"stem": "break-pmos-p420", "cell": "sg13g2_nand2_1", "layout": {},
+     "breaks": ("p", 1)},
 ]
 
 
@@ -75,29 +79,53 @@ def regenerate(row, config):
 
     Patches `gl._strip_profile` (and `gl._notch_violation` for the refused
     rows) around `gl.generate` and restores both in a `finally`, so a failed
-    row cannot leave the generator patched for the next one."""
+    row cannot leave the generator patched for the next one. A `breaks` row
+    patches `gl.order_strips` the same way instead: the pairing the model
+    picks is kept and one diffusion break is forced into it."""
     cfg = copy.deepcopy(config)
     cfg["layout"].update(row["layout"])
     cell = _base_cell(cfg, row["cell"])
-    strip, profile = row["force"]
-    # The naming rule every committed stream follows: the config's cell name
-    # is the GDS structure name, with "_lib" appended for the library name.
-    cell["name"] = f"notch_{strip}_p{cfg['layout']['gate_pitch_nm']}"
+    if "breaks" in row:
+        strip = row["breaks"][0]
+        # The naming rule every committed stream follows: the config's cell
+        # name is the GDS structure name, with "_lib" appended for the library.
+        cell["name"] = f"break_{strip}_p{cfg['layout']['gate_pitch_nm']}"
+    else:
+        strip, profile = row["force"]
+        cell["name"] = f"notch_{strip}_p{cfg['layout']['gate_pitch_nm']}"
     cfg["cells"] = [cell]
 
-    real_prof, real_hit = gl._strip_profile, gl._notch_violation
+    real_prof, real_hit, real_order = gl._strip_profile, gl._notch_violation, gl.order_strips
+    patches = []
 
-    def patched_prof(order, devs_, cols_):
-        p = real_prof(order, devs_, cols_)
-        return list(profile) if devs_[0][1] == strip else p
+    if "breaks" in row:
+        bstrip, at = row["breaks"]
 
-    gl._strip_profile = patched_prof
-    gl._notch_violation = (lambda *a: None) if row["notch_off"] else real_hit
+        def patched_order(ndevs, pdevs):
+            nord, nbrk, pord, pbrk = real_order(ndevs, pdevs)
+            if bstrip == "p":
+                pbrk = tuple(sorted(set(pbrk) | {at}))
+            else:
+                nbrk = tuple(sorted(set(nbrk) | {at}))
+            return nord, nbrk, pord, pbrk
+
+        gl.order_strips = patched_order
+        patches.append((gl, "order_strips", real_order))
+    else:
+        profile = row["force"][1]
+
+        def patched_prof(order, devs_, cols_):
+            p = real_prof(order, devs_, cols_)
+            return list(profile) if devs_[0][1] == strip else p
+
+        gl._strip_profile = patched_prof
+        gl._notch_violation = (lambda *a, **k: None) if row["notch_off"] else real_hit
+        patches.extend([(gl, "_strip_profile", real_prof), (gl, "_notch_violation", real_hit)])
     try:
         files = gl.generate(cfg)
     finally:
-        gl._strip_profile = real_prof
-        gl._notch_violation = real_hit
+        for obj, attr, real in patches:
+            setattr(obj, attr, real)
     (name,) = files  # one control cell in, one stream out
     return {f"{row['stem']}.gds": files[name]}
 
