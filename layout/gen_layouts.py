@@ -37,7 +37,11 @@ Placement model (deliberately small; anything outside it is a named failure):
     each poly column crosses both strips;
   * Metal1 only: VSS/VDD rails on the row edges, vertical stubs from diffusion
     contacts, at most `channel_tracks` horizontal tracks between the strips
-    for nets that need joining, one gate contact pad per input;
+    for nets that need joining, one gate contact pad per input. A gate whose
+    net is also driven from diffusion (a multi-stage cell's internal net) is a
+    terminal of that route, not a standalone pad: its pad grows into a riser
+    down to the net's track, the track grows out to meet it, and nets that
+    need a riser take the topmost tracks so a riser crosses no other track;
   * one well tap (n-well tie to VDD, under the VDD rail) and one substrate tap
     (p-substrate tie to VSS, under the VSS rail) per cell, so the extracted
     device bodies land on VDD/VSS instead of a synthesized well/substrate net.
@@ -462,10 +466,17 @@ def layout_cell(cell, proc, lay):
             raise PlaceError(f"gate net {g} drives the columns of two different devices; joining them needs more routing than one track model")
         seen_gate.add(g)
 
-    # Horizontal tracks for signal nets with more than one attachment.
+    # A gate pad whose net is also driven from diffusion (a multi-stage cell's
+    # internal net, e.g. buf's Y_i) must land on that net's route: a labelled
+    # island instead is read by extraction as a split net (issue #201).
+    driven = {g for g in gates if g in net_m1}
+    # Horizontal tracks for signal nets with more than one attachment. A net
+    # that needs a gate-pad riser takes the topmost track: the riser runs from
+    # the track up to the channel-top pad and must not cross another net's
+    # track, so every riser net sits above every non-riser net.
     tracks = {}
     need = [n for n, att in net_m1.items() if n not in (vss, vdd) and len(att) > 1]
-    need.sort()
+    need.sort(key=lambda net: (net in driven, net))
     if len(need) > lay["channel_tracks"]:
         raise PlaceError(f"nets {need} need {len(need)} channel tracks, config allows {lay['channel_tracks']}")
     # Tracks sit at the channel bottom; gate contact pads sit at the channel top.
@@ -475,6 +486,10 @@ def layout_cell(cell, proc, lay):
         if y0 + mw + R["m1_space_nm"] > gate_pad_y:
             raise PlaceError(f"channel too short for track {t + 1} of net {net}")
         tracks[net] = (y0, y0 + mw)
+    trackless = sorted(n for n in driven if n not in tracks)
+    if trackless:
+        raise PlaceError(f"gate net(s) {trackless} driven from a single diffusion node: "
+                         "no channel track to land the gate pad on")
     m1 = []  # (net, rect)
     for net, att in sorted(net_m1.items()):
         if net in tracks:
@@ -497,14 +512,16 @@ def layout_cell(cell, proc, lay):
 
     poly_pads = []
     # Gate pads: one per device (its fingers are bridged), poly + contact + M1, on
-    # the first finger/side whose M1 and poly neighbours leave room.
+    # the first finger/side whose M1 and poly neighbours leave room. A driven
+    # gate's Metal1 is a riser from its net's track up to the pad plus the track
+    # grown out to meet it, so the pad is a terminal of its net's route
+    # (issue #201); an input gate keeps the standalone pad.
     for pos, g in enumerate(gates):
         mine = dev_cols[pos]
         placed = None
         for j in mine:
             for sgn in (-1, 1):
                 cx = gate_x[j] + sgn * (R["poly_enc_cont_nm"] + half_c)
-                pad = (cx - mw // 2, gate_pad_y, cx + mw // 2, gate_pad_y + R["cont_nm"])
                 others = [r for n2, r in m1 if n2 != g]
                 if cx - half_c - R["poly_enc_cont_nm"] < 0 or cx + half_c + R["poly_enc_cont_nm"] > W:
                     continue
@@ -513,19 +530,33 @@ def layout_cell(cell, proc, lay):
                 others_poly = [(gate_x[k] - pw // 2, ppad[1], gate_x[k] + pw // 2, ppad[3]) for k in range(N) if k not in mine] + poly_pads
                 if any(_overlap_or_close(ppad, r, R["poly_space_nm"]) for r in others_poly):
                     continue
-                if all(not _overlap_or_close(pad, r, R["m1_space_nm"]) for r in others):
-                    placed = (j, cx, pad, ppad)
+                if g in driven:
+                    # The riser contains the pad rectangle, so its clearance
+                    # check covers the pad's; the track reaches out to cx so the
+                    # riser overlaps it and the two are one conductor.
+                    ty0, ty1 = tracks[g]
+                    xs = [(r[0] + r[2]) // 2 for r, _ in net_m1[g]]
+                    pieces = [(cx - mw // 2, ty0, cx + mw // 2, gate_pad_y + R["cont_nm"]),
+                              (min(xs + [cx]) - mw // 2, ty0, max(xs + [cx]) + mw // 2, ty1)]
+                else:
+                    pieces = [(cx - mw // 2, gate_pad_y, cx + mw // 2, gate_pad_y + R["cont_nm"])]
+                if all(not _overlap_or_close(piece, r, R["m1_space_nm"]) for piece in pieces for r in others):
+                    placed = (j, cx, pieces, ppad)
                     break
             if placed:
                 break
         if placed is None:
+            if g in driven:
+                raise PlaceError(f"no Metal1-clean riser from the track of internal net {g} up to its gate pad "
+                                 "(neighbouring stubs/tracks in the way)")
             raise PlaceError(f"no Metal1-clean spot for the gate contact of {g} (neighbouring stubs/tracks in the way)")
-        j, cx, pad, ppad = placed
+        j, cx, pieces, ppad = placed
         poly_pads.append(ppad)
         S.box("gatpoly", *ppad)
         S.box("cont", cx - half_c, gate_pad_y, cx + half_c, gate_pad_y + R["cont_nm"])
-        S.box("metal1", *pad)
-        m1.append((g, pad))
+        for piece in pieces:
+            S.box("metal1", *piece)
+            m1.append((g, piece))
         S.labels.append(("metal1_label", cx, gate_pad_y + half_c, g))
 
     # Rails and output/rail labels.
