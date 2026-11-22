@@ -28,6 +28,20 @@
       "layout/lvs/sg13g2_nand2_1.json"
     ],
     "4.digital": "flow/records/20261104-df96543/lvs.json",
+    "6.digital": {
+      "not_applicable": {
+        "spec": {
+          "file": "spec/0001-target-specification.md",
+          "content_hash": "sha256:ba6ab55b1ad6c96ae911c49c33101b32fd57e04031874b1e620036b5c0813ea3",
+          "format": "markdown-table",
+          "id_column": "#"
+        },
+        "statement": {
+          "file": "manifests/item6-na-statement.json",
+          "content_hash": "sha256:5fe58d59cd80677e5788eb2cc9d132ebfcdc465a449f515f5ad4a05d9848c280"
+        }
+      }
+    },
     "8.analog": {
       "file": "manifests/envelopes/item8.analog.attest.json",
       "content_hash": "sha256:1910e308982aec47919dc6ba9d323533e1486ab4f1bfdc24e8a51d400ce61dea"
