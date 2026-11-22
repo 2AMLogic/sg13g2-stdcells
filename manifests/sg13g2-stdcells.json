@@ -8,7 +8,7 @@
   "evidence": {
     "1.analog": {
       "file": "manifests/envelopes/item1.analog.attest.json",
-      "content_hash": "sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f"
+      "content_hash": "sha256:c4b2668f1e64b0b9218cfe5e84492f6826e34a5fb6b50c016567e401142d1744"
     },
     "1.digital": "flow/records/20261104-df96543/synthesize.json",
     "2.analog": {
