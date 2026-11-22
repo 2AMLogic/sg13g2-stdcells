@@ -1,0 +1,381 @@
+{
+  "schema_version": 3,
+  "netlist": {
+    "path": "sim/yield/testbench-cells.spice",
+    "scope": "repo"
+  },
+  "status": "pass",
+  "corner_count": 1,
+  "passed": 1,
+  "failed": 0,
+  "errored": 0,
+  "inconclusive": 0,
+  "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+  },
+  "metrics": {
+    "sim__corner__count": 1,
+    "sim__corner__passed_count": 1,
+    "sim__corner__failed_count": 0,
+    "sim__corner__errored_count": 0,
+    "sim__corner__inconclusive_count": 0
+  },
+  "environment": {
+    "engine": "ngspice",
+    "engine_version": "47",
+    "ngspice_binary": "/usr/local/bin/ngspice",
+    "engine_build": {
+      "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******",
+      "binary_sha256": null,
+      "probe": "ok",
+      "reason": null
+    },
+    "ngspice_init": {
+      "source": "runner",
+      "lines": null,
+      "sha256": null
+    },
+    "models_lib": {
+      "path": null,
+      "scope": "external"
+    },
+    "models_lib_sha256": "03d505847c880d233b341be115a1e5460edf4d8e9b3e8a7df791a52fa4455d67",
+    "models_lib_sha256_scope": "client",
+    "netlist_sha256": "9439d14ec127f86990279b20311a4fa3b7808cea03ca5b6f4e263d8dea409a4e",
+    "netlist_sha256_scope": "staged",
+    "netlist_closure": [
+      {
+        "path": "sim/yield/testbench-cells.spice",
+        "scope": "repo",
+        "sha256": "9439d14ec127f86990279b20311a4fa3b7808cea03ca5b6f4e263d8dea409a4e"
+      },
+      {
+        "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+        "scope": "repo",
+        "sha256": "65aa1e3c6e10bc76cea3cae6015b0c7b6f58161d896e8b6301fcf76a21d227e7"
+      },
+      {
+        "path": "layout/lvs/netlists/sg13g2_nand2_1.spice",
+        "scope": "repo",
+        "sha256": "1fc9770ab7c6d2a87ba9e0026f630a789f736b1e4cc4a17dbfd79755692ada59"
+      }
+    ],
+    "netlist_identity": "sha256:3049e71acf68829c1f3a760227aa9d741780e7772c51df11235f45398fe8ef68",
+    "osdi_preload_runner_resolved": [
+      {
+        "entry": "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi",
+        "index": 0,
+        "reason": "env_var",
+        "sha256": "2e4299c4683997e26469410dc1ab36b02ced924b1ac0972d6c4eae360e1fc796"
+      }
+    ],
+    "remote": {
+      "provider": "aws-batch-fleet",
+      "job_id": "klt-sim-dbe3d00380ac",
+      "region": "us-east-1",
+      "instance_id": "i-02d2a814ec4516a4c",
+      "instance_type": "m6i.4xlarge",
+      "availability_zone": "us-east-1d",
+      "ami_id": "ami-09c14f55df4958cbd",
+      "lifecycle": "spot",
+      "spot": true,
+      "state": "done",
+      "exit_code": "0",
+      "concurrency": "1",
+      "physical_cores": "8",
+      "elapsed_seconds": 10,
+      "client_submitted_at": "2026-11-22T10:41:24.278954Z",
+      "client_launched_at": "2026-11-22T10:41:45.150342Z",
+      "client_status_terminal_at": "2026-11-22T10:42:16.803874Z",
+      "client_collected_at": "2026-11-22T10:42:17.798612Z",
+      "runner_klt_version": "0.9.0",
+      "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+      "runner_compatibility": "match",
+      "runner_request_features": {
+        "required": [
+          "options.osdi_preload"
+        ],
+        "missing": [],
+        "status": "supported"
+      },
+      "worker_environment": {
+        "capture": "ok",
+        "simulator": {
+          "requested_binary": "ngspice",
+          "binary_source": "PATH",
+          "selected_path": "/usr/local/bin/ngspice",
+          "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+          "version_probe": "ok"
+        },
+        "pdk": {
+          "variant": "ihp-sg13g2",
+          "root": "/opt/pdk",
+          "stamp_scheme": null,
+          "stamp_sha256": null,
+          "stamp_text": null,
+          "models_staged": false,
+          "stamp_scope": "executed"
+        },
+        "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+        "omp_num_threads": null,
+        "image_manifest": null,
+        "model_inputs": null,
+        "diagnostics": [
+          "pdk stamp unreadable: FileNotFoundError"
+        ],
+        "pdk_stamp_comparison": {
+          "status": "not_comparable",
+          "reason": "worker_stamp_unavailable"
+        },
+        "ngspice_init": null,
+        "threads_per_worker": null,
+        "engine_build_comparison": {
+          "status": "match"
+        }
+      },
+      "runner_model_inputs": null,
+      "runner_models_lib_sha256": "03d505847c880d233b341be115a1e5460edf4d8e9b3e8a7df791a52fa4455d67",
+      "runner_corner_section_libs": null,
+      "runner_osdi_preload": [
+        {
+          "name": "psp103.osdi",
+          "sha256": "2e4299c4683997e26469410dc1ab36b02ced924b1ac0972d6c4eae360e1fc796"
+        }
+      ],
+      "job_ceiling": {
+        "basis": "conservative_serial_bound",
+        "unit_count": 1,
+        "per_unit_timeout_s": 120,
+        "overhead_s": 120.0,
+        "job_bound_s": 240.0,
+        "max_job_seconds": 3600.0,
+        "max_job_seconds_source": "fleet_config",
+        "exceeds_ceiling": false,
+        "check": "warn",
+        "max_units_per_job": 29,
+        "recommended_hosts": 1
+      },
+      "models_lib_comparison": {
+        "status": "match"
+      }
+    },
+    "engine_host": "worker",
+    "client_ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "client_engine_build": {
+      "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******",
+      "binary_sha256": "39ca1adb826660324c3626f72bd946ec40704f0f3fc8e243c623f76e24b3eee2",
+      "probe": "ok",
+      "reason": null
+    },
+    "backend": {
+      "resolved": "batch",
+      "source": "flag",
+      "requested": "batch"
+    }
+  },
+  "coverage": {
+    "corners_simulated": 1,
+    "measurements_declared": 4,
+    "measurements_with_limits": 0,
+    "unrecognized_limit_keys": [],
+    "schema_version": 1,
+    "known": true,
+    "checked": [
+      "measurement:[0,\"mos_tt/1.200V/25C\",\"inv_tpdhl\"]/observation",
+      "measurement:[0,\"mos_tt/1.200V/25C\",\"inv_tpdlh\"]/observation",
+      "measurement:[0,\"mos_tt/1.200V/25C\",\"nand_tpdhl\"]/observation",
+      "measurement:[0,\"mos_tt/1.200V/25C\",\"nand_tpdlh\"]/observation"
+    ],
+    "skipped": [],
+    "inapplicable": [
+      {
+        "id": "measurement:[0,\"mos_tt/1.200V/25C\",\"inv_tpdhl\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"mos_tt/1.200V/25C\",\"inv_tpdlh\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"mos_tt/1.200V/25C\",\"nand_tpdhl\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"mos_tt/1.200V/25C\",\"nand_tpdlh\"]/limits",
+        "reason": "characterization_without_limits"
+      }
+    ],
+    "unknown": [],
+    "nothing_checked": false,
+    "nothing_checked_reasons": []
+  },
+  "provenance": {
+    "klt_version": "0.9.3.dev3062+g1933ce4aa752",
+    "klt_git_commit": "1933ce4aa752f4161f93591e56335fe9b36fef11",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1933ce4aa752f4161f93591e56335fe9b36fef11",
+    "klayout_version": "0.30.12",
+    "pdk": {
+      "name": "ihp-sg13g2",
+      "source": "search root: ~/share/pdk",
+      "version": "fetched:0.3.0"
+    },
+    "deck": {
+      "name": "cornerMOSlv.lib",
+      "content_hash": "sha256:03d505847c880d233b341be115a1e5460edf4d8e9b3e8a7df791a52fa4455d67",
+      "released": false
+    },
+    "input": {
+      "content_hash": "sha256:9439d14ec127f86990279b20311a4fa3b7808cea03ca5b6f4e263d8dea409a4e",
+      "role": "netlist"
+    }
+  },
+  "measurements": [
+    {
+      "name": "inv_tpdlh",
+      "unit": "s",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.09931e-11,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.09931e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.09931e-11
+      },
+      "plausible_range": {
+        "min": 1e-12,
+        "max": 1e-08
+      }
+    },
+    {
+      "name": "inv_tpdhl",
+      "unit": "s",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5.59375e-11,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5.59375e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5.59375e-11
+      },
+      "plausible_range": {
+        "min": 1e-12,
+        "max": 1e-08
+      }
+    },
+    {
+      "name": "nand_tpdlh",
+      "unit": "s",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.75896e-11,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.75896e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.75896e-11
+      },
+      "plausible_range": {
+        "min": 1e-12,
+        "max": 1e-08
+      }
+    },
+    {
+      "name": "nand_tpdhl",
+      "unit": "s",
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5.39753e-11,
+        "margin": null
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5.39753e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5.39753e-11
+      },
+      "plausible_range": {
+        "min": 1e-12,
+        "max": 1e-08
+      }
+    }
+  ],
+  "corners": [
+    {
+      "corner_id": "mos_tt/1.200V/25C",
+      "process": "mos_tt",
+      "supply_v": {
+        "VSUP": 1.2
+      },
+      "temperature_c": 25,
+      "status": "pass",
+      "runtime_s": 0.467,
+      "peak_rss_bytes": 50130944,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "inv_tpdlh",
+          "value": 6.09931e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "inv_tpdhl",
+          "value": 5.59375e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "nand_tpdlh",
+          "value": 6.75896e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "nand_tpdhl",
+          "value": 5.39753e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": null,
+        "raw": null,
+        "waveform": null,
+        "deck": null
+      },
+      "monte_carlo": null
+    }
+  ]
+}

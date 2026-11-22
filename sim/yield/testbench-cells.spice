@@ -1,0 +1,24 @@
+* sim/yield/testbench-cells.spice -- record-0003 pilot bench, this library's cells.
+* Drives sg13g2_inv_1 (input arc A->Y) and sg13g2_nand2_1 (switching arc A->Y
+* with B held high) at the spec-0001 row-9 TT pairing: VDD 1.20 V, 25 C.
+* Stimulus: 0.05 ns linear input edges (PULSE trise/tfall), 0 -> 1.2 V swing,
+* first edge (rise) at 2 ns, second edge (fall) at ~6.05 ns, tran 0..10 ns.
+* Load: 10 fF on each output. Thresholds: 50% of VDD (0.6 V) on input and
+* output crossings (see the requests' .meas cards).
+* Used by requests/ref-nominal.request.json (process mos_tt, mismatch off)
+* and requests/mc-nominal.request.json (process mos_tt_mismatch, MC).
+.include "../../layout/lvs/netlists/sg13g2_inv_1.spice"
+.include "../../layout/lvs/netlists/sg13g2_nand2_1.spice"
+
+* Supply (the requests' corners.supply_v axis alters this source by name).
+VSUP VDD 0 1.2
+
+* Inverter DUT: A->Y, both output transitions.
+VA1 a_inv 0 PULSE(0 1.2 2n 0.05n 0.05n 4n 10n)
+XDUT1 a_inv y_inv VDD 0 sg13g2_inv_1
+CL1 y_inv 0 10f
+
+* NAND2 DUT: switching arc A->Y with B held high (Y = !(A * 1) = !A).
+VA2 a_nand 0 PULSE(0 1.2 2n 0.05n 0.05n 4n 10n)
+XDUT2 a_nand VDD y_nand VDD 0 sg13g2_nand2_1
+CL2 y_nand 0 10f

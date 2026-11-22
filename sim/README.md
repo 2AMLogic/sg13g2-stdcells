@@ -91,3 +91,13 @@ view cites.
 The local run needs ngspice >= 44 for the OSDI v0.4 PSP103 models. The request
 preloads `psp103.osdi` (the module the PDK's `psp103va` model cards bind to),
 not `psp103_nqs.osdi`. FF/SS corners are not yet run (batch only).
+
+## yield/
+
+Monte Carlo local-mismatch campaign evidence for proposed spec row 0003-R1
+(`spec/0003-cell-delay-mismatch-spread.md`, issue #182): per-arc delay yield
+of `sg13g2_inv_1` / `sg13g2_nand2_1` under `mos_tt_mismatch` at TT/1.20 V/
+25 C, n=400 seeded, with a deterministic known-bad control, graded by
+`klt yield` against row-12-derived limits. Inputs and reports live together
+under `sim/yield/` (see its README for the replay commands); the campaign
+record is `sim/yield/records/20261122-105858-aeb7c25.md`.

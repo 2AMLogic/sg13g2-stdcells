@@ -1,0 +1,19 @@
+* sim/yield/testbench-cells-knownbad.spice -- record-0003 negative-control
+* bench. Identical stimulus, load and measurement nodes to
+* testbench-cells.spice, but each DUT is the deliberately defective fixture
+* under dut-knownbad/ (every channel width halved -> roughly half the drive
+* current, so every arc delay rises far past the 1.10x-nominal limits). The
+* measurements keep the same names and units as the nominal campaign so
+* `klt yield-samples` can pair the two reports.
+.include "dut-knownbad/sg13g2_inv_1.spice"
+.include "dut-knownbad/sg13g2_nand2_1.spice"
+
+VSUP VDD 0 1.2
+
+VA1 a_inv 0 PULSE(0 1.2 2n 0.05n 0.05n 4n 10n)
+XDUT1 a_inv y_inv VDD 0 sg13g2_inv_1
+CL1 y_inv 0 10f
+
+VA2 a_nand 0 PULSE(0 1.2 2n 0.05n 0.05n 4n 10n)
+XDUT2 a_nand VDD y_nand VDD 0 sg13g2_nand2_1
+CL2 y_nand 0 10f

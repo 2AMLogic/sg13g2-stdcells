@@ -1,0 +1,10 @@
+* sg13g2_inv_1 (KNOWN-BAD FIXTURE) -- record-0003 negative-control DUT.
+* NOT a library view: every channel width is halved vs
+* layout/lvs/netlists/sg13g2_inv_1.spice (the seeded defect: drive current
+* roughly halved, both arc delays rise far past the 1.10x-nominal limits).
+* Never use this file as a cell; it exists only so the control campaign's
+* netlist is committed and replayable.
+.subckt sg13g2_inv_1 A Y VDD VSS
+XMN0 Y A VSS VSS sg13_lv_nmos w=250n l=130n ng=1 m=1
+XMP0 Y A VDD VDD sg13_lv_pmos w=400n l=130n ng=1 m=1
+.ends sg13g2_inv_1
