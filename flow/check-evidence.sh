@@ -5,11 +5,12 @@
 # status "ok" and a clean signal-only LVS.
 #
 # Issue #175 adds an optional STA + functional-verification pair (arguments 5
-# and 6, both or neither): the STA envelope must be constrained with
-# non-negative slack at every reported corner and the functional-verification
-# envelope must be a passing run with at least one test. A partial pair or an
-# unreadable report is not evidence. check-ci.sh replays the four-argument
-# power check against the 20261104 record, which predates both reports.
+# and 6, both or neither): the STA envelope must be constrained with complete
+# constraint_completeness and non-negative slack at every reported corner and
+# the functional-verification envelope must be a passing run with at least one
+# test. A partial pair or an unreadable report is not evidence. check-ci.sh
+# replays the four-argument power check against the 20261104 record, which
+# predates both reports.
 #
 # Usage: flow/check-evidence.sh <par-request.json> <par.json> <lvs.json> <erc.json>
 #                               [sta.json functional-verification.json]
@@ -50,8 +51,11 @@ if [ "$nargs" -eq 6 ]; then
     # single-corner response read as its own only entry. Every corner must be
     # a real measurement -- an unconstrained run reports OpenSTA's 1e+39
     # sentinel, a *positive* number, so timing_status is checked before any
-    # slack is read -- with non-negative setup slack and null (no hold path)
-    # or non-negative hold slack. An empty corner list proves nothing, and a
+    # slack is read -- with every endpoint constrained and every register
+    # clocked (timing_status=="constrained" only says at least one path was
+    # timed; an unavailable sub-check reports count:null, so status is checked
+    # alongside count), non-negative setup slack, and null (no hold path) or
+    # non-negative hold slack. An empty corner list proves nothing, and a
     # present `corners` must itself be an array (null or an object fails; the
     # flat form is read only when the key is absent). The envelope must also
     # report status ok on routed geometry (issue #190).
@@ -62,12 +66,18 @@ if [ "$nargs" -eq 6 ]; then
         | ($c|type)=="array" and ($c|length)>=1
         and all($c[];
             .timing_status=="constrained"
+            and (.constraint_completeness|type=="object")
+            and .constraint_completeness.status=="complete"
+            and ([.constraint_completeness.unconstrained_endpoints,
+                  .constraint_completeness.unclocked_registers]
+                 | all(type=="object" and .status=="ok"
+                       and (.count|type=="number") and .count==0))
             and (.worst_slack_ns|type=="number") and .worst_slack_ns>=0
             and has("worst_hold_slack_ns")
             and (.worst_hold_slack_ns==null
                  or ((.worst_hold_slack_ns|type=="number") and .worst_hold_slack_ns>=0))))
     ' "$sta" >/dev/null \
-      || bad "gate 4: STA is not an ok, routed, constrained run with non-negative slack at every corner ($sta)"
+      || bad "gate 4: STA is not an ok, routed, constrained run with complete constraint_completeness and non-negative slack at every corner ($sta)"
   else
     bad "STA report missing or unreadable: ${sta:-<empty>}"
   fi

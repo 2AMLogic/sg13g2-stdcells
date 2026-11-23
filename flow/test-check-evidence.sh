@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Edge tests for check-evidence.sh (issues #9 and #175). Runs one real klt
-# place-and-route on a copy of request-par.json with `power` deleted, then
-# asserts the check rejects it while still seeing status ok / stage route.
-# Then exercises the issue #175 STA / functional-verification gates: a
-# passing pair is accepted, and each bad envelope alone -- an unconstrained
-# corner, negative setup slack, negative hold slack, an empty corner list, a
-# failing FV status, a partial pair, an unreadable report -- is rejected.
+# Edge tests for check-evidence.sh (issues #9, #175, #190 and #247). Runs one
+# real klt place-and-route on a copy of request-par.json with `power` deleted,
+# then asserts the check rejects it while still seeing status ok / stage route.
+# Then exercises the STA / functional-verification gates: a passing pair is
+# accepted, and each bad envelope alone -- a non-ok status, non-routed
+# geometry, a `corners` value that is not an array, an unconstrained corner,
+# incomplete or unavailable constraint_completeness, negative setup slack,
+# negative hold slack, an empty corner list, a failing FV status, a partial
+# pair, an unreadable report -- is rejected.
 # Needs a completed flow/run.sh (flow/build/{add8_synth.v,par.out.json,
 # lvs.out.json,erc.json,sta.json,fv.json}). Single local run, no grids.
 set -euo pipefail
@@ -63,6 +65,27 @@ jq '(.corners[0]).worst_hold_slack_ns="-1"' build/sta.json > "$t/sta-strhold.jso
 reject "$t/sta-strhold.json" build/fv.json "string-valued hold slack"
 jq 'del(.corners[0].worst_hold_slack_ns)' build/sta.json > "$t/sta-nohold.json"
 reject "$t/sta-nohold.json" build/fv.json "a missing hold-slack field"
+jq '(.corners[0]).constraint_completeness.status="incomplete"' build/sta.json > "$t/sta-incomplete.json"
+reject "$t/sta-incomplete.json" build/fv.json "incomplete constraint_completeness"
+grep -qi "constraint.completeness" "$t/err" \
+  || { echo "FAIL: gate 4 message did not name constraint completeness" >&2; exit 1; }
+jq '(.corners[0]).constraint_completeness.status="unknown"' build/sta.json > "$t/sta-cc-unknown.json"
+reject "$t/sta-cc-unknown.json" build/fv.json "unknown constraint_completeness"
+jq '(.corners[0]).constraint_completeness.unconstrained_endpoints.count=1' build/sta.json > "$t/sta-unconstrained-ep.json"
+reject "$t/sta-unconstrained-ep.json" build/fv.json "non-zero unconstrained_endpoints.count under complete status"
+jq '(.corners[0]).constraint_completeness.unclocked_registers={status:"unavailable",count:null}' build/sta.json > "$t/sta-unclocked-unavail.json"
+reject "$t/sta-unclocked-unavail.json" build/fv.json "unavailable unclocked_registers with null count under complete status"
+jq 'del(.corners[0].constraint_completeness)' build/sta.json > "$t/sta-no-cc.json"
+reject "$t/sta-no-cc.json" build/fv.json "a missing constraint_completeness block"
+jq '(.corners[0]).constraint_completeness.unclocked_registers.count=1' build/sta.json > "$t/sta-unclocked-reg.json"
+reject "$t/sta-unclocked-reg.json" build/fv.json "non-zero unclocked_registers.count under complete status"
+jq '(.corners[0]).constraint_completeness.unconstrained_endpoints={status:"unavailable",count:null}' build/sta.json > "$t/sta-unconstrained-unavail.json"
+reject "$t/sta-unconstrained-unavail.json" build/fv.json "unavailable unconstrained_endpoints with null count under complete status"
+jq '. + .corners[0] | del(.corners, .corner)' build/sta.json > "$t/sta-flat-ok.json"
+./check-evidence.sh request-par.json build/par.out.json build/lvs.out.json build/erc.json "$t/sta-flat-ok.json" build/fv.json
+echo "PASS: flat single-corner STA envelope accepted"
+jq '.constraint_completeness.status="incomplete"' "$t/sta-flat-ok.json" > "$t/sta-flat-incomplete.json"
+reject "$t/sta-flat-incomplete.json" build/fv.json "a flat single-corner STA envelope with incomplete constraint_completeness"
 : > "$t/empty.json"
 reject "$t/empty.json" build/fv.json "an empty STA file"
 reject build/sta.json "$t/empty.json" "an empty FV file"
