@@ -133,6 +133,134 @@ def layout_of(cell, cfg=CFG):
     return gl.layout_cell(cell, cfg["process"], cfg["layout"])
 
 
+def off_grid_labels(S, pitch):
+    """Spec row 4's check over one cell's shapes, against row 2's routing grid.
+
+    The grid is `pitch` on both axes with its origin at the cell origin: the
+    rails are centred on y=0 and y=row_height_nm (= 8 * pitch), so the grid's
+    (0, 0) is the cell's. Every `metal1_label` -- the gate pads, the outputs
+    and the VSS/VDD rail labels -- must lie at a multiple of `pitch` on both
+    axes and on a Metal1 shape. Returns [(text, x, y, why)] for the labels
+    that fail, in drawing order."""
+    metal = [b[1:] for b in S.boxes if b[0] == "metal1"]
+    out = []
+    for layer, x, y, text in S.labels:
+        if layer != "metal1_label":
+            continue
+        axes = [a for a, v in (("x", x), ("y", y)) if v % pitch]
+        why = ["off grid on " + " and ".join(axes)] if axes else []
+        if not any(b[0] <= x <= b[2] and b[1] <= y <= b[3] for b in metal):
+            why.append("not on Metal1")
+        if why:
+            out.append((text, x, y, " and ".join(why)))
+    return out
+
+
+class PinOnGrid(unittest.TestCase):
+    """Spec row 4, pin access: every pin on a grid point (issue #221).
+
+    Row 2's routing grid is `gate_pitch_nm` -- the config carries no separate
+    routing-grid key, and row 2's own check reads the widths off the same
+    value -- with its origin at the cell origin: the rails are centred on
+    y=0 and y=row_height_nm = 8 * pitch, so both are grid lines and the cell's
+    (0, 0) is a grid point. As the generator stands the row is **not met**,
+    and that is recorded rather than claimed: the assertion itself is an
+    expected failure, OFF_GRID_RECORD pins what it finds, and the generator
+    fix is tracked in #225. Nothing in `gen_layouts.py` snaps a pin to the
+    grid, and with the shipped rules three placements land off it:
+
+      * a gate pad's contact sits beside its on-grid gate column, at
+        gate_x +/- (poly_enc_cont_nm + cont_nm / 2), and the label at the pad
+        M1's centre: off on both axes;
+      * an output label is the centre of the net's first diffusion stub, on
+        a node column, which is at a half pitch: off on x, and on y wherever
+        the stub's contact stack is not centred on a grid line;
+      * the rail labels sit at x = width / 2, a half pitch whenever the cell
+        has an even number of gate columns.
+
+    Every label does lie on Metal1, so the grid is the only thing the row
+    fails on."""
+
+    P = CFG["layout"]["gate_pitch_nm"]
+    maxDiff = None
+    OFF_GRID_RECORD = {
+        "sg13g2_inv_1": [("A", 270, 1940), ("Y", 630, 650)],
+        "sg13g2_inv_2": [("A", 270, 1940), ("VSS", 630, 0), ("VDD", 630, 3360), ("Y", 630, 650)],
+        "sg13g2_inv_4": [("A", 270, 1940), ("VSS", 1050, 0), ("VDD", 1050, 3360), ("Y", 630, 650)],
+        "sg13g2_nand2_1": [("A", 270, 1940), ("B", 990, 1940), ("VSS", 630, 0), ("VDD", 630, 3360),
+                           ("Y", 210, 900)],
+    }
+
+    def offenders(self, cells):
+        """One line per failing label of {cell name: shapes}."""
+        return [f"{name}: {text} at ({x}, {y}) -- {why}"
+                for name, S in cells.items() for text, x, y, why in off_grid_labels(S, self.P)]
+
+    def assert_on_grid(self, cells):
+        self.assertEqual(self.offenders(cells), [],
+                         f"every pin label at a multiple of {self.P} nm from the cell origin, and on Metal1")
+
+    def test_grid_origin_is_the_cell_origin(self):
+        """The rails are centred on y=0 and y=row_height_nm = 8 * pitch: both
+        are grid lines, so the cell origin is a grid point and the top rail
+        lies on the grid."""
+        self.assertEqual(CFG["layout"]["row_height_nm"], 8 * self.P)
+        for cell in CFG["cells"]:
+            S, W, H = layout_of(cell)
+            rails = sorted((b[2] + b[4]) // 2 for b in S.boxes if b[0] == "metal1" and b[1] == 0 and b[3] == W)
+            self.assertEqual(rails, [0, H], cell["name"])
+
+    @unittest.expectedFailure
+    def test_every_pin_label_is_on_the_routing_grid(self):
+        """Row 4's assertion over every config cell. Expected to fail until
+        the generator places its pins on the grid (#225); an unexpected
+        success means it does, and this decorator, OFF_GRID_RECORD and
+        ROADMAP's row-4 sentence then go together."""
+        self.assert_on_grid({c["name"]: layout_of(c)[0] for c in CFG["cells"]})
+
+    def test_row4_off_grid_record(self):
+        """The measurement the expected failure stands on, pinned so the
+        count ROADMAP quotes is CI-checked. A failure here means the
+        generator's pin placement moved: re-measure, then update the record,
+        the expected failure and ROADMAP's row-4 sentence together (#225)."""
+        found = {c["name"]: off_grid_labels(layout_of(c)[0], self.P) for c in CFG["cells"]}
+        self.assertEqual({n: [o[:3] for o in off] for n, off in found.items() if off}, self.OFF_GRID_RECORD)
+        self.assertTrue(all(o[3].startswith("off grid") for off in found.values() for o in off),
+                        "a label is not on Metal1")
+
+    def rail_only(self):
+        """inv_1 with only its two rail labels, the committed cells' only
+        on-grid ones: a control's clean baseline (the boxes are shared read-only)."""
+        S = copy.copy(layout_of(cell_named("sg13g2_inv_1"))[0])
+        S.labels = [l for l in S.labels if l[3] in (CFG["process"]["vss_net"], CFG["process"]["vdd_net"])]
+        return S
+
+    def test_control_baseline_passes(self):
+        self.assert_on_grid({"sg13g2_inv_1": self.rail_only()})
+
+    def test_control_one_label_moved_off_the_grid_fails_naming_it(self):
+        """One DBU (the GDS unit, 1 nm) on either axis, or the half pitch the
+        generator's own labels carry: the check fails on exactly that label."""
+        for dx, dy, axes in ((1, 0, "x"), (0, 1, "y"), (self.P // 2, 0, "x")):
+            S = self.rail_only()
+            layer, x, y, text = S.labels[-1]
+            S.labels[-1] = (layer, x + dx, y + dy, text)
+            cells = {"sg13g2_inv_1": S}
+            self.assertEqual(self.offenders(cells),
+                             [f"sg13g2_inv_1: {text} at ({x + dx}, {y + dy}) -- off grid on {axes}"])
+            with self.assertRaises(AssertionError):
+                self.assert_on_grid(cells)
+
+    def test_control_label_on_the_grid_but_off_metal_fails_naming_it(self):
+        S = self.rail_only()
+        layer, x, y, text = S.labels[-1]
+        S.labels[-1] = (layer, x, y + self.P, text)
+        cells = {"sg13g2_inv_1": S}
+        self.assertEqual(self.offenders(cells), [f"sg13g2_inv_1: {text} at ({x}, {y + self.P}) -- not on Metal1"])
+        with self.assertRaises(AssertionError):
+            self.assert_on_grid(cells)
+
+
 class MultiFinger(unittest.TestCase):
     def test_two_finger_inverter_places(self):
         S, W, H = layout_of(cell_named("sg13g2_inv_2"))
