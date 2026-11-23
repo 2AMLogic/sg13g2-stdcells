@@ -1,0 +1,197 @@
+{
+  "schema_version": 3,
+  "netlist": {
+    "path": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.function.spice",
+    "scope": "repo"
+  },
+  "status": "pass",
+  "corner_count": 1,
+  "passed": 1,
+  "failed": 0,
+  "errored": 0,
+  "inconclusive": 0,
+  "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+  },
+  "metrics": {
+    "sim__corner__count": 1,
+    "sim__corner__passed_count": 1,
+    "sim__corner__failed_count": 0,
+    "sim__corner__errored_count": 0,
+    "sim__corner__inconclusive_count": 0
+  },
+  "environment": {
+    "engine": "ngspice",
+    "engine_version": "47",
+    "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "engine_build": {
+      "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******",
+      "binary_sha256": "39ca1adb826660324c3626f72bd946ec40704f0f3fc8e243c623f76e24b3eee2",
+      "probe": "ok",
+      "reason": null
+    },
+    "ngspice_init": {
+      "source": "none",
+      "lines": null,
+      "sha256": null
+    },
+    "models_lib": {
+      "path": null,
+      "scope": "external"
+    },
+    "models_lib_sha256": "03d505847c880d233b341be115a1e5460edf4d8e9b3e8a7df791a52fa4455d67",
+    "models_lib_sha256_scope": "local",
+    "netlist_sha256": "e5dabd89579fec5d7051270dff59fca60b91f016c1be3241a69aba4e16f5c25f",
+    "netlist_sha256_scope": "staged",
+    "netlist_closure": [
+      {
+        "path": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.function.spice",
+        "scope": "repo",
+        "sha256": "e5dabd89579fec5d7051270dff59fca60b91f016c1be3241a69aba4e16f5c25f"
+      },
+      {
+        "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+        "scope": "repo",
+        "sha256": "65aa1e3c6e10bc76cea3cae6015b0c7b6f58161d896e8b6301fcf76a21d227e7"
+      }
+    ],
+    "netlist_identity": "sha256:334ab81cedb473b62d0a2b7ad139c3b60f454b4f82af3e8e787b3f1abf61d2aa",
+    "osdi_preload": [
+      {
+        "name": "psp103.osdi",
+        "path": null,
+        "scope": "external",
+        "sha256": "2e4299c4683997e26469410dc1ab36b02ced924b1ac0972d6c4eae360e1fc796"
+      }
+    ],
+    "engine_host": "local",
+    "backend": {
+      "resolved": "local",
+      "source": "flag",
+      "requested": "local"
+    },
+    "timeout_preflight_warning": "options.timeout_s (120s) looks implausible for a tran analysis with ~7e+03 timepoints (1e-12 step, 7e-09 window) -- even 50 timepoints/s (a generous floor, not a real engine-rate estimate) would need 140s per corner. This is only a coarse, advisory pre-grid heuristic -- it does not block the sweep, and a plausible-looking budget can still turn out to be too short in practice."
+  },
+  "coverage": {
+    "corners_simulated": 1,
+    "measurements_declared": 2,
+    "measurements_with_limits": 2,
+    "unrecognized_limit_keys": [],
+    "schema_version": 1,
+    "known": true,
+    "checked": [
+      "limit:[0,\"mos_tt/1.200V/25C\",\"y_A0_Y\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"y_A0_Y\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"y_A1_Y\",\"max\"]"
+    ],
+    "skipped": [],
+    "inapplicable": [],
+    "unknown": [],
+    "nothing_checked": false,
+    "nothing_checked_reasons": []
+  },
+  "provenance": {
+    "klt_version": "0.9.3.dev2575+g6bd18bbc8637",
+    "klt_git_commit": "6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
+    "klayout_version": "0.30.12",
+    "pdk": null,
+    "deck": {
+      "name": "cornerMOSlv.lib",
+      "content_hash": "sha256:03d505847c880d233b341be115a1e5460edf4d8e9b3e8a7df791a52fa4455d67",
+      "released": false
+    },
+    "input": {
+      "content_hash": "sha256:e5dabd89579fec5d7051270dff59fca60b91f016c1be3241a69aba4e16f5c25f",
+      "role": "netlist"
+    }
+  },
+  "measurements": [
+    {
+      "name": "y_A0_Y",
+      "unit": "V",
+      "limits": {
+        "min": 1.19,
+        "max": 1.21
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.2,
+        "margin": 0.010000000000000009
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.2
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.2
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "y_A1_Y",
+      "unit": "V",
+      "limits": {
+        "max": 0.01
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.05021e-08,
+        "margin": 0.0099999394979
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.05021e-08
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.05021e-08
+      },
+      "spec_row": "9"
+    }
+  ],
+  "corners": [
+    {
+      "corner_id": "mos_tt/1.200V/25C",
+      "process": "mos_tt",
+      "supply_v": {
+        "Vdd": 1.2
+      },
+      "temperature_c": 25.0,
+      "status": "pass",
+      "runtime_s": 0.216,
+      "peak_rss_bytes": 117813248,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "y_A0_Y",
+          "value": 1.2,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.010000000000000009
+        },
+        {
+          "name": "y_A1_Y",
+          "value": 6.05021e-08,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.0099999394979
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": null,
+        "raw": null,
+        "waveform": null,
+        "deck": null
+      },
+      "monte_carlo": null
+    }
+  ]
+}

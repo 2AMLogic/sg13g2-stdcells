@@ -1,0 +1,49 @@
+{
+  "netlist": "sg13g2_inv_2.function.spice",
+  "corners": {
+    "process": [
+      "mos_tt"
+    ],
+    "supply_v": {
+      "Vdd": [
+        1.2
+      ]
+    },
+    "temperature_c": [
+      25.0
+    ]
+  },
+  "models": {
+    "lib": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOSlv.lib"
+  },
+  "options": {
+    "osdi_preload": [
+      "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi"
+    ]
+  },
+  "analysis": {
+    "kind": "tran",
+    "args": "1e-12 7e-09 0 1e-12"
+  },
+  "measurements": [
+    {
+      "name": "y_A0_Y",
+      "spice": ".meas tran y_A0_Y FIND v(y_dut_Y) AT=2e-09",
+      "limits": {
+        "min": 1.19,
+        "max": 1.21
+      },
+      "unit": "V",
+      "spec_row": "9"
+    },
+    {
+      "name": "y_A1_Y",
+      "spice": ".meas tran y_A1_Y FIND v(y_dut_Y) AT=5e-09",
+      "limits": {
+        "max": 0.01
+      },
+      "unit": "V",
+      "spec_row": "9"
+    }
+  ]
+}
