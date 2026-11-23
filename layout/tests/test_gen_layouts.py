@@ -10,6 +10,7 @@ import unittest
 
 LAYOUT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(LAYOUT))
+import gen_controls as gc  # noqa: E402
 import gen_layouts as gl  # noqa: E402
 
 CONFIG = LAYOUT / "example_config.json"
@@ -462,10 +463,9 @@ class DiffusionBreaks(unittest.TestCase):
     continuing strip bridges the other's break with its own diffusion, the
     n-well bridges every break (one well, one tap), and a net the break splits
     must be re-joined in Metal1 like any multi-node net -- the channel-track
-    budget is the named limit it is, which is what every census break cell
-    hits next. No reachable cell places through a break under the committed
-    config (they all need joined nets beyond `channel_tracks: 1`), so the
-    geometry is exercised the way `ForcedNotch` exercises a profile: one
+    budget is the named limit it is, and some census break cells hit it next
+    (others hit the contact floor or the n-well notch). No reachable cell
+    places through a break under the committed config, so the geometry is exercised the way `ForcedNotch` exercises a profile: one
     break forced into the pairing the model picks -- the forcing behind the
     recorded `break-pmos-p420` control, whose DRC report and LVS match are
     committed in layout/drc/controls/."""
@@ -584,7 +584,7 @@ class DiffusionBreaks(unittest.TestCase):
     def test_demo_census_reports_no_diffusion_break(self):
         """AC of issue #169: every demo cell either places or names a different
         limit. demo_xor2_1 / demo_mux2_1 / demo_a21oi_1 land on their measured
-        next limits (a contact floor, a notch, a contact floor)."""
+        next limits (a contact floor, an nwell notch, a contact floor)."""
         design = json.loads((LAYOUT.parent / "design" / "example_config.json").read_text())
         for cell in design["cells"]:
             cfg = copy.deepcopy(CFG)
@@ -604,6 +604,140 @@ class DiffusionBreaks(unittest.TestCase):
             with self.assertRaises(gl.PlaceError) as cm:
                 gl.generate(cfg)
             self.assertIn(fragment, str(cm.exception), name)
+
+
+def m1_components(S):
+    """Metal1 boxes grouped into connected components: two boxes whose edges
+    touch or that overlap are one conductor, the way extraction merges
+    abutting metal."""
+    boxes = [b[1:] for b in S.boxes if b[0] == "metal1"]
+    parent = list(range(len(boxes)))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for i, a in enumerate(boxes):
+        for j in range(i):
+            b = boxes[j]
+            if a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3]:
+                parent[find(i)] = find(j)
+    return boxes, [find(i) for i in range(len(boxes))]
+
+
+class DrivenGateRoute(unittest.TestCase):
+    """A gate whose net is also driven from diffusion -- buf's internal Y_i,
+    the first stage's output feeding the second stage's gate -- is a terminal
+    of that net's Metal1 route, not a standalone labelled pad (issue #201).
+    Before the fix this exact fixture generated cleanly and LVS split Y_i:
+    6 layout nets for the reference's 5, one net.split, two device.unmatched,
+    with the pad's left edge 515 nm from its track's right edge."""
+
+    def buf_cfg(self, **layout_over):
+        cfg = copy.deepcopy(CFG)
+        cfg["process"].update(grid_nm=5, unit_n_nm=900, unit_p_nm=2430)
+        cfg["layout"].update(row_height_nm=4200, gate_pitch_nm=550, channel_tracks=2)
+        cfg["layout"].update(layout_over)
+        cfg["cells"] = [{"name": "buf", "family": "buf", "drive": 2,
+                         "inputs": ["A"], "outputs": {"Y": "A"}}]
+        return cfg
+
+    def route(self, S, text):
+        """(Metal1 boxes, contacts under them) of the component carrying a
+        net label: reading the drawn geometry, not the generator's bookkeeping
+        -- the bug was that the bookkeeping said fine while the metal was
+        two pieces."""
+        boxes, roots = m1_components(S)
+        lx, ly = next((x, y) for lay, x, y, t in S.labels if lay == "metal1_label" and t == text)
+        root = next(roots[i] for i, b in enumerate(boxes) if b[0] <= lx <= b[2] and b[1] <= ly <= b[3])
+        comp = [b for i, b in enumerate(boxes) if roots[i] == root]
+        conts = [c for c in S.boxes if c[0] == "cont"
+                 and any(c[1] < b[2] and b[0] < c[3] and c[2] < b[3] and b[1] < c[4] for b in comp)]
+        return comp, conts
+
+    def on_poly(self, S, cont):
+        return any(cont[1] < p[3] and p[1] < cont[3] and cont[2] < p[4] and p[2] < cont[4]
+                   for p in S.boxes if p[0] == "gatpoly")
+
+    def test_driven_gate_is_a_terminal_of_its_nets_route(self):
+        cfg = self.buf_cfg()
+        S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        comp, conts = self.route(S, "Y_i")
+        # the second-stage gate contact: a contact of this component on poly
+        self.assertTrue(any(self.on_poly(S, c) for c in conts), "no gate contact on the Y_i route")
+        # the first-stage drains: contacts of the SAME component in each strip
+        mid = cfg["layout"]["row_height_nm"] // 2
+        diffs = [c for c in conts if not self.on_poly(S, c)]
+        self.assertTrue(any((c[2] + c[4]) // 2 < mid for c in diffs), "Y_i does not reach the NMOS strip")
+        self.assertTrue(any((c[2] + c[4]) // 2 > mid for c in diffs), "Y_i does not reach the PMOS strip")
+
+    def test_input_gate_keeps_its_standalone_pad(self):
+        cfg = self.buf_cfg()
+        S, _, _ = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        comp, conts = self.route(S, "A")
+        self.assertEqual(len(conts), 1, "an input pad should carry exactly its gate contact")
+        self.assertTrue(self.on_poly(S, conts[0]))
+
+    def test_nets_stay_separate_conductors(self):
+        cfg = self.buf_cfg()
+        S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        boxes, roots = m1_components(S)
+        seen = set()
+        for text in ("A", "Y_i", "Y", "VSS", "VDD"):
+            lx, ly = next((x, y) for lay, x, y, t in S.labels if lay == "metal1_label" and t == text)
+            root = next(roots[i] for i, b in enumerate(boxes) if b[0] <= lx <= b[2] and b[1] <= ly <= b[3])
+            self.assertNotIn(root, seen, f"{text} shares Metal1 with another labelled net")
+            seen.add(root)
+
+    def test_placed_buffer_is_byte_deterministic(self):
+        cfg = self.buf_cfg()
+        self.assertEqual(gl.generate(cfg), gl.generate(self.buf_cfg()))
+
+    def test_unroutable_driven_gate_refuses_naming_cell_net_and_constraint(self):
+        """At the shipped 420 pitch the same drive-2 buffer cannot land Y_i's
+        riser clear of the neighbouring stubs: exit 3 naming the cell, the
+        internal net and the routing constraint, with no partial GDS written
+        (a standalone labelled pad instead of the riser is exactly the split
+        this issue is about, so the refusal is the only other outcome)."""
+        cfg = self.buf_cfg(gate_pitch_nm=420)
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(cfg)
+        msg = str(cm.exception)
+        self.assertIn("buf", msg)
+        # Whichever gate pad runs out of room first is the one named: the
+        # input's contact or the internal net's riser.
+        self.assertRegex(msg, r"riser|gate contact of A")
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d) / "c.json"
+            p.write_text(json.dumps(cfg))
+            r = run("--config", str(p))
+            self.assertEqual(r.returncode, 3)
+            self.assertRegex(r.stderr, r"riser|gate contact of A")
+            self.assertFalse((pathlib.Path(d) / "gds").exists())
+
+    def test_break_selected_buffer_beside_inverter_is_placed_or_refused(self):
+        """A buffer on A beside an inverter on B needs an automatic diffusion
+        break (issue #169 review). Its internal gate net Y_i must either be
+        one conductor with the first stage's drains, or the cell must be
+        refused naming Y_i and the riser -- never drawn with Y_i's pad as an
+        island (the split LVS reports as net.split)."""
+        cfg = copy.deepcopy(CFG)
+        cfg["layout"].update(row_height_nm=6200, gate_pitch_nm=840, channel_tracks=5)
+        cfg["cells"] = [{"name": "probe", "family": "probe", "drive": 1,
+                         "inputs": ["A", "B"], "outputs": {"Y": "A", "Z": "!B"}}]
+        try:
+            S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        except gl.PlaceError as e:
+            self.assertIn("Y_i", str(e))
+            self.assertIn("riser", str(e))
+            return
+        boxes, roots = m1_components(S)
+        lx, ly = next((x, y) for lay, x, y, t in S.labels if lay == "metal1_label" and t == "Y_i")
+        root = next(roots[i] for i, b in enumerate(boxes) if b[0] <= lx <= b[2] and b[1] <= ly <= b[3])
+        members = [b for i, b in enumerate(boxes) if roots[i] == root]
+        self.assertGreater(len(members), 1, "Y_i's gate pad is an island, not tied to its driver")
 
 
 def notch_layers(cfg=CFG):
@@ -690,8 +824,9 @@ class NotchPredicate(unittest.TestCase):
 class ForcedNotch(unittest.TestCase):
     """End-to-end refusal and admission, with a strip's drawn profile forced
     the way issue #86's original measurement forced it (no reachable cell
-    notches, so the profile cannot arise on its own). The same forcing is how
-    the recorded controls in layout/drc/controls/ were produced."""
+    notches, so the profile cannot arise on its own). The forcing is the
+    control generator's own `forced_strip_profile` -- the code the recorded
+    controls in layout/drc/controls/ were produced with."""
 
     AND2 = {"name": "x_and2_1", "family": "and2", "drive": 1,
             "inputs": ["A", "B"], "outputs": {"X": "(A*B)"}}
@@ -703,18 +838,10 @@ class ForcedNotch(unittest.TestCase):
         return cfg
 
     def force(self, strip, prof, notch_off=False):
-        """Patch _strip_profile to hand back `prof` for `strip`'s devices --
+        """The shared forcing (`gen_controls.forced_strip_profile`), entered
+        for the rest of the test: `prof` handed back for `strip`'s devices --
         and, for drawing a refused notch (the DRC controls), the check itself."""
-        real_prof, real_hit = gl._strip_profile, gl._notch_violation
-
-        def patched_prof(order, devs_, cols_):
-            p = real_prof(order, devs_, cols_)
-            return list(prof) if devs_[0][1] == strip else p
-
-        gl._strip_profile = patched_prof
-        gl._notch_violation = (lambda *a: None) if notch_off else real_hit
-        self.addCleanup(setattr, gl, "_strip_profile", real_prof)
-        self.addCleanup(setattr, gl, "_notch_violation", real_hit)
+        self.enterContext(gc.forced_strip_profile(strip, prof, notch_off))
 
     def test_pmos_notch_refused_naming_cell_strip_layer_and_numbers(self):
         cfg = self.forced_cfg(pitch=840)

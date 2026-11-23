@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
+  "t1_item": 9,
+  "description": "Analog partition testbenches: (1) the characterization bench behind the committed TT/1.20V/25C Liberty view -- the pure klt characterize request builder, the runner that drives klt and appends the append-only evidence record (capturing the IHP-Open-PDK revision of the --pdk-dir checkout before anything is written), the freshness checker that re-derives the committed view's provenance claims, the harness modules they import, the netlist generator and the config every measurement is made from; and (2) the T1 item 5 klt sim corner testbenches (sim/item5/, #180 -- pure function/timing request and netlist builders, runner, and builder tests) covering spec row 9 at TT/1.20V/25C for the four committed cells. The attested cold start (sh sim/characterize/cold_start.sh) is honestly lighter than the full benches: it runs the characterization request-construction tests (python3 -m unittest sim.characterize.tests.test_request) and the freshness checker (python3 -m sim.characterize.check_library) -- both tool-free, stdlib Python only, and the checker fails on any stale or tampered committed artifact (config bytes, record, PDK pin, provenance stamps); the item 5 builder tests run in CI (python3 -m pytest sim/item5/tests). It does NOT re-run the SPICE characterization or item 5 klt sim sweeps themselves: those need klt, ngspice and an IHP-Open-PDK git checkout at the pinned commit (characterization recorded in documented_argv below and in README.md 'Reproducing the characterization'; item 5 in sim/item5/README.md). Later benches (klt pex -- issue #181) extend this inventory instead of adding a second one.",
+  "testbenches": [
+    "sim/characterize/cold_start.sh",
+    "sim/characterize/tests/test_request.py",
+    "sim/characterize/request.py",
+    "sim/characterize/runner.py",
+    "sim/characterize/__main__.py",
+    "sim/characterize/check_library.py",
+    "sim/item5/request.py",
+    "sim/item5/runner.py",
+    "sim/item5/__main__.py",
+    "sim/item5/tests/test_request.py",
+    "sim/harness/corners.py",
+    "sim/harness/evidence.py",
+    "sim/harness/report.py",
+    "design/gen_netlists.py",
+    "layout/example_config.json"
+  ],
+  "cold_start": {
+    "argv": ["sh", "sim/characterize/cold_start.sh"],
+    "timeout_s": 1800,
+    "documented_argv": ["python3", "-m", "sim.characterize", "--library", "--pdk-dir", "<IHP-Open-PDK git checkout at commit 5cccb161f7492697cfa52eb14dc03beb00bdca9e>/ihp-sg13g2"]
+  },
+  "pins": {
+    "pdk": {
+      "name": "IHP-Open-PDK",
+      "revision": "5cccb161f7492697cfa52eb14dc03beb00bdca9e"
+    },
+    "tools": {
+      "klt": "0.9.3.dev3782+gb79f1ff9d9ec",
+      "ngspice": "47"
+    }
+  }
+}

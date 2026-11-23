@@ -3,63 +3,49 @@
   "kind": "generic",
   "status": "pass",
   "t1_item": 8,
-  "summary": "T1 item 8 (Characterization report): 6/6 attestation checks passed (klt signoff --attest)",
+  "summary": "T1 item 8 (Characterization report): 5/5 attestation checks passed (klt signoff --attest)",
   "source": "manifests/inventories/item8.analog.json",
   "attestation": {
     "producer": "klt signoff --attest",
     "inventory_schema_version": 1,
     "hash_algorithm": "sha256-raw-bytes",
-    "check_count": 6,
-    "passed_count": 6,
+    "check_count": 5,
+    "passed_count": 5,
     "checks": [
       {
         "check": "present",
         "role": "report",
-        "path": "sim/characterize/records/20261115-220740-13dc481.md",
+        "path": "sim/characterize/records/20261121-045231-9214168.md",
         "passed": true,
-        "content_hash": "sha256:fae2b85aaac248fbdfdbd8e8e362344cc29a815517e9c4264334f43d8f52c427"
+        "content_hash": "sha256:a100b62d2714f47a8114274c28de498b424a5b61c9ed34a936eb8af2f4d0da51"
       },
       {
         "check": "present",
         "role": "evidence",
-        "path": "views/sg13g2_stdcells_tt_1p20v_25c.lib",
+        "path": "manifests/envelopes/item9.analog.attest.json",
         "passed": true,
-        "content_hash": "sha256:caf01af759959b17e567a61b388ab2c100eab75ef1627e1b67904ef15df1d0cf"
+        "content_hash": "sha256:0d7b8b6e27cf113284ae751a8d9af030631480928cf3daf1e7208b4aae38b967"
       },
       {
-        "check": "present",
+        "check": "envelope",
         "role": "evidence",
-        "path": "views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance",
-        "passed": true,
-        "content_hash": "sha256:160a9b30f2c7ef31ac810258074d14ede12fd775f9ab486efe80f068d4ed20a8"
+        "path": "manifests/envelopes/item9.analog.attest.json",
+        "kind": "generic",
+        "passed": true
       },
       {
         "check": "citation",
         "role": "spec_row",
         "row": "spec-row-9-liberty-corners-tt",
         "envelopes": [
-          "views/sg13g2_stdcells_tt_1p20v_25c.lib",
-          "views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance"
+          "manifests/envelopes/item9.analog.attest.json"
         ],
         "passed": true
       },
       {
         "check": "command",
         "role": "freshness",
-        "target": "views/sg13g2_stdcells_tt_1p20v_25c.lib",
-        "argv": [
-          "python3",
-          "-m",
-          "sim.characterize.check_library"
-        ],
-        "cwd": ".",
-        "exit_status": 0,
-        "passed": true
-      },
-      {
-        "check": "command",
-        "role": "freshness",
-        "target": "views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance",
+        "target": "manifests/envelopes/item9.analog.attest.json",
         "argv": [
           "python3",
           "-m",
@@ -69,11 +55,12 @@
         "exit_status": 0,
         "passed": true
       }
-    ]
+    ],
+    "description": "Analog partition characterization report: the append-only klt characterize record behind the committed TT/1.20 V/25 C Liberty view, cited for spec row 9 (Liberty corners). The spec-row citation names the item 9 analog bench envelope (manifests/envelopes/item9.analog.attest.json, a generic evidence envelope klt recognizes) rather than the raw view and sidecar files: klayout-tools #7040 -- klt's citation recognition (#5688) accepts recognized envelopes only, and a Liberty view, a provenance sidecar and a markdown record are none, while the freshness command is where the artifacts' content is actually verified. The chain is still fully pinned: the cited envelope byte-pins the bench that measured the view (request builder, runner, freshness checker, harness modules, netlist generator, config) and carries the PDK revision pin, the report below pins the record's own bytes, and the envelope_checks command (python3 -m sim.characterize.check_library) re-derives what the view's provenance sidecar claims -- the library name and cell set the view declares, the corner it declares (the operating_conditions group name plus voltage and temperature, via the nom_* attributes and the group; the sidecar's process-corner entry is a name like mos_tt, not comparable with the view's numeric process factor, so process is not pinned), the SHA-256 of the config it was characterized from, the record it names, and the IHP-Open-PDK revision both the sidecar and the record pin -- so a config edit or a tampered view that changes any of those fails the attestation instead of being reported as current. The view's delay tables themselves are not pinned by the sidecar: it records no hash of the .lib (a klt characterize gap, filed upstream on the klayout-tools tracker). The check is deliberately not weakened to pass."
   },
   "provenance": {
-    "klt_version": "0.9.3.dev16+gdcf18e2e0c03",
-    "klayout_version": null,
+    "klt_version": "0.9.3.dev3782+gb79f1ff9d9ec",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": null,
     "input": {
@@ -81,7 +68,7 @@
         "path": "manifests/inventories/item8.analog.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:1910e308982aec47919dc6ba9d323533e1486ab4f1bfdc24e8a51d400ce61dea"
+      "content_hash": "sha256:191c3c82a8bb01e2491602b530ac0b2b9f62a13f7ccef7027ff3a1cd47b0aecb"
     }
   }
 }

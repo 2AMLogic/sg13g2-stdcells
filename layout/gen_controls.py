@@ -11,10 +11,10 @@ files on disk (changed, missing, or stray `.gds`); `check-ci.sh layouts`
 runs it on every PR. Exit 2 means the config is invalid; exit 3 means a
 control's forcing cannot be placed.
 
-Each control is the shipped generator's own drawing engine with
-`gen_layouts._strip_profile` patched to hand back the forced profile for one
-strip's devices and, for the refused rows, `_notch_violation` stubbed to
-None so the notch is drawn -- the same forcing
+Each control is the shipped generator's own drawing engine inside the
+shared `forced_strip_profile` context manager: one strip's devices are handed
+the forced height profile and, for the refused rows, `_notch_violation` is
+stubbed to None so the notch is drawn -- the same forcing
 `layout/tests/test_gen_layouts.py::ForcedNotch` exercises. The table below
 is the recipe the recorded controls were produced with (issue #120): the
 config cell is renamed to `notch_<strip>_p<pitch>` (the committed streams'
@@ -23,6 +23,7 @@ rows carry the row-height and channel-track overrides the taller `and2` row
 needs on top of the pitch bump.
 """
 import argparse
+import contextlib
 import copy
 import json
 import pathlib
@@ -74,14 +75,57 @@ def _base_cell(cfg, base):
     raise ValueError(f"config has no cell {base!r} for a control row")
 
 
-def regenerate(row, config):
-    """One control as {committed filename: bytes}, via the ForcedNotch forcing.
+@contextlib.contextmanager
+def forced_strip_profile(strip, profile, notch_off=False):
+    """Force `gl._strip_profile` to hand back `profile` for `strip`'s devices.
 
-    Patches `gl._strip_profile` (and `gl._notch_violation` for the refused
-    rows) around `gl.generate` and restores both in a `finally`, so a failed
-    row cannot leave the generator patched for the next one. A `breaks` row
-    patches `gl.order_strips` the same way instead: the pairing the model
-    picks is kept and one diffusion break is forced into it."""
+    The notch check stays live unless `notch_off` (drawing a refused control,
+    whose notch must still be drawn). Both patched attributes are restored on
+    exit, so a cell that fails to place cannot leave the generator patched
+    for the next one."""
+    real_prof, real_hit = gl._strip_profile, gl._notch_violation
+
+    def patched_prof(order, devs_, cols_):
+        p = real_prof(order, devs_, cols_)
+        return list(profile) if devs_[0][1] == strip else p
+
+    gl._strip_profile = patched_prof
+    gl._notch_violation = (lambda *a, **k: None) if notch_off else real_hit
+    try:
+        yield
+    finally:
+        gl._strip_profile = real_prof
+        gl._notch_violation = real_hit
+
+
+@contextlib.contextmanager
+def forced_break(strip, at):
+    """Force one diffusion break at order position `at` of `strip`.
+
+    Patches `gl.order_strips`: the pairing the model picks is kept and one
+    break is added to it. Restored on exit even if the cell fails to place."""
+    real_order = gl.order_strips
+
+    def patched_order(ndevs, pdevs):
+        nord, nbrk, pord, pbrk = real_order(ndevs, pdevs)
+        if strip == "p":
+            pbrk = tuple(sorted(set(pbrk) | {at}))
+        else:
+            nbrk = tuple(sorted(set(nbrk) | {at}))
+        return nord, nbrk, pord, pbrk
+
+    gl.order_strips = patched_order
+    try:
+        yield
+    finally:
+        gl.order_strips = real_order
+
+
+def regenerate(row, config):
+    """One control as {committed filename: bytes}, via the shared forcing.
+
+    The forcing context wraps `gl.generate`, so a failed row cannot leave
+    the generator patched for the next one."""
     cfg = copy.deepcopy(config)
     cfg["layout"].update(row["layout"])
     cell = _base_cell(cfg, row["cell"])
@@ -95,37 +139,12 @@ def regenerate(row, config):
         cell["name"] = f"notch_{strip}_p{cfg['layout']['gate_pitch_nm']}"
     cfg["cells"] = [cell]
 
-    real_prof, real_hit, real_order = gl._strip_profile, gl._notch_violation, gl.order_strips
-    patches = []
-
     if "breaks" in row:
-        bstrip, at = row["breaks"]
-
-        def patched_order(ndevs, pdevs):
-            nord, nbrk, pord, pbrk = real_order(ndevs, pdevs)
-            if bstrip == "p":
-                pbrk = tuple(sorted(set(pbrk) | {at}))
-            else:
-                nbrk = tuple(sorted(set(nbrk) | {at}))
-            return nord, nbrk, pord, pbrk
-
-        gl.order_strips = patched_order
-        patches.append((gl, "order_strips", real_order))
+        forcing = forced_break(*row["breaks"])
     else:
-        profile = row["force"][1]
-
-        def patched_prof(order, devs_, cols_):
-            p = real_prof(order, devs_, cols_)
-            return list(profile) if devs_[0][1] == strip else p
-
-        gl._strip_profile = patched_prof
-        gl._notch_violation = (lambda *a, **k: None) if row["notch_off"] else real_hit
-        patches.extend([(gl, "_strip_profile", real_prof), (gl, "_notch_violation", real_hit)])
-    try:
+        forcing = forced_strip_profile(strip, row["force"][1], notch_off=row["notch_off"])
+    with forcing:
         files = gl.generate(cfg)
-    finally:
-        for obj, attr, real in patches:
-            setattr(obj, attr, real)
     (name,) = files  # one control cell in, one stream out
     return {f"{row['stem']}.gds": files[name]}
 

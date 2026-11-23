@@ -226,6 +226,20 @@ class DeterminismAndCheckTest(unittest.TestCase):
             for word in ("stale", "missing", "stray"):
                 self.assertIn(word, r.stderr)
 
+    def test_check_rejects_crlf_rewrite_and_leaves_input_intact(self):
+        # a CRLF rewrite changes no line content, so the check must compare
+        # the exact bytes the generator writes, not normalized text (#196)
+        with tempfile.TemporaryDirectory() as td:
+            out = pathlib.Path(td)
+            self.assertEqual(self.run_cli("--config", str(CONFIG), "--out", td).returncode, 0)
+            spice = out / "demo_inv_1.spice"
+            crlf = spice.read_bytes().replace(b"\n", b"\r\n")
+            spice.write_bytes(crlf)
+            r = self.run_cli("--config", str(CONFIG), "--out", td, "--check")
+            self.assertEqual(r.returncode, 1)
+            self.assertIn("stale", r.stderr)
+            self.assertEqual(spice.read_bytes(), crlf)  # --check writes nothing
+
     def test_check_fails_on_empty_dir(self):
         with tempfile.TemporaryDirectory() as td:
             self.assertEqual(self.run_cli("--config", str(CONFIG), "--out", td, "--check").returncode, 1)
