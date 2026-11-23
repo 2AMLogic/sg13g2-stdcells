@@ -51,7 +51,7 @@ SPEC_ROW = "9"
 #: The committed view was measured by ``klt characterize`` under the same
 #: conventions these testbenches replicate (same ramp law, same thresholds,
 #: same models and corner), and the worst observed disagreement across all
-#: four cells' full grids is ~0.03 %, so 2 % is ~70x the observed drift --
+#: four cells' full grids is 0.0578 %, so 2 % is ~35x the observed drift --
 #: far too tight to hide a real divergence (a stale view, a wrong arc, a
 #: mis-sized instance moves values by whole percent), far too loose to trip
 #: on solver noise or a future ngspice point release.
