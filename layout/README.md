@@ -33,7 +33,7 @@ The `process` and `cells` objects are exactly `design/README.md`'s contract. The
 ```jsonc
 "layout": {
   "row_height_nm": 3360,       // cell height; rails are centred on y=0 and y=row height
-  "gate_pitch_nm": 420,        // even; poly pitch = node pitch; cell width = (columns+1) * pitch
+  "gate_pitch_nm": 420,        // even; poly pitch = node pitch; cell width = (columns+2) * pitch
   "channel_tracks": 1,         // max Metal1 tracks between the strips (more -> exit 3)
   "n_diff_y0_nm": 400,         // bottom of the NMOS diffusion
   "p_diff_top_margin_nm": 400, // PMOS diffusion top sits this far below the row top
@@ -89,7 +89,7 @@ below the NMOS diffusion (`poly_width_nm` tall, `poly_to_activ_nm` clear of it) 
 share one gate contact. A poly column crosses both strips, so the NMOS and PMOS
 device on one gate net get the same finger count, the larger of the two; the other
 is folded into that many fingers (same total width, which must divide evenly on
-`process.grid_nm`, default 10, else exit `3`). Cell width is `(columns + 1) *
+`process.grid_nm`, default 10, else exit `3`). Cell width is `(columns + 2) *
 gate_pitch_nm`, counting fingers. Each strip must be a single chain of devices
 sharing source/drain nets, and both chains must have the same gate-net sequence.
 
@@ -209,6 +209,31 @@ synthetic configs, the way `FakeProcess` exercises a second process -- `and2_1`
 places with a stepped NMOS strip once the synthetic row gives it two channel
 tracks and a wider pitch. The committed config's `channel_tracks` and `rules`
 are unchanged.
+
+### Pin placement on the routing grid (issue #225)
+
+Spec row 4 wants every pin on a grid point of `gate_pitch_nm`, origin at the
+cell origin. The diffusion nodes sit on the grid columns (`x = (j + 1) * pitch`)
+and the gates a half pitch between them, which is why a cell is `(columns + 2)`
+pitches wide: with the nodes at half pitch, no Metal1 that reaches a grid column
+can stay `m1_space_nm` clear of the output riser. Rail labels sit on the first
+node column; an output label is the grid point deepest inside its net's Metal1;
+an input gate's pad is joined by a bridge to a vertical bar on the node column
+beside it, long enough to hold a grid y of the channel. Input pads that find no
+Metal1-clean bar, and internal-net (driven) gate pads, keep the compact pad with
+its label at the centre, off the grid; `PinOnGrid` fails if a shipped cell
+does. A `(columns + 1)`-wide cell from before this change cannot be reproduced.
+
+**Re-recorded 2026-11-23 (issue #225)**, superseding the earlier records of the
+same files because the layouts are different GDS: the four `layout/gds/*.gds`,
+their `layout/drc/*.json` (still `clean`, 0 violations) and `layout/lvs/*.json`
+(still `match`), the four notch controls in `layout/drc/controls/` (regenerated
+and re-run; each keeps its outcome: the two admits `clean`, the two refusals
+one violation each), `manifests/envelopes/item2.analog.attest.json` (re-attested)
+and its manifest pin and `manifests/signoff-report.*`. The reports were
+recorded on klt `0.9.3.dev4174+g85b21713e8c0` (KLayout 0.30.12), newer than the
+previous set's `0.9.2.dev1022+g2a9c52b27ce7`, so their provenance and the
+deck's `content_hash` differ for that reason as well as for the new GDS.
 
 ### Well and substrate taps
 

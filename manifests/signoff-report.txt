@@ -22,9 +22,9 @@ T1: 15/22 items met, 1 not_applicable
         input: not re-hashed (content_hash compared against this envelope's own claim only -- the artifact itself was not read)
         topic: not bound -- a passing synthesize envelope satisfies this item, but klt signoff cannot judge its relevance (cite an artifact-anchored generic envelope to bind it)
 [MET  ] T1 #2 [analog] Layout
-        cite: manifests/envelopes/item2.analog.attest.json (kind=generic, status=pass, content_hash=sha256:aac8f95bb3bcc0b54f1d3b64a27466e61826bc050ceb48074840389e7a3e04c0, exit_status=0)
+        cite: manifests/envelopes/item2.analog.attest.json (kind=generic, status=pass, content_hash=sha256:404f3d2b5d60a6ba18e788cceeb2dc1642e1ac51a6ea1b226b789c7807416fa2, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
-        bound: T1 item #2 -> 4 members (content_hash=sha256:aac8f95bb3bcc0b54f1d3b64a27466e61826bc050ceb48074840389e7a3e04c0)
+        bound: T1 item #2 -> 4 members (content_hash=sha256:404f3d2b5d60a6ba18e788cceeb2dc1642e1ac51a6ea1b226b789c7807416fa2)
         member layout/gds/sg13g2_inv_1.gds: verified
         member layout/gds/sg13g2_inv_2.gds: verified
         member layout/gds/sg13g2_inv_4.gds: verified
@@ -36,15 +36,15 @@ T1: 15/22 items met, 1 not_applicable
         bound: T1 item #2 -> flow/records/20261107-a1a4ec6/add8.routed.gds (content_hash=sha256:3a3336d6ce0bf0383fad65c3ad885f68a3cbbd83fde0971721a5daea61f2f1fd)
         regeneration: sha256:3a3336d6ce0bf0383fad65c3ad885f68a3cbbd83fde0971721a5daea61f2f1fd matches the bound artifact; generator `PDK_ROOT=<pdk> RECORD_ID=<id> flow/run.sh` was attested, not run by klt (generator correctness and topical relevance not checked)
 [MET  ] T1 #3 [analog] DRC clean
-        cite: layout/drc/sg13g2_inv_1.json (kind=drc, status=clean, content_hash=sha256:91c226f6336a7fb8ef2245c00f25f297c098d8368a445de84fe7df8c1bd95dc0, exit_status=0)
+        cite: layout/drc/sg13g2_inv_1.json (kind=drc, status=clean, content_hash=sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
-        coverage: layers_in_stream_without_rules=1 (8/25), rules_skipped=34 (metal1.enclosing.via1.1, metal2.enclosing.via2.1, metal2.space.1, metal2.width.1, +30 more), deck_scope=20 (Act, Cnt, Gat, M1, +16 more)
+        coverage: layers_in_stream_without_rules=1 (8/25), rules_skipped=38 (metal1.enclosing.via1.1, metal2.enclosing.via1.1, metal2.enclosing.via2.1, metal2.space.1, +34 more), deck_scope=25 (Act, Cnt, Cont upper-landing containment (curated), Gat, +21 more)
 [MET  ] T1 #3 [digital] DRC clean
         cite: flow/records/20261107-a1a4ec6/drc.json (kind=drc, status=clean, content_hash=sha256:3a3336d6ce0bf0383fad65c3ad885f68a3cbbd83fde0971721a5daea61f2f1fd, exit_status=0)
         input: not re-hashed (content_hash compared against this envelope's own claim only -- the artifact itself was not read)
         coverage: layers_in_stream_without_rules=9 (8/2, 8/25, 10/2, 10/25, +5 more), rules_skipped=8 (metal5.enclosing.mim.1, mim.enclosing.topvia1.1, nwell.enclosing.nactiv.1, nwell.enclosing.nactiv.dig.1, +4 more), deck_scope=19 (Act, Cnt, Gat, M1, +15 more)
 [MET  ] T1 #4 [analog] LVS clean
-        cite: layout/lvs/sg13g2_inv_1.json (kind=lvs, status=match, content_hash=sha256:91c226f6336a7fb8ef2245c00f25f297c098d8368a445de84fe7df8c1bd95dc0, exit_status=0)
+        cite: layout/lvs/sg13g2_inv_1.json (kind=lvs, status=match, content_hash=sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
 [MET  ] T1 #4 [digital] LVS clean
         cite: flow/records/20261104-df96543/lvs.json (kind=lvs, status=match, content_hash=sha256:a8eedac6ece34023fc103f36f32ef62be5d671c862c6952982809bac24022bf5, exit_status=0)
@@ -871,5 +871,5 @@ spec rows (1):
         from: sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.timing.report.json (B_s0p4_l0p1_in_slew_rise)
         from: sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.timing.report.json (B_s0p4_l0p1_in_slew_fall)
 
-source: docs/design-evidence-tiers.md (content_hash=sha256:5ec474adf78172a90bbee59b7cab515942f21c13532798f8d0e2e103a08dada5)
-build: klt 0.9.3.dev4118+gd740468abb98
+source: docs/design-evidence-tiers.md (content_hash=sha256:2bc576233450be5e650805a4e5fda8567b7c6120dee5aff3fb8732d5f7a1b4f6)
+build: klt 0.9.3.dev4224+gcc049d4d9637
