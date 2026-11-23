@@ -38,6 +38,7 @@ written but a verdict is wrong (the reports are the evidence; nothing is
 hidden or retried).
 """
 import argparse
+import hashlib
 import json
 import os
 import pathlib
@@ -49,6 +50,16 @@ sys.path.insert(0, str(HERE))
 import toolchain_pin  # noqa: E402
 
 DECK = "sg13g2"
+# The shared pin in layout/toolchain.json is deliberately untouched by #179, but
+# its commit predates the `well_complement_of` tie schema erc-spec.json uses:
+# that build advertises `erc` and then rejects the spec. The reports were
+# produced by this build, so it is the install for this runner.
+ERC_INSTALL = ("git+https://github.com/2AMLogic/klayout-tools@"
+               "6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe")
+SCHEMA_HINT = ("the spec's substrate tie uses `well_complement_of` with a null `well_layer`; "
+               "klt builds older than the ERC-capable one demand `well_boxes` instead. "
+               "Install a compatible build: uv tool install --force " + ERC_INSTALL
+               + " (or run `uvx --from " + ERC_INSTALL + " klt ...`)")
 ERC_EXIT_OK = (0, 3, 4)  # 3 violations / 4 antenna not_checked: report still written
 
 
@@ -66,6 +77,12 @@ def cell_names(config_path):
     return [c["name"] for c in json.loads(pathlib.Path(config_path).read_text())["cells"]]
 
 
+def supply_names(config_path):
+    """[vdd_net, vss_net] the generated cells draw as their rails."""
+    proc = json.loads(pathlib.Path(config_path).read_text())["process"]
+    return [proc["vdd_net"], proc["vss_net"]]
+
+
 def missing_ties(report):
     return [f for f in report.get("erc_findings", []) if f.get("rule") == "erc.missing_tie"]
 
@@ -81,12 +98,45 @@ def supply_islands(report):
     return [(n["name"], n["matched_islands"], n["expected_islands"]) for n in report.get("nets", [])]
 
 
-def cell_ok(report):
-    """erc_status clean, one island per supply, zero findings, no skipped tie."""
-    return (report.get("erc_status") == "clean"
+def tie_check_ids(spec):
+    return [f'erc.missing_tie:["{t["name"]}"]' for t in spec.get("ties", [])]
+
+
+def spec_problems(spec, supplies):
+    """Reasons the spec cannot grade both configured rails (empty = usable).
+
+    `supplies` is [vdd_net, vss_net] from the config: the spec must declare
+    exactly those as supplies and tie each one to its well/substrate."""
+    bad = []
+    declared = [n["name"] for n in spec.get("nets", []) if n.get("kind") == "supply"]
+    if sorted(declared) != sorted(supplies):
+        bad.append(f"spec supplies {declared} != configured rails {list(supplies)}")
+    tied = {t.get("net") for t in spec.get("ties", [])}
+    for net in supplies:
+        if net not in tied:
+            bad.append(f"spec has no tie to supply {net}")
+    return bad
+
+
+def cell_ok(report, supplies=None, spec=None):
+    """erc_status clean, one island per supply, zero findings, no skipped tie.
+
+    With `supplies` the report must name exactly those rails, one island each;
+    with `spec` every tie it declares must be in the report's checked set."""
+    if not (report.get("erc_status") == "clean"
             and report.get("erc_finding_count") == 0
             and all(m == e for _, m, e in supply_islands(report))
-            and not degenerate_ties(report))
+            and not degenerate_ties(report)):
+        return False
+    if supplies is not None:
+        isl = supply_islands(report)
+        if sorted(n for n, _, _ in isl) != sorted(supplies) or any(m != 1 for _, m, _ in isl):
+            return False
+    if spec is not None:
+        checked = set(report.get("erc_coverage", {}).get("checked", []))
+        if not set(tie_check_ids(spec)) <= checked:
+            return False
+    return True
 
 
 def control_ok(report):
@@ -105,6 +155,8 @@ def run_klt_erc(cmd, report_path):
     if r.returncode not in ERC_EXIT_OK:
         print(f"run_erc: klt erc failed (exit {r.returncode}):\n{r.stdout}{r.stderr}",
               file=sys.stderr)
+        if "well_boxes" in r.stdout + r.stderr:
+            print(f"run_erc: {SCHEMA_HINT}", file=sys.stderr)
         return None
     try:
         report = json.loads(r.stdout)
@@ -121,25 +173,65 @@ def controls(out):
     return sorted((p.stem, p) for p in cdir.glob("*.gds")) if cdir.is_dir() else []
 
 
-def do_check(cells, out, spec):
+def sha(path):
+    return "sha256:" + hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
+
+
+def binding_problems(report, layout, spec):
+    """The report must describe the layout and spec the caller asked for.
+
+    `klt erc --check` only rehashes whatever paths the report embeds, so a
+    report copied over another cell's (or one run with a different spec) is
+    fresh against itself; compare against the requested inputs instead."""
     bad = []
-    streams = [(c, pathlib.Path(out) / f"{c}.json") for c in cells]
-    streams += [(f"control {s}", pathlib.Path(out) / "controls" / f"{s}.json")
-                for s, _ in controls(out)]
-    if len(streams) == len(cells):
+    rp = report.get("file", {}).get("path")
+    if rp is None or os.path.normpath(rp) != os.path.normpath(relpath(layout)):
+        bad.append(f"report names layout {rp}, expected {relpath(layout)}")
+    if os.path.normpath(str(report.get("spec"))) != os.path.normpath(relpath(spec)):
+        bad.append(f"report names spec {report.get('spec')}, expected {relpath(spec)}")
+    prov = report.get("provenance", {})
+    if not pathlib.Path(layout).exists():
+        bad.append(f"layout {layout} missing")
+    elif prov.get("input", {}).get("content_hash") != sha(layout):
+        bad.append(f"report layout hash does not match {relpath(layout)}")
+    if prov.get("spec", {}).get("content_hash") != sha(spec):
+        bad.append(f"report spec hash does not match {relpath(spec)}")
+    return bad
+
+
+def do_check(cells, out, spec, gds, supplies):
+    bad = []
+    spec_doc = json.loads(pathlib.Path(spec).read_text())
+    ctl = controls(out)
+    streams = [(c, pathlib.Path(out) / f"{c}.json", pathlib.Path(gds) / f"{c}.gds")
+               for c in cells]
+    streams += [(f"control {s}", pathlib.Path(out) / "controls" / f"{s}.json", g)
+                for s, g in ctl]
+    if not ctl:
         bad.append(f"no negative-control streams in {pathlib.Path(out) / 'controls'}; "
                    "regenerate with layout/gen_controls.py")
-    for what, rep in streams:
+    for what, rep, layout in streams:
         if not rep.exists():
             bad.append(f"{what}: report {rep} missing")
             continue
         c = subprocess.run(["klt", "erc", "--check", str(rep)], capture_output=True, text=True)
         if c.returncode != 0:
             bad.append(f"{what}: klt erc --check exit {c.returncode}: {c.stdout.strip()[:200]}")
-        elif what.startswith("control") and not control_ok(json.loads(rep.read_text())):
-            bad.append(f"{what}: report no longer shows erc.missing_tie")
+            continue
+        doc = json.loads(rep.read_text())
+        bad += [f"{what}: {b}" for b in binding_problems(doc, layout, spec)]
+        if what.startswith("control"):
+            if not control_ok(doc):
+                bad.append(f"{what}: report no longer shows erc.missing_tie")
+        elif not cell_ok(doc, supplies, spec_doc):
+            bad.append(f"{summarize(what, doc)}: not a clean supply/tie verdict")
     stray = sorted(p.name for p in pathlib.Path(out).glob("*.json") if p.stem not in cells)
     bad += [f"stray report {s}" for s in stray]
+    cdir = pathlib.Path(out) / "controls"
+    stems = {s for s, _ in ctl}
+    if cdir.is_dir():
+        bad += [f"stray control report {p.name}" for p in sorted(cdir.glob("*.json"))
+                if p.stem not in stems]
     for b in bad:
         print(b, file=sys.stderr)
     return 1 if bad else 0
@@ -159,6 +251,7 @@ def main(argv=None):
     out = pathlib.Path(a.out) if a.out else cfgdir / "erc"
     try:
         cells = cell_names(a.config)
+        supplies = supply_names(a.config)
     except (OSError, ValueError, KeyError) as e:
         print(f"run_erc: invalid config: {e}", file=sys.stderr)
         return 2
@@ -166,16 +259,25 @@ def main(argv=None):
         print(f"run_erc: spec {spec} missing", file=sys.stderr)
         return 2
     try:
+        spec_doc = json.loads(spec.read_text())
+    except ValueError as e:
+        print(f"run_erc: invalid spec {spec}: {e}", file=sys.stderr)
+        return 2
+    problems = spec_problems(spec_doc, supplies)
+    if problems:
+        print("run_erc: invalid spec: " + "; ".join(problems), file=sys.stderr)
+        return 2
+    try:
         missing = toolchain_pin.check_commands()
     except (OSError, subprocess.CalledProcessError) as e:
         print(f"run_erc: cannot run klt: {e}", file=sys.stderr)
         return 1
     if missing:
-        print(f"run_erc: klt lacks {missing}; install: {toolchain_pin.install_hint()}",
-              file=sys.stderr)
+        print(f"run_erc: klt lacks {missing}; install a build with `erc` and the "
+              f"tie schema erc-spec.json uses: {ERC_INSTALL}", file=sys.stderr)
         return 1
     if a.check:
-        return do_check(cells, out, spec)
+        return do_check(cells, out, spec, gds, supplies)
     ctl = controls(out)
     if not ctl:
         print(f"run_erc: no negative-control streams in {out / 'controls'}; "
@@ -190,7 +292,7 @@ def main(argv=None):
         if report is None:
             return 1
         print(summarize(cell, report))
-        if not cell_ok(report):
+        if not cell_ok(report, supplies, spec_doc):
             worst = 4
     for stem, gds_path in ctl:
         rep = out / "controls" / f"{stem}.json"

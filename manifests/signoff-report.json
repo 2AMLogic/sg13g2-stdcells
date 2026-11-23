@@ -12,7 +12,8 @@
   "t1_met_count": 13,
   "t1_not_applicable_count": 1,
   "unmet_reason_counts": {
-    "no_evidence": 7,
+    "no_evidence": 6,
+    "stale_evidence": 1,
     "supply_spec_incomplete": 1
   },
   "source_doc": "docs/design-evidence-tiers.md",
@@ -43,13 +44,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f",
+        "content_hash": "sha256:c4b2668f1e64b0b9218cfe5e84492f6826e34a5fb6b50c016567e401142d1744",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 1,
           "path": null,
-          "content_hash": "sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f",
+          "content_hash": "sha256:c4b2668f1e64b0b9218cfe5e84492f6826e34a5fb6b50c016567e401142d1744",
           "input_verified": true,
           "members": [
             {
@@ -57,7 +58,7 @@
                 "path": "design/gen_netlists.py",
                 "scope": "repo"
               },
-              "content_hash": "sha256:758eab5f13e4853cdaa40525ac0474d755f3ede11c7e5cb9adeb44cad84612d4",
+              "content_hash": "sha256:2fcf40fa59c33608b502da0f1ede3ffd8a4efe4cc22665b0074b54498216fa08",
               "status": "verified"
             },
             {
@@ -115,7 +116,8 @@
             "producer": "klt signoff --attest",
             "inventory_schema_version": 1,
             "check_count": 10,
-            "passed_count": 10
+            "passed_count": 10,
+            "description": "Analog partition design sources: the netlist generator and its config, plus the generated reference netlists used by layout/run_lvs.py."
           }
         }
       }
@@ -690,14 +692,15 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:1910e308982aec47919dc6ba9d323533e1486ab4f1bfdc24e8a51d400ce61dea",
+        "content_hash": "sha256:191c3c82a8bb01e2491602b530ac0b2b9f62a13f7ccef7027ff3a1cd47b0aecb",
         "input_verified": true,
         "exit_status": 0,
         "attestation": {
           "tool_produced": true,
           "producer": "klt signoff --attest",
-          "check_count": 6,
-          "passed_count": 6
+          "check_count": 5,
+          "passed_count": 5,
+          "description": "Analog partition characterization report: the append-only klt characterize record behind the committed TT/1.20 V/25 C Liberty view, cited for spec row 9 (Liberty corners). The spec-row citation names the item 9 analog bench envelope (manifests/envelopes/item9.analog.attest.json, a generic evidence envelope klt recognizes) rather than the raw view and sidecar files: klayout-tools #7040 -- klt's citation recognition (#5688) accepts recognized envelopes only, and a Liberty view, a provenance sidecar and a markdown record are none, while the freshness command is where the artifacts' content is actually verified. The chain is still fully pinned: the cited envelope byte-pins the bench that measured the view (request builder, runner, freshness checker, harness modules, netlist generator, config) and carries the PDK revision pin, the report below pins the record's own bytes, and the envelope_checks command (python3 -m sim.characterize.check_library) re-derives what the view's provenance sidecar claims -- the library name and cell set the view declares, the corner it declares (the operating_conditions group name plus voltage and temperature, via the nom_* attributes and the group; the sidecar's process-corner entry is a name like mos_tt, not comparable with the view's numeric process factor, so process is not pinned), the SHA-256 of the config it was characterized from, the record it names, and the IHP-Open-PDK revision both the sidecar and the record pin -- so a config edit or a tampered view that changes any of those fails the attestation instead of being reported as current. The view's delay tables themselves are not pinned by the sidecar: it records no hash of the .lib (a klt characterize gap, filed upstream on the klayout-tools tracker). The check is deliberately not weakened to pass."
         }
       }
     },
@@ -723,9 +726,20 @@
       "text": "every claimed measurement's testbench committed, with a documented cold-start invocation a third party can run; pinned PDK revision.",
       "notes": [],
       "status": "unmet",
-      "reason": "no_evidence",
+      "reason": "stale_evidence",
       "graded_by_build": true,
-      "citation": null
+      "citation": null,
+      "detail": {
+        "artifact_binding": {
+          "members": [
+            {
+              "path": "design/gen_netlists.py",
+              "content_hash": "sha256:758eab5f13e4853cdaa40525ac0474d755f3ede11c7e5cb9adeb44cad84612d4",
+              "status": "stale"
+            }
+          ]
+        }
+      }
     },
     {
       "tier": "T1",
@@ -798,7 +812,8 @@
             "producer": "klt signoff --attest",
             "inventory_schema_version": 1,
             "check_count": 6,
-            "passed_count": 6
+            "passed_count": 6,
+            "description": "Repo hygiene: the three repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
           }
         }
       }
@@ -836,7 +851,8 @@
             "producer": "klt signoff --attest",
             "inventory_schema_version": 1,
             "check_count": 6,
-            "passed_count": 6
+            "passed_count": 6,
+            "description": "Repo hygiene: the three repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
           }
         }
       }
