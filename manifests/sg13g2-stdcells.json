@@ -56,11 +56,11 @@
     },
     "10.analog": {
       "file": "manifests/envelopes/item10.attest.json",
-      "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16"
+      "content_hash": "sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256"
     },
     "10.digital": {
       "file": "manifests/envelopes/item10.attest.json",
-      "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16"
+      "content_hash": "sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256"
     },
     "11.digital": [
       "flow/records/20261104-df96543/erc.json",

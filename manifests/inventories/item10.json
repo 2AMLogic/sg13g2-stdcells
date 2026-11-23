@@ -11,15 +11,15 @@
   "checks": [
     {
       "name": "netlists-fresh",
-      "argv": ["python3", "design/gen_netlists.py", "--config", "layout/example_config.json", "--out", "layout/lvs/netlists", "--check"]
+      "argv": ["./check-ci.sh", "netlists"]
     },
     {
       "name": "layouts-fresh",
-      "argv": ["python3", "layout/gen_layouts.py", "--config", "layout/example_config.json", "--check"]
+      "argv": ["./check-ci.sh", "layouts"]
     },
     {
       "name": "flow-evidence-accepts-committed-record",
-      "argv": ["flow/check-evidence.sh", "flow/request-par.json", "flow/records/20261104-df96543/place-and-route.json", "flow/records/20261104-df96543/lvs.json", "flow/records/20261104-df96543/erc.json"]
+      "argv": ["./check-ci.sh", "evidence-accept"]
     }
   ]
 }

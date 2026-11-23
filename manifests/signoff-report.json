@@ -9112,13 +9112,13 @@
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:5ec474adf78172a90bbee59b7cab515942f21c13532798f8d0e2e103a08dada5",
   "build": {
-    "version": "0.9.3.dev3782+gb79f1ff9d9ec",
-    "package_version": "0.9.3.dev3782+gb79f1ff9d9ec",
-    "git_commit": "b79f1ff9d9ec609f3bd6a16bdcc01ea0eea7ef39",
+    "version": "0.9.3.dev4118+gd740468abb98",
+    "package_version": "0.9.3.dev4118+gd740468abb98",
+    "git_commit": "d740468abb980078ea8469aec6ed968b69f239c1",
     "git_tag": null,
     "dirty": false,
     "is_release": false,
-    "grading_ruleset_id": "sha256:1b2239d3c432b66a0cee5cc9a7f7c2d3ff0730f81dca501fbe5022c2e9ba0057"
+    "grading_ruleset_id": "sha256:a833fd1a57eccac31b045d43c558e505a4f21e7ae92d6c9ddab705ca5af95a6a"
   },
   "items": [
     {
@@ -10060,7 +10060,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16",
+        "content_hash": "sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
@@ -10069,7 +10069,7 @@
             "path": "manifests/inventories/item10.json",
             "scope": "repo"
           },
-          "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16",
+          "content_hash": "sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256",
           "input_verified": true,
           "summary": "T1 item 10 (Repo hygiene): 6/6 attestation checks passed (klt signoff --attest)",
           "source": "manifests/inventories/item10.json",
@@ -10099,7 +10099,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16",
+        "content_hash": "sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
@@ -10108,7 +10108,7 @@
             "path": "manifests/inventories/item10.json",
             "scope": "repo"
           },
-          "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16",
+          "content_hash": "sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256",
           "input_verified": true,
           "summary": "T1 item 10 (Repo hygiene): 6/6 attestation checks passed (klt signoff --attest)",
           "source": "manifests/inventories/item10.json",
