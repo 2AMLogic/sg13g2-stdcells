@@ -119,18 +119,18 @@ implementation guidance, re-run at this head).
 | item2.analog | `layout/gds/sg13g2_inv_2.gds` | `b7f96fccc399bc987` | content-bearing | as above |
 | item2.analog | `layout/gds/sg13g2_inv_4.gds` | `e6d2fc1fb4b6a0a0f` | content-bearing | as above |
 | item2.analog | `layout/gds/sg13g2_nand2_1.gds` | `9bef3c012a6e531bb` | content-bearing | as above |
-| item9.digital | `verification/test_add8.py` | `095bf6541170ee425` | predicate-bearing | the evidence is behavioral — the declared testbench passes on this tree (the cold start runs it; cocotb fails on a failing test) — not the file's bytes; a formatting edit stales the pin and changes nothing verified |
-| item9.digital | `verification/Makefile` | `c9e504120822d2c10` | predicate-bearing | drives the same behavioral check |
-| item9.digital | `verification/cold_start.sh` | `7bf48dc164e2f6fc6` | predicate-bearing | provisions and runs it |
-| item10 | `.github/workflows/ci.yml` | `77d86e39b749ba4ec` | predicate-bearing | none of the inventory's three checks (`netlists-fresh`, `layouts-fresh`, `flow-evidence-accepts-committed-record`) reads it; the envelope names it via a path-bearing hygiene check (the workflow exists and names the gates) plus the hash |
-| item10 | `README.md` | `13f8c6ec4f089bf5f` | predicate-bearing | hygiene predicate (exists, passes the hygiene gate); the highest-churn pin, stale at three observed hash pairs during this issue's lifetime, `fresh_status: pass` every time |
-| item10 | `LICENSE` | `cfc7749b96f63bd31` | predicate-bearing | recognized-licence predicate; near-frozen in practice, so the churn cost is low — but the pin still over-asserts |
+| item9.digital | `verification/test_add8.py` | `095bf6541170ee425` | content-bearing | the file is the bench. The item's check is a `local_only` cold start of up to 1800 s, which `klt signoff --check` skips and carries the committed outcome for, so under `--check` this hash is the only live binding between the attestation and the testbench (see Scope). A pin that is the only live evidence binding is content-bearing by this section's own definition; a formatting edit staling it is the cost of that binding |
+| item9.digital | `verification/Makefile` | `c9e504120822d2c10` | content-bearing | drives the same bench; same only-live-binding argument as `test_add8.py` |
+| item9.digital | `verification/cold_start.sh` | `7bf48dc164e2f6fc6` | content-bearing | provisions and runs the bench; same only-live-binding argument |
+| item10 | `.github/workflows/ci.yml` | `77d86e39b749ba4ec` | predicate-bearing | none of the inventory's three checks (`netlists-fresh`, `layouts-fresh`, `flow-evidence-accepts-committed-record`) reads it; the envelope names it via a path-bearing hygiene check (the workflow exists and names the gates) plus the hash. Dropping the hash means gutting a gate in this file is no longer caught by the pin, and nothing the inventory runs reads it; accepted here, stated plainly |
+| item10 | `README.md` | `13f8c6ec4f089bf5f` | predicate-bearing | hygiene predicate (exists, passes the hygiene gate; the inventory defines no such gate beyond the file's presence, so this predicate is weaker than its name); the highest-churn pin, stale at three observed hash pairs during this issue's lifetime, `fresh_status: pass` every time |
+| item10 | `LICENSE` | `cfc7749b96f63bd31` | predicate-bearing | recognized-licence predicate (the inventory does not define "recognized"; presence is what upstream's presence-only entry would assert); near-frozen in practice, so the churn cost is low — but the pin still over-asserts |
 
-Count: **8 predicate-bearing, 8 content-bearing** — even, and the
-content-bearing set is exactly the generated artifacts (4 LVS netlists, 4 GDS).
-For item 9 the nuance is honest: a *substantive* testbench edit does change what
-is attested — but that is caught by re-running the check (which is the
-attestation), not by the byte pin; the pin's extra assertion is the formatting.
+Count: **5 predicate-bearing, 11 content-bearing**. The content-bearing set is
+the generated artifacts (4 LVS netlists, 4 GDS) plus the 3 item 9 bench files,
+which are content-bearing because under `--check` their byte hash is the only
+live binding (the cold-start check is `local_only` and skipped). The
+predicate-bearing set is the 2 item 1 inputs and the 3 item 10 hygiene files.
 
 ## Policy
 
@@ -153,9 +153,9 @@ refuses item 1 `sources` and item 9 `testbenches` outright (an
 gap, 2AMLogic/klayout-tools#5831, was closed as a duplicate of #5615, so
 #5615 is the live route and its scoping is upstream's measurement, not a
 position this record can argue away by re-stating its classification. Policy
-(b) is therefore implementable upstream for **3 of the 8 predicate-bearing
+(b) is therefore implementable upstream for **3 of the 5 predicate-bearing
 pins** (`README.md`, `LICENSE`, `.github/workflows/ci.yml`) and refused for
-the 5 item 1 / item 9 pins. The two upstream reasons, which this record
+the 2 item 1 pins (and for item 9, whose pins are content-bearing here). The two upstream reasons, which this record
 adopts rather than rebuts:
 
 - **Item 1 `sources` — the option would silently not work.** The manifest
@@ -170,19 +170,21 @@ adopts rather than rebuts:
   freshness command is **skipped** and its committed outcome carried
   (`_skipped_check`, `--skip-local-only`), so for such a check the source
   hashes are the only live binding, and dropping them would weaken the
-  attestation materially rather than remove a redundancy. The "the evidence
-  is behavioral, not the file's bytes" reading in the table above holds only
-  while the check actually re-runs.
+  attestation materially rather than remove a redundancy. This is why the
+  classification table treats the item 9 files as content-bearing: a
+  "behavioral, not the file's bytes" reading would hold only while the check
+  actually re-runs.
 
-**Stated precisely, then: (b) means the 8 content-bearing paths keep byte
-pins, the 3 item 10 hygiene pins become presence-only once #5615 lands, and
-the 5 item 1 / item 9 predicate pins stay byte-pinned** — for them, (a) below
+**Stated precisely, then: (b) means the 11 content-bearing paths (4 netlists,
+4 GDS, 3 item 9 bench files) keep byte pins, the 3 item 10 hygiene pins become
+presence-only once #5615 lands, and the 2 item 1 predicate pins stay
+byte-pinned** — for them, (a) below
 is not an interim but the standing practice until #5615 is extended upstream
 (an item-1 extension belongs as a follow-up on top of #5615, since it needs
 the `input_binding()` change). Their churn is bounded in practice: item 1's
-inputs move only when the generator or its config change, and item 9's three
-files move rarely — and both move exactly when the evidence genuinely must be
-re-minted.
+inputs move only when the generator or its config change — exactly when the
+evidence genuinely must be re-minted. Item 9's three files are content-bearing
+and keep their pins on the merits, not as a tool-gap hold.
 
 Rejected alternatives, one line each:
 
@@ -213,8 +215,9 @@ Rejected alternatives, one line each:
 endorsement; this record changes no manifest and relaxes nothing. What #112
 changed is that the churn is no longer *silent*: the gate names the stale
 envelope on every PR that touches a pinned path. #5615 ends this interim for
-the 3 item 10 hygiene pins only; for the 5 item 1 / item 9 pins, (a) is the
-standing practice until #5615 is extended upstream (see the policy's scope).
+the 3 item 10 hygiene pins only; for the 2 item 1 pins, (a) is the
+standing practice until #5615 is extended upstream; the 3 item 9 pins stay
+pinned by classification (see the policy's scope).
 
 ## CI consequence of the recommendation
 
@@ -239,7 +242,7 @@ compares recorded hashes to the tree. Under the interim (a):
 Under (b), once #5615 lands upstream and item 10's inventory is re-authored:
 the 3 hygiene pins disappear from the gate's and grader's input, so their
 triggers vanish; only edits to the generated artifacts require a re-mint, and
-those are edits the checks themselves would flag anyway. The 5 item 1 / item 9
+those are edits the checks themselves would flag anyway. The 2 item 1 pins and the 3 item 9
 pins stay byte-pinned (policy scope above), so their triggers remain.
 
 A third consumer of the stamped hash, worth naming because the interim pays it
