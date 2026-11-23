@@ -1,0 +1,14 @@
+{
+  "def": "__ROUTED_DEF__",
+  "hdl_toplevel": "add8",
+  "pdk": {
+    "cell_library": "sg13g2_stdcell",
+    "corners": ["typ_1p20V_25C", "fast_1p32V_m40C", "slow_1p08V_125C"]
+  },
+  "constraints": {
+    "clock_port": "clk",
+    "clock_period_ns": 10.0,
+    "input_delay_ns": 2.0,
+    "output_delay_ns": 2.0
+  }
+}

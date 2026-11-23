@@ -122,7 +122,7 @@ class Geometry(unittest.TestCase):
     def test_cell_width_follows_pitch(self):
         cell = next(c for c in CFG["cells"] if c["name"] == "sg13g2_nand2_1")
         S, W, H = gl.layout_cell(cell, CFG["process"], CFG["layout"])
-        self.assertEqual((W, H), (3 * 420, 3360))
+        self.assertEqual((W, H), (4 * 420, 3360))
 
 
 def cell_named(name):
@@ -133,16 +133,132 @@ def layout_of(cell, cfg=CFG):
     return gl.layout_cell(cell, cfg["process"], cfg["layout"])
 
 
+def off_grid_labels(S, pitch):
+    """Spec row 4's check over one cell's shapes, against row 2's routing grid.
+
+    The grid is `pitch` on both axes with its origin at the cell origin: the
+    rails are centred on y=0 and y=row_height_nm (= 8 * pitch), so the grid's
+    (0, 0) is the cell's. Every `metal1_label` -- the gate pads, the outputs
+    and the VSS/VDD rail labels -- must lie at a multiple of `pitch` on both
+    axes and on a Metal1 shape. Returns [(text, x, y, why)] for the labels
+    that fail, in drawing order."""
+    metal = [b[1:] for b in S.boxes if b[0] == "metal1"]
+    out = []
+    for layer, x, y, text in S.labels:
+        if layer != "metal1_label":
+            continue
+        axes = [a for a, v in (("x", x), ("y", y)) if v % pitch]
+        why = ["off grid on " + " and ".join(axes)] if axes else []
+        if not any(b[0] <= x <= b[2] and b[1] <= y <= b[3] for b in metal):
+            why.append("not on Metal1")
+        if why:
+            out.append((text, x, y, " and ".join(why)))
+    return out
+
+
+class PinOnGrid(unittest.TestCase):
+    """Spec row 4, pin access: every pin on a grid point (issue #221).
+
+    Row 2's routing grid is `gate_pitch_nm` -- the config carries no separate
+    routing-grid key, and row 2's own check reads the widths off the same
+    value -- with its origin at the cell origin: the rails are centred on
+    y=0 and y=row_height_nm = 8 * pitch, so both are grid lines and the cell's
+    (0, 0) is a grid point. The row is **met** (issue #225): the generator
+    puts the diffusion nodes on the grid columns (x = (j + 1) * pitch) and the
+    gates a half pitch between them, so a cell is (columns + 2) pitches wide;
+
+      * a rail label sits on the first node column, on its rail;
+      * an output label is a grid point of the net's final Metal1, on its
+        node column;
+      * an input gate's pad reaches the node column beside it by a vertical
+        Metal1 bar up to a grid y in the channel.
+
+    The label of an *internal* net's gate pad (a multi-stage cell's `X_i`)
+    stays on the pad centre. It is still checked: `off_grid_labels()` tests
+    every `metal1_label` with no exemption, so a shipped multi-stage cell would
+    fail this row for that label."""
+
+    P = CFG["layout"]["gate_pitch_nm"]
+    maxDiff = None
+    OFF_GRID_RECORD = {}  # cell name -> [(label, x, y)] of its off-grid labels: none (#225)
+
+    def offenders(self, cells):
+        """One line per failing label of {cell name: shapes}."""
+        return [f"{name}: {text} at ({x}, {y}) -- {why}"
+                for name, S in cells.items() for text, x, y, why in off_grid_labels(S, self.P)]
+
+    def assert_on_grid(self, cells):
+        self.assertEqual(self.offenders(cells), [],
+                         f"every pin label at a multiple of {self.P} nm from the cell origin, and on Metal1")
+
+    def test_grid_origin_is_the_cell_origin(self):
+        """The rails are centred on y=0 and y=row_height_nm = 8 * pitch: both
+        are grid lines, so the cell origin is a grid point and the top rail
+        lies on the grid."""
+        self.assertEqual(CFG["layout"]["row_height_nm"], 8 * self.P)
+        for cell in CFG["cells"]:
+            S, W, H = layout_of(cell)
+            rails = sorted((b[2] + b[4]) // 2 for b in S.boxes if b[0] == "metal1" and b[1] == 0 and b[3] == W)
+            self.assertEqual(rails, [0, H], cell["name"])
+
+    def test_every_pin_label_is_on_the_routing_grid(self):
+        """Row 4's assertion over every config cell (ROADMAP's row-4 sentence
+        cites this test)."""
+        self.assert_on_grid({c["name"]: layout_of(c)[0] for c in CFG["cells"]})
+
+    def test_row4_off_grid_record(self):
+        """The measurement ROADMAP quotes, pinned so it is CI-checked: no
+        shipped cell has an off-grid label. A failure here means the
+        generator's pin placement moved: re-measure, then update the record
+        and ROADMAP's row-4 sentence together."""
+        found = {c["name"]: off_grid_labels(layout_of(c)[0], self.P) for c in CFG["cells"]}
+        self.assertEqual({n: [o[:3] for o in off] for n, off in found.items() if off}, self.OFF_GRID_RECORD)
+        self.assertTrue(all(o[3].startswith("off grid") for off in found.values() for o in off),
+                        "a label is not on Metal1")
+
+    def rail_only(self):
+        """inv_1 with only its two rail labels, the committed cells' only
+        on-grid ones: a control's clean baseline (the boxes are shared read-only)."""
+        S = copy.copy(layout_of(cell_named("sg13g2_inv_1"))[0])
+        S.labels = [l for l in S.labels if l[3] in (CFG["process"]["vss_net"], CFG["process"]["vdd_net"])]
+        return S
+
+    def test_control_baseline_passes(self):
+        self.assert_on_grid({"sg13g2_inv_1": self.rail_only()})
+
+    def test_control_one_label_moved_off_the_grid_fails_naming_it(self):
+        """One DBU (the GDS unit, 1 nm) on either axis, or the half pitch the
+        generator's own labels carry: the check fails on exactly that label."""
+        for dx, dy, axes in ((1, 0, "x"), (0, 1, "y"), (self.P // 2, 0, "x")):
+            S = self.rail_only()
+            layer, x, y, text = S.labels[-1]
+            S.labels[-1] = (layer, x + dx, y + dy, text)
+            cells = {"sg13g2_inv_1": S}
+            self.assertEqual(self.offenders(cells),
+                             [f"sg13g2_inv_1: {text} at ({x + dx}, {y + dy}) -- off grid on {axes}"])
+            with self.assertRaises(AssertionError):
+                self.assert_on_grid(cells)
+
+    def test_control_label_on_the_grid_but_off_metal_fails_naming_it(self):
+        S = self.rail_only()
+        layer, x, y, text = S.labels[-1]
+        S.labels[-1] = (layer, x, y + self.P, text)
+        cells = {"sg13g2_inv_1": S}
+        self.assertEqual(self.offenders(cells), [f"sg13g2_inv_1: {text} at ({x}, {y + self.P}) -- not on Metal1"])
+        with self.assertRaises(AssertionError):
+            self.assert_on_grid(cells)
+
+
 class MultiFinger(unittest.TestCase):
     def test_two_finger_inverter_places(self):
         S, W, H = layout_of(cell_named("sg13g2_inv_2"))
-        self.assertEqual((W, H), (3 * 420, 3360))
+        self.assertEqual((W, H), (4 * 420, 3360))
         cols = [b for b in S.boxes if b[0] == "gatpoly" and b[4] - b[2] > 1000]  # full-height stripes
-        self.assertEqual(sorted((b[1] + b[3]) // 2 for b in cols), [420, 840])
+        self.assertEqual(sorted((b[1] + b[3]) // 2 for b in cols), [630, 1050])
 
     def test_width_grows_with_finger_count(self):
         w = {n: layout_of(cell_named(n))[1] for n in ("sg13g2_inv_1", "sg13g2_inv_2", "sg13g2_inv_4")}
-        self.assertEqual(w, {"sg13g2_inv_1": 2 * 420, "sg13g2_inv_2": 3 * 420, "sg13g2_inv_4": 5 * 420})
+        self.assertEqual(w, {"sg13g2_inv_1": 3 * 420, "sg13g2_inv_2": 4 * 420, "sg13g2_inv_4": 6 * 420})
 
     def test_fingers_share_a_gate_bridge_and_one_pad(self):
         S, _, _ = layout_of(cell_named("sg13g2_inv_4"))
@@ -248,7 +364,7 @@ class Taps(unittest.TestCase):
             S, W, H, sub, well = self.bands(cell["name"])
             for band, ry in ((sub, 0), (well, H)):
                 conts = [b for b in S.boxes if b[0] == "cont" and band[2] <= b[2] and b[4] <= band[4]]
-                self.assertEqual(len(conts), W // CFG["layout"]["gate_pitch_nm"], cell["name"])
+                self.assertEqual(len(conts), W // CFG["layout"]["gate_pitch_nm"] - 1, cell["name"])  # one per node column
                 for c in conts:  # enclosed by the band diffusion
                     self.assertGreaterEqual(c[2] - band[2], R["activ_enc_cont_nm"], cell["name"])
                     self.assertGreaterEqual(band[4] - c[4], R["activ_enc_cont_nm"], cell["name"])
@@ -331,7 +447,7 @@ class Taps(unittest.TestCase):
             nw = next(b for b in S.boxes if b[0] == "nwell")
             self.assertEqual(nw[4], well[4] + R["nwell_enc_nactiv_nm"], name)
             self.assertEqual(len([b for b in S.boxes if b[0] == "cont" and sub[2] <= b[2] <= sub[4]]),
-                             W // lay["gate_pitch_nm"], name)
+                             W // lay["gate_pitch_nm"] - 1, name)
 
 
 class MixedFingerWidths(unittest.TestCase):
@@ -366,7 +482,7 @@ class MixedFingerWidths(unittest.TestCase):
     def test_mixed_width_strip_places(self):
         cfg = self.mixed_cfg()
         S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
-        self.assertEqual((W, H), (4 * 840, 4200))
+        self.assertEqual((W, H), (5 * 840, 4200))
 
     def test_activ_really_steps(self):
         cfg = self.mixed_cfg()
@@ -499,7 +615,8 @@ class DiffusionBreaks(unittest.TestCase):
     def test_forced_break_places_and_parts_the_strip(self):
         self.force_break("p", 1)
         S, W, H = self.forced()
-        self.assertEqual((W, H), (3 * 420 + 970, 3360))  # (N+1)*pitch + one 970 nm gap
+        # (N+2)*pitch + one gap: the 970 nm rule need rounded up to 3 pitches
+        self.assertEqual((W, H), (4 * 420 + 1260, 3360))
         lay = CFG["layout"]
         pruns = self.strip_runs_at(S, "activ", lay["row_height_nm"] - lay["p_diff_top_margin_nm"], 3)
         self.assertEqual(len(pruns), 2, "the PMOS strip must part at its break")
@@ -514,7 +631,20 @@ class DiffusionBreaks(unittest.TestCase):
         psd = self.strip_runs_at(S, "psd", lay["row_height_nm"] - lay["p_diff_top_margin_nm"] + R["sd_enc_activ_nm"], 3)
         self.assertEqual(len(psd), 2)
         self.assertGreaterEqual(psd[1][1] - psd[0][3], R["psd_space_nm"])
-        self.assertEqual(pruns[1][1] - pruns[0][3] + 2 * act_hang, 970)  # the rule need, exactly
+        gap = pruns[1][1] - pruns[0][3] + 2 * act_hang  # the break width between node centres
+        self.assertGreaterEqual(gap, 970)  # the rule need (psd binds) ...
+        self.assertEqual(gap, 1260)  # ... rounded up to whole gate pitches (node columns stay on the grid)
+        self.assertEqual(gap % CFG["layout"]["gate_pitch_nm"], 0)
+
+    def test_break_cell_pins_stay_on_the_row4_grid(self):
+        """The gap is a whole number of gate pitches, so node columns after a
+        break are still routing-grid columns (issue #225 phase) and spec row 4's
+        `off_grid_labels` is empty for a break cell, for a PMOS-strip break."""
+        P = CFG["layout"]["gate_pitch_nm"]
+        self.force_break("p", 1)
+        S, W, _ = self.forced()
+        self.assertEqual(off_grid_labels(S, P), [])
+        self.assertEqual(W % P, 0)
 
     def test_continuing_strip_bridges_the_break(self):
         """The NMOS chain runs through the PMOS break: one activ run spans
@@ -537,18 +667,20 @@ class DiffusionBreaks(unittest.TestCase):
         self.assertEqual(len(nwell), 2)
         for a, b in zip(nwell, nwell[1:]):
             self.assertLessEqual(b[1], a[3], "the n-well boxes must overlap across the break")
-        self.assertLessEqual(nwell[0][1], 210 - (CFG["layout"]["rules"]["cont_nm"] // 2
+        self.assertLessEqual(nwell[0][1], 420 - (CFG["layout"]["rules"]["cont_nm"] // 2
                                                  + CFG["layout"]["rules"]["activ_enc_cont_nm"]
                                                  + CFG["layout"]["rules"]["nwell_enc_pactiv_nm"]))
         self.assertGreater(nwell[-1][3], W)
 
     def test_break_width_comes_from_the_rules(self):
         cfg = copy.deepcopy(CFG)
-        cfg["layout"]["rules"]["psd_space_nm"] += 100  # the binding rule grows the gap
+        # The binding rule grows the gap: need 970 -> 1370, so the gap goes from
+        # 3 to 4 pitches. (+100 would stay inside the 1260 nm quantum.)
+        cfg["layout"]["rules"]["psd_space_nm"] += 400
         self.force_break("p", 1)
         a = self.forced()[1]
         b = self.forced(cfg)[1]
-        self.assertEqual(b - a, 100)
+        self.assertEqual(b - a, CFG["layout"]["gate_pitch_nm"])
 
     def test_break_output_is_byte_deterministic(self):
         def gen():
@@ -862,7 +994,7 @@ class ForcedNotch(unittest.TestCase):
         cfg = self.forced_cfg(pitch=840)
         self.force("n", [1000, 500, 1000])
         S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
-        self.assertEqual(W, 4 * 840)
+        self.assertEqual(W, 5 * 840)
         runs = [b for b in S.boxes if b[0] == "activ" and b[2] == cfg["layout"]["n_diff_y0_nm"]]
         self.assertEqual(sorted(b[4] - b[2] for b in runs), [500, 1000, 1000])  # the notch is really drawn
 
@@ -878,7 +1010,7 @@ class ForcedNotch(unittest.TestCase):
         cell = next(c for c in cfg["cells"] if c["name"] == "sg13g2_inv_4")
         self.force("p", [800, 500, 800, 800])
         S, W, H = gl.layout_cell(cell, cfg["process"], cfg["layout"])
-        self.assertEqual(W, 5 * 600)  # (N + 1) * pitch for N = 4 columns
+        self.assertEqual(W, 6 * 600)  # (N + 2) * pitch for N = 4 columns
         p_y1 = cfg["layout"]["row_height_nm"] - cfg["layout"]["p_diff_top_margin_nm"]
         R = cfg["layout"]["rules"]
         hang = R["cont_nm"] // 2 + R["activ_enc_cont_nm"]
@@ -929,7 +1061,7 @@ class FakeProcess(unittest.TestCase):
         layers = {(l, d) for data in fake.values() for l, d, _, _ in read_gds_boxes(data)}
         self.assertTrue(all(l >= 50 and d == 3 for l, d in layers))
         S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], lay)
-        self.assertEqual((W, H), (2 * 600, 4800))
+        self.assertEqual((W, H), (3 * 600, 4800))
 
 
 if __name__ == "__main__":

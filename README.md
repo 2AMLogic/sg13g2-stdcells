@@ -195,7 +195,9 @@ call it too, so there is no second copy to drift. To reproduce CI locally, run
 Which flow record CI gates on is the `FLOW_RECORD` line of that script.
 
 T1 item 10 inventory: README present (this file), license present
-([LICENSE](LICENSE)), CI present (`.github/workflows/ci.yml`).
+([LICENSE](LICENSE)), CI present (`.github/workflows/ci.yml`), and the CI entry script that
+holds the item 10 audit checks (`check-ci.sh`, content-pinned so editing it
+requires re-minting the item 10 envelope).
 
 ## Reproducing the characterization
 
@@ -236,7 +238,7 @@ Then, from this repo's root (one corner per invocation; FF/SS go through
 `--backend batch`, never a local loop):
 
 ```
-python3 -m sim.characterize --library --pdk-dir <IHP-Open-PDK>/ihp-sg13g2
+python3 -m sim.characterize --pdk-dir <IHP-Open-PDK>/ihp-sg13g2
 ```
 
 This rewrites the view and its sidecar and appends a new record — records

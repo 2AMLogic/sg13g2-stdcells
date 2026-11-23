@@ -439,7 +439,9 @@ def layout_cell(cell, proc, lay):
     # across it, with the hang each layer reaches past its node columns. The
     # n-well needs no width from its own rule: the drawing bridges the gap with
     # it (one well, one tap), instead of parting it into wells that would each
-    # need a tie. Rounded up to even so node centres stay on the half pitch.
+    # need a tie. Rounded up to a whole number of gate pitches: node columns are
+    # the routing grid (issue #225), so every column after a break must stay on
+    # it -- a break cell's post-break pins would otherwise leave the row-4 grid.
     def brk_cols(brk, order, devs_):
         out, j = set(), 0
         for k, (i, _, _) in enumerate(order):
@@ -453,11 +455,14 @@ def layout_cell(cell, proc, lay):
     uset = set(ubrk)
     brk_w = max(R["activ_space_nm"] + 2 * act_hang,
                 R["psd_space_nm"] + 2 * (act_hang + sd))
-    brk_w += brk_w % 2
-    bx = [P // 2]  # left position of column boundary j, gap inserted after a break
+    brk_w = -(-brk_w // P) * P
+    # Phase (issue #225): diffusion nodes sit on the routing grid (x = (j + 1) * P,
+    # plus one gap per break to the left) and the gates a half pitch between them,
+    # so every Metal1 stub on a node, and the rail taps, is on a grid column.
+    bx = [P]  # x of node column boundary j; a gap is inserted after a break
     for j in range(N):
         bx.append(bx[j] + P + (brk_w if j in uset else 0))
-    W = bx[N] + P // 2
+    W = bx[N] + P
     rail = R["rail_width_nm"]
     vdd, vss = proc["vdd_net"], proc["vss_net"]
     gate_x = [bx[c] + (brk_w if c in uset else 0) + P // 2 for c in range(N)]
@@ -737,12 +742,18 @@ def layout_cell(cell, proc, lay):
     # gate's Metal1 is a riser from its net's track up to the pad plus the track
     # grown out to meet it, so the pad is a terminal of its net's route
     # (issue #201); an input gate keeps the standalone pad.
-    for pos, g in enumerate(gates):
+    ch_lo, ch_hi = n_y1, p_y0
+    grid_ys = sorted((y for y in range((ch_lo // P + 1) * P, ch_hi, P)),
+                     key=lambda y: abs(y - (gate_pad_y + half_c)))
+    # Driven gates first: their riser has the least freedom, and an input pad's
+    # bar must not take the column it needs.
+    for pos, g in sorted(enumerate(gates), key=lambda t: (t[1] not in driven, t[0])):
         mine = dev_cols[pos]
         placed = None
         for j in mine:
             for sgn in (-1, 1):
                 cx = gate_x[j] + sgn * (R["poly_enc_cont_nm"] + half_c)
+                gx_node = gate_x[j] + sgn * (P // 2)  # the node column beside the pad: on the grid
                 others = [r for n2, r in m1 if n2 != g]
                 if cx - half_c - R["poly_enc_cont_nm"] < 0 or cx + half_c + R["poly_enc_cont_nm"] > W:
                     continue
@@ -756,18 +767,41 @@ def layout_cell(cell, proc, lay):
                                for k in range(N) if k != j] + poly_pads
                 if any(_overlap_or_close(ppad, r, R["poly_space_nm"]) for r in others_poly):
                     continue
+                pad_rect = (cx - mw // 2, gate_pad_y, cx + mw // 2, gate_pad_y + R["cont_nm"])
+                # An input pin's label sits on a grid point (node column x, a grid
+                # y in the channel) that the pad's Metal1 reaches by a vertical
+                # bar on the node column, just long enough. A driven gate's
+                # riser runs from its net's track up to the pad, so the pad
+                # stays a terminal of the net's route (issue #201).
                 if g in driven:
-                    # The riser contains the pad rectangle, so its clearance
-                    # check covers the pad's; the track reaches out to cx so the
-                    # riser overlaps it and the two are one conductor.
+                    # An internal net's gate label is not a pin: its riser stays
+                    # on the pad's own column and the label on the pad centre.
+                    # pad_rect is kept alongside the riser on purpose: when the
+                    # track lands above the pad (ty0 > gate_pad_y) the riser box
+                    # is y-inverted and does not cover it; otherwise the riser
+                    # contains pad_rect exactly and the box is a harmless duplicate.
                     ty0, ty1 = tracks[g]
                     xs = [(r[0] + r[2]) // 2 for r, _ in net_m1[g]]
-                    pieces = [(cx - mw // 2, ty0, cx + mw // 2, gate_pad_y + R["cont_nm"]),
-                              (min(xs + [cx]) - mw // 2, ty0, max(xs + [cx]) + mw // 2, ty1)]
+                    cands = [(None, [pad_rect,
+                                     (cx - mw // 2, ty0, cx + mw // 2, gate_pad_y + R["cont_nm"]),
+                                     (min(xs + [cx]) - mw // 2, ty0, max(xs + [cx]) + mw // 2, ty1)])]
                 else:
-                    pieces = [(cx - mw // 2, gate_pad_y, cx + mw // 2, gate_pad_y + R["cont_nm"])]
-                if all(not _overlap_or_close(piece, r, R["m1_space_nm"]) for piece in pieces for r in others):
-                    placed = (j, cx, pieces, ppad)
+                    # The bar overshoots the grid y by `e`, as much as the
+                    # neighbouring Metal1 allows (down to the grid y itself).
+                    bridge = (min(cx, gx_node) - mw // 2, gate_pad_y, max(cx, gx_node) + mw // 2, gate_pad_y + R["cont_nm"])
+                    cands = [(gy, [bridge,
+                                   (gx_node - mw // 2, min(gate_pad_y, gy - e),
+                                    gx_node + mw // 2, max(gate_pad_y + R["cont_nm"], gy + e))])
+                             for gy in grid_ys for e in range(mw // 2, -1, -grid)]
+                    # Crowded channel (a cell outside the shipped set): the
+                    # compact pad, labelled at its centre and so off the grid.
+                    # The row-4 test names any shipped cell that lands here.
+                    cands.append((None, [pad_rect]))
+                for gy, pieces in cands:
+                    if all(not _overlap_or_close(piece, r, R["m1_space_nm"]) for piece in pieces for r in others):
+                        placed = (j, cx, pieces, ppad, gx_node, gy)
+                        break
+                if placed:
                     break
             if placed:
                 break
@@ -775,15 +809,17 @@ def layout_cell(cell, proc, lay):
             if g in driven:
                 raise PlaceError(f"no Metal1-clean riser from the track of internal net {g} up to its gate pad "
                                  "(neighbouring stubs/tracks in the way)")
-            raise PlaceError(f"no Metal1-clean spot for the gate contact of {g} (neighbouring stubs/tracks in the way)")
-        j, cx, pieces, ppad = placed
+            raise PlaceError(f"no Metal1-clean spot for the gate contact of {g} on a grid point (neighbouring stubs/tracks in the way)")
+        j, cx, pieces, ppad, lx, ly = placed
+        if ly is None:
+            lx, ly = cx, gate_pad_y + half_c
         poly_pads.append(ppad)
         S.box("gatpoly", *ppad)
         S.box("cont", cx - half_c, gate_pad_y, cx + half_c, gate_pad_y + R["cont_nm"])
         for piece in pieces:
             S.box("metal1", *piece)
             m1.append((g, piece))
-        S.labels.append(("metal1_label", cx, gate_pad_y + half_c, g))
+        S.labels.append(("metal1_label", lx, ly, g))
 
     # Rails and output/rail labels.
     S.box("metal1", 0, -rail // 2, W, rail // 2)
@@ -799,13 +835,21 @@ def layout_cell(cell, proc, lay):
                 raise PlaceError(f"{net} tap Metal1 is not {R['m1_space_nm']} nm clear of {n2}")
         S.box("metal1", *patch)
         m1.append((net, patch))
-    S.labels.append(("metal1_label", W // 2, 0, vss))
-    S.labels.append(("metal1_label", W // 2, H, vdd))
+    S.labels.append(("metal1_label", bx[0], 0, vss))
+    S.labels.append(("metal1_label", bx[0], H, vdd))
     for pin in sorted(cell["outputs"]):
         if pin not in net_m1:
             raise PlaceError(f"output {pin} has no diffusion node")
-        rect = net_m1[pin][0][0]
-        S.labels.append(("metal1_label", (rect[0] + rect[2]) // 2, (rect[1] + rect[3]) // 2, pin))
+        # A grid point of the output's final Metal1 (stubs grown to the track
+        # included): its node column is on the grid in x, so only y needs one.
+        pts = [(x, y, min(x - r[0], r[2] - x, y - r[1], r[3] - y))
+               for n2, r in m1 if n2 == pin
+               for x in range(-(-r[0] // P) * P, r[2] + 1, P) for y in range(-(-r[1] // P) * P, r[3] + 1, P)
+               if r[0] <= x <= r[2] and r[1] <= y <= r[3]]
+        if not pts:
+            raise PlaceError(f"output {pin} has no grid point on its Metal1")
+        x, y, _ = max(pts, key=lambda t: (t[2], -t[1], -t[0]))
+        S.labels.append(("metal1_label", x, y, pin))
     for net_a, ra in m1:
         for net_b, rb in m1:
             if net_a != net_b and (ra[0] < rb[2] and rb[0] < ra[2] and ra[1] < rb[3] and rb[1] < ra[3]):

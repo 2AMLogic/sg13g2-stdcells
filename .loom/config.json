@@ -109,5 +109,11 @@
       },
       "theme": "midnight"
     }
-  ]
+  ],
+  "merge": {
+    "treeChecks": [
+      "python3 manifests/check_attestations.py",
+      "python3 manifests/check_attestations.py --manifest manifests/sg13g2-stdcells.json"
+    ]
+  }
 }

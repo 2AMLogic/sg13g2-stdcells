@@ -145,6 +145,21 @@
       "matched": 5
     }
   },
+  "pin_set_difference": {
+    "deck_synthesized_layout_pins": [],
+    "layout_only_pins": [],
+    "layout_only_pins_count": 0,
+    "layout_only_pins_truncated": false,
+    "reference_only_pins": [],
+    "reference_only_pins_count": 0,
+    "reference_only_pins_truncated": false
+  },
+  "ignored_layers": [],
+  "warnings": [],
+  "sg13g2_passive_pairing": {
+    "status": "all_devices_paired",
+    "findings": []
+  },
   "device_classes": [
     "nfet",
     "pfet",
@@ -154,29 +169,30 @@
     "cap_cmomf",
     "resistor",
     "dantenna",
-    "dpantenna"
+    "dpantenna",
+    "inductor"
   ],
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
     "netgen_binary": null,
-    "layout_sha256": "46f490b8ec53b9e38575a1e7f0a906b7528a47708c22896f495a37e7eaf462ba",
+    "layout_sha256": "6601c09b703b779175953db52993704d6c3a19f8ab56e8391bfb9c73644298b8",
     "reference_sha256": "1fc9770ab7c6d2a87ba9e0026f630a789f736b1e4cc4a17dbfd79755692ada59",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.9.3.dev3062+g1933ce4aa752",
-    "klt_git_commit": "1933ce4aa752f4161f93591e56335fe9b36fef11",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1933ce4aa752f4161f93591e56335fe9b36fef11",
+    "klt_version": "0.9.3.dev4263+g473bcdb00d05",
+    "klt_git_commit": "473bcdb00d05aaa072e11bf287c1b09228ceb476",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@473bcdb00d05aaa072e11bf287c1b09228ceb476",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:eaaf298957eeced674e4030635c66ba6bdee98adde15fe36203ba047fd7b0669",
+      "content_hash": "sha256:e5459fe971c6c008d99bd59da48f6dc87cdb6d601ce7aabcc755fa134c19da20",
       "released": false
     },
     "input": {
-      "content_hash": "sha256:46f490b8ec53b9e38575a1e7f0a906b7528a47708c22896f495a37e7eaf462ba",
+      "content_hash": "sha256:6601c09b703b779175953db52993704d6c3a19f8ab56e8391bfb9c73644298b8",
       "role": "layout"
     },
     "klayout_version_mismatch": false
