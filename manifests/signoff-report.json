@@ -9,9 +9,10 @@
   "tier": null,
   "t1_item_count": 22,
   "build_t1_item_count": 22,
-  "t1_met_count": 13,
+  "t1_met_count": 14,
+  "t1_not_applicable_count": 1,
   "unmet_reason_counts": {
-    "no_evidence": 8,
+    "no_evidence": 6,
     "supply_spec_incomplete": 1
   },
   "source_doc": "docs/design-evidence-tiers.md",
@@ -602,10 +603,86 @@
         "**Add the missing statistical row(s)** to the block's spec through a decision record the operator ratifies, then supply Monte Carlo evidence (`klt yield`) for them. Where the PDK has no mismatch models, assumed mismatch is acceptable, labelled as such in the evidence.",
         "**Declare item 6 a gap** for the analog partition. The digital partition of the same block may still use `not_applicable`. **Declared gaps keep blocking T1** (issue #5858, operator ruling 2026-11-17): a settled, hash-justified gap does *not* satisfy the roll-up, on any item or partition. `_T1_SATISFIED_STATUSES` is not widened and ruling #4183 above is untouched, so `tier: \"T1\"` still means every *applicable* row is evidenced. A gap is not a permanent state: a row that cannot be evidenced today is a statement about today's tools and inputs, and a request to build what is missing, either a klayout-tools feature or a new EDA project. A declared gap therefore names the open issue that would close it, and a gap with no such link is a signoff finding. A row that is unevidenceable for a reason no tool could ever fix is a different case, closer to `not_applicable`, and goes back to the operator rather than being declared a gap. The hash-justified declaration and the separate count and listing of declared gaps belong to #5599. **Several statistical rows, only some evidenced** (issue #2908): item 6 is a claim about *every* statistical row, so a manifest may declare the row set under `spec_rows.\"6\"` and cite one `klt yield` report per row set (`rows` on each citation). Item 6 grades `met` only when every declared row is covered by a passing citation against a ratified target. A row with no citation (`uncovered_rows`), a row declared a `gap` (`declared_gaps` \u2014 pending work that a named issue should close, never a permanent pass; issue #5599 adds a justified form carrying a hash-bound rationale artifact and the issue that would close the gap, and an operator ruling on #5858, 2026-11-17 settled that a gap keeps blocking T1), or a row declared `ratified: false` (`unratified_rows`, evidence against a proposed limit is provisional) grades `unmet` / `partial_coverage`, never `met`. Without a declaration the item grades as before; a `not_applicable` entry contradicts a declared row set and is `invalid_evidence`."
       ],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "not_applicable",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": null,
+      "not_applicable": {
+        "spec": {
+          "file": "spec/0001-target-specification.md",
+          "content_hash": "sha256:ba6ab55b1ad6c96ae911c49c33101b32fd57e04031874b1e620036b5c0813ea3",
+          "status": "ratified",
+          "row_count": 12,
+          "format": "markdown-table",
+          "id_column": "#"
+        },
+        "statement": {
+          "file": "manifests/item6-na-statement.json",
+          "content_hash": "sha256:5fe58d59cd80677e5788eb2cc9d132ebfcdc465a449f515f5ad4a05d9848c280",
+          "rows": [
+            {
+              "id": "1",
+              "class": "geometry",
+              "reason": "The row height is a fixed layout dimension of 3.36 um (8 tracks)."
+            },
+            {
+              "id": "2",
+              "class": "geometry",
+              "reason": "The routing grid specifies a fixed pitch of 0.42 um on each axis."
+            },
+            {
+              "id": "3",
+              "class": "geometry",
+              "reason": "Layer inspection determines whether all intra-cell routing uses Metal1."
+            },
+            {
+              "id": "4",
+              "class": "geometry",
+              "reason": "Each pin location is checked against the specified routing grid."
+            },
+            {
+              "id": "5",
+              "class": "cell count",
+              "reason": "Counting the combinational cells in the library determines whether it reaches the target or stretch count."
+            },
+            {
+              "id": "6",
+              "class": "cell count",
+              "reason": "The target excludes sequential cells and the stretch specifies a count of eight."
+            },
+            {
+              "id": "7",
+              "class": "physical verification",
+              "reason": "The DRC verdict depends on whether the SG13G2 deck reports a violation on the given layout."
+            },
+            {
+              "id": "8",
+              "class": "physical verification",
+              "reason": "LVS compares the extracted layout netlist with the schematic and returns a match verdict."
+            },
+            {
+              "id": "9",
+              "class": "corner coverage",
+              "reason": "The Liberty views are required at named process, voltage and temperature points, with TT at target and FF and SS added at stretch."
+            },
+            {
+              "id": "10",
+              "class": "benchmark ratio",
+              "reason": "The area bound compares post-synthesis cell area for add8 mapped with each library under the same flow and constraints."
+            },
+            {
+              "id": "11",
+              "class": "benchmark ratio",
+              "reason": "The energy bound compares total post-synthesis energy over one fixed seeded vector set at TT, using the same clock period and power tool for both libraries."
+            },
+            {
+              "id": "12",
+              "class": "benchmark ratio",
+              "reason": "The period bound compares worst input-to-output path delays at each specified corner using the same virtual clock and I/O constraints for both post-synthesis netlists."
+            }
+          ]
+        }
+      }
     },
     {
       "tier": "T1",
@@ -653,14 +730,15 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:1910e308982aec47919dc6ba9d323533e1486ab4f1bfdc24e8a51d400ce61dea",
+        "content_hash": "sha256:191c3c82a8bb01e2491602b530ac0b2b9f62a13f7ccef7027ff3a1cd47b0aecb",
         "input_verified": true,
         "exit_status": 0,
         "attestation": {
           "tool_produced": true,
           "producer": "klt signoff --attest",
-          "check_count": 6,
-          "passed_count": 6
+          "check_count": 5,
+          "passed_count": 5,
+          "description": "Analog partition characterization report: the append-only klt characterize record behind the committed TT/1.20 V/25 C Liberty view, cited for spec row 9 (Liberty corners). The spec-row citation names the item 9 analog bench envelope (manifests/envelopes/item9.analog.attest.json, a generic evidence envelope klt recognizes) rather than the raw view and sidecar files: klayout-tools #7040 -- klt's citation recognition (#5688) accepts recognized envelopes only, and a Liberty view, a provenance sidecar and a markdown record are none, while the freshness command is where the artifacts' content is actually verified. The chain is still fully pinned: the cited envelope byte-pins the bench that measured the view (request builder, runner, freshness checker, harness modules, netlist generator, config) and carries the PDK revision pin, the report below pins the record's own bytes, and the envelope_checks command (python3 -m sim.characterize.check_library) re-derives what the view's provenance sidecar claims -- the library name and cell set the view declares, the corner it declares (the operating_conditions group name plus voltage and temperature, via the nom_* attributes and the group; the sidecar's process-corner entry is a name like mos_tt, not comparable with the view's numeric process factor, so process is not pinned), the SHA-256 of the config it was characterized from, the record it names, and the IHP-Open-PDK revision both the sidecar and the record pin -- so a config edit or a tampered view that changes any of those fails the attestation instead of being reported as current. The view's delay tables themselves are not pinned by the sidecar: it records no hash of the .lib (a klt characterize gap, filed upstream on the klayout-tools tracker). The check is deliberately not weakened to pass."
         }
       }
     },
@@ -685,10 +763,36 @@
       "partition_boundary": "transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS",
       "text": "every claimed measurement's testbench committed, with a documented cold-start invocation a third party can run; pinned PDK revision.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/envelopes/item9.analog.attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:6eeb0589342109571879d90bbc9863051c47993d5066160a3ffcf07615668333",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 9,
+          "path": {
+            "path": "manifests/inventories/item9.analog.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:6eeb0589342109571879d90bbc9863051c47993d5066160a3ffcf07615668333",
+          "input_verified": true,
+          "summary": "T1 item 9 (Testbenches shipped): 26/26 attestation checks passed (klt signoff --attest)",
+          "source": "manifests/inventories/item9.analog.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 26,
+            "passed_count": 26,
+            "description": "Analog partition testbenches: the characterization bench behind the committed TT/1.20V/25C Liberty view -- the pure klt characterize request builder, the runner that drives klt and appends the append-only evidence record (capturing the IHP-Open-PDK revision of the --pdk-dir checkout before anything is written), the freshness checker that re-derives the committed view's provenance claims, the harness modules they import, the netlist generator and the config every measurement is made from. The attested cold start (sh sim/characterize/cold_start.sh) is honestly lighter than the bench: it runs the request-construction tests (python3 -m unittest sim.characterize.tests.test_request) and the freshness checker (python3 -m sim.characterize.check_library) -- both tool-free, stdlib Python only, and the checker fails on any stale or tampered committed artifact (config bytes, record, PDK pin, provenance stamps). It does NOT re-run the characterization itself: that needs klt, ngspice and an IHP-Open-PDK git checkout at the pinned commit, and is recorded in documented_argv below and spelled out, PDK checkout included, in README.md 'Reproducing the characterization'. Later benches (klt sim, klt pex -- issues #180/#181) extend this inventory instead of adding a second one."
+          }
+        }
+      }
     },
     {
       "tier": "T1",
@@ -761,7 +865,8 @@
             "producer": "klt signoff --attest",
             "inventory_schema_version": 1,
             "check_count": 6,
-            "passed_count": 6
+            "passed_count": 6,
+            "description": "Repo hygiene: the three repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
           }
         }
       }
@@ -799,7 +904,8 @@
             "producer": "klt signoff --attest",
             "inventory_schema_version": 1,
             "check_count": 6,
-            "passed_count": 6
+            "passed_count": 6,
+            "description": "Repo hygiene: the three repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
           }
         }
       }

@@ -34,6 +34,16 @@ this package writes the `.lib.provenance` sidecar beside it (see
 python3 -m sim.characterize --library --pdk-dir <ihp-sg13g2 dir>
 ```
 
+`--pdk-dir` must be a **clean IHP-Open-PDK git checkout** (the `ihp-sg13g2`
+variant directory of a clone, or the clone root). The runner captures its
+commit (`pdk_provenance`) before klt runs or anything is written, refuses the
+run when the revision cannot be recorded honestly — not a git checkout, no
+commit, an origin that is not IHP-Open-PDK, or a dirty checkout — and records
+the one snapshot in the record's `**PDK**` header line and the sidecar's
+`pdk` object. How to check the PDK out at the pinned commit (and build the
+OSDI models the request preloads) is documented in the root README,
+"Reproducing the characterization".
+
 One corner per invocation (`--corner tt|ff|ss`, TT/1.20 V/25 C by default).
 FF/SS are one invocation per corner with `--backend batch`, never a local loop.
 The default view path is corner-named — derived from the corner's PVT pairing
@@ -42,9 +52,11 @@ at FF; negative temperatures spell `m` for minus) — so a non-default corner
 never needs an explicit `--lib` to keep the committed TT view safe; pass
 `--lib` only to write somewhere other than the default per-corner path.
 
-**Status**: six records (one baseline leg; the library view was characterized
-five times — four refreshes); the library-view record is the one the committed
-view cites.
+**Status**: seven records (one baseline leg; the library view was characterized
+six times — five refreshes); the library-view record is the one the committed
+view cites. `cold_start.sh` is the tool-free T1 item 9 cold start
+(request-construction tests plus the freshness checker; see the root README's
+"Reproducing the characterization" for the full re-measurement invocation).
 
 - **Baseline leg** (first real record):
   `sim/characterize/records/20261105-042154-1376b8f.md` — `sg13g2_inv_1` from
@@ -80,13 +92,22 @@ view cites.
   version in the artifact itself (`simulator ngspice-47` in the record's
   Notes line, a `simulator` field in the sidecar), so this list's klt/ngspice
   prose is a summary, not the only source of the toolchain.
-- **Library view, current**:
+- **Library view, superseded**:
   `sim/characterize/records/20261115-220740-13dc481.md` — same four cells,
   corner and grid, local backend, klt 0.9.3.dev16+gdcf18e2e0c03, ngspice-47.
   Re-characterized on the merged tree (`13dc481`) when the #125 merge moved
   the `.lib`'s measured table bytes and the sidecar/record format carries the
-  simulator version. This is the record id cited by
-  `views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`.
+  simulator version. Superseded (kept, append-only) by the #178
+  re-characterization against a pinned IHP-Open-PDK git checkout; its
+  measured tables are byte-identical in the committed `.lib`.
+- **Library view, current**:
+  `sim/characterize/records/20261121-045231-9214168.md` — same four cells,
+  corner and grid, local backend, klt 0.9.3.dev2575+g6bd18bbc8637, ngspice-47,
+  characterized against IHP-Open-PDK commit
+  `5cccb161f7492697cfa52eb14dc03beb00bdca9e` (release v0.3.0) — the first
+  record whose PDK revision is pinned in the artifact itself (the `**PDK**`
+  header line here, the `pdk` object in the sidecar), per #178. This is the
+  record id cited by `views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`.
 
 The local run needs ngspice >= 44 for the OSDI v0.4 PSP103 models. The request
 preloads `psp103.osdi` (the module the PDK's `psp103va` model cards bind to),

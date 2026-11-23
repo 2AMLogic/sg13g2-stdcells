@@ -390,13 +390,13 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:bf6c6248c2f282f9ff4a6e143d05b19f49c0ba64dbda61b6aa68cfb890972081",
+      "content_hash": "sha256:9b412092a6ac96ff59e5e07d60fbf4d3b8aca7c6ea3967adb8795cd34ae2816c",
       "role": "layout"
     },
     "klayout_version_mismatch": true
   },
   "negative_control": {
-    "file": "notch-pmos-p840-refused.gds",
+    "file": "layout/drc/controls/notch-pmos-p840-refused.gds",
     "status": "passed",
     "violation_count": 1,
     "rules_found": [

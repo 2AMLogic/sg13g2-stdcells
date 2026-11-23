@@ -20,16 +20,26 @@ Covers both provenance shapes klt emits:
 Every attestation.checks[] entry that carries a path is checked too; command
 checks record no hash and are skipped.
 
+The walk also carries a focused item-9 check (issue #178): an item-9
+envelope's PDK pin (the resolved pins.pdk of its inventory) must agree with
+the PDK pin of every committed measurement sidecar under views/*.lib.provenance
+-- the analog characterization inventory pins the PDK its measurement
+consumed, and the sidecar is where the run recorded it. A disagreement means
+the inventory pins a PDK the committed view was not measured against, and
+exits 1 like any other drift; an unreadable pin or sidecar is an error (2).
+
 With --manifest FILE the script instead checks a block manifest's evidence
 pins (issue #116): every evidence entry that is a {file, content_hash} object
 pins the provenance.input.content_hash of the envelope it names -- the
 single-file digest for the path shape, the input-set aggregate for the paths
-shape (exactly the field the per-file walk above skips). Bare path strings
-and lists of them record locations without a pin and are skipped. The
-envelope directory is not walked in this mode; envelope-vs-tree checking is
-the default run. Issue #116's defect was a re-minted envelope whose manifest
-pin was never re-pointed, so the committed signoff count disagreed with what
-the grader computed, and no CI stage could see it.
+shape (exactly the field the per-file walk above skips). For item 6's
+not_applicable form, the spec and statement pins each hash the raw bytes
+of the named document. Bare path strings and lists of them record locations
+without a pin and are skipped. The default run walks the envelope directory
+and checks the envelopes against the tree. Issue #116's defect was a
+re-minted envelope whose manifest pin was never re-pointed, so the committed
+signoff count disagreed with what the grader computed, and no CI stage could
+see it.
 
 An envelope that cannot be parsed, or that records no comparable hash at all,
 is an error, never a silent pass. The same holds in --manifest mode: a
@@ -201,12 +211,138 @@ def envelope_input_hash(envelope, envelope_name):
     return _parse_content_hash(inp["content_hash"], envelope_name, "provenance.input")
 
 
+# --- Focused item-9 PDK-pin check (issue #178) --------------------------------
+#
+# An item-9 testbench inventory pins the PDK its partition's measurement
+# consumed (`pins.pdk`); `klt signoff --attest 9` records that pin, resolved,
+# as the envelope's `role: "pdk"` check. The measurement's own provenance is
+# the committed Liberty sidecar (`views/*.lib.provenance`), whose `pdk`
+# object the characterize runner captured from the --pdk-dir checkout before
+# anything was written. The two must agree: the envelope is minted from the
+# inventory, the sidecar from the run, so committed bytes naming different
+# revisions mean the inventory pins a PDK the committed view was not measured
+# against -- exactly the disagreement `check_library` catches between sidecar
+# and record, extended one link up the chain. This is tool-free, so CI (which
+# has no klt to re-attest) sees it too.
+
+SIDECAR_GLOB = "views/*.lib.provenance"
+
+
+def _item9_pdk_pin(envelope, envelope_name):
+    """The item-9 inventory's resolved PDK pin from its envelope.
+
+    None when the envelope is not an item-9 one, or the partition's cold
+    start consumes no PDK (the explicit ``{"none": true}`` form). Raises on
+    an item-9 envelope whose recorded pin check is missing or unreadable:
+    silence never means "no PDK".
+    """
+    if envelope.get("t1_item") != 9:
+        return None
+    checks = (envelope.get("attestation") or {}).get("checks")
+    if not isinstance(checks, list):
+        raise EnvelopeError(f"{envelope_name}: attestation.checks is not an array")
+    pins = [c for c in checks if isinstance(c, dict) and c.get("role") == "pdk"]
+    if len(pins) != 1:
+        raise EnvelopeError(
+            f"{envelope_name}: an item-9 envelope records {len(pins)} pdk pin "
+            f"checks (expected exactly one) -- the PDK pin is missing or ambiguous"
+        )
+    value = pins[0].get("value")
+    if not isinstance(value, dict):
+        raise EnvelopeError(
+            f"{envelope_name}: the pdk pin check records no value object"
+        )
+    if value.get("none"):
+        return None
+    name, revision = value.get("name"), value.get("revision")
+    if (not isinstance(name, str) or not name.strip()
+            or not isinstance(revision, str) or not revision.strip()):
+        raise EnvelopeError(
+            f"{envelope_name}: the pdk pin check names no PDK and no revision "
+            f"(value {value!r})"
+        )
+    return name.strip(), revision.strip()
+
+
+def pdk_pin_findings(envelope, envelope_name, repo_root):
+    """Return mismatch findings for the inventory PDK pin vs the committed
+    measurement sidecars; empty means they agree (or the item has no PDK)."""
+    pin = _item9_pdk_pin(envelope, envelope_name)
+    if pin is None:
+        return []
+    name, revision = pin
+    sidecars = sorted(repo_root.glob(SIDECAR_GLOB))
+    if not sidecars:
+        raise EnvelopeError(
+            f"{envelope_name}: pins PDK {name!r} @ {revision} but the repo "
+            f"carries no {SIDECAR_GLOB} provenance sidecar to compare against"
+        )
+    findings = []
+    for sidecar in sidecars:
+        try:
+            prov = json.loads(sidecar.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+            raise EnvelopeError(
+                f"{envelope_name}: cannot read the measurement sidecar "
+                f"{sidecar.name} ({exc})"
+            ) from exc
+        pdk = prov.get("pdk") if isinstance(prov, dict) else None
+        pdk = pdk if isinstance(pdk, dict) else {}
+        pinned_name = pdk.get("name")
+        pinned_revision = pdk.get("revision")
+        where = f"{envelope_name}: pdk pin vs {sidecar.name}"
+        if (not isinstance(pinned_name, str) or not pinned_name.strip()
+                or not isinstance(pinned_revision, str) or not pinned_revision.strip()):
+            findings.append(
+                f"{where}: the inventory pins {name!r} @ {revision} but the "
+                f"sidecar records no PDK pin -- the committed measurement was "
+                f"taken against an unpinned PDK; re-characterize and re-attest"
+            )
+        elif (pinned_name.strip(), pinned_revision.strip()) != (name, revision):
+            findings.append(
+                f"{where}: the inventory pins {name!r} @ {revision} but the "
+                f"sidecar records {pinned_name!r} @ {pinned_revision!r} -- the "
+                f"inventory pins a PDK the committed measurement was not "
+                f"taken against; re-characterize and re-attest"
+            )
+    return findings
+
+
+def _parse_file_pin(entry, manifest_name, where):
+    if (
+        not isinstance(entry, dict)
+        or "file" not in entry
+        or "content_hash" not in entry
+    ):
+        raise EnvelopeError(
+            f"{manifest_name}: {where}: object entries must carry both 'file' and 'content_hash'"
+        )
+    rel = entry["file"]
+    if not isinstance(rel, str) or not rel:
+        raise EnvelopeError(f"{manifest_name}: {where}: 'file' is not a path string")
+    return rel, _parse_content_hash(entry["content_hash"], manifest_name, where)
+
+
+def _document_pin_mismatch(entry, manifest_name, where, repo_root):
+    rel, pin = _parse_file_pin(entry, manifest_name, where)
+    try:
+        content = (repo_root / rel).read_bytes()
+    except (OSError, ValueError) as exc:
+        raise EnvelopeError(
+            f"{manifest_name}: {where}: cannot read {rel} ({exc})"
+        ) from exc
+    actual = hashlib.sha256(content).hexdigest()
+    if actual != pin:
+        return f"{manifest_name}: {where} pins sha256:{pin} but {rel} hashes to sha256:{actual}"
+    return None
+
+
 def manifest_pin_findings(manifest, manifest_name, repo_root):
     """Return (checked, errors, failures) for the manifest's evidence pins.
 
     checked counts the pins compared; an error is a structural problem
-    (missing/unparseable envelope, malformed pin) and exits 2; a failure is
-    a pin that disagrees with the envelope it names and exits 1.
+    (unreadable evidence, malformed pin or envelope) and exits 2. A failure
+    is a pin that disagrees with the evidence it names and exits 1.
     """
     errors = []
     failures = []
@@ -230,18 +366,28 @@ def manifest_pin_findings(manifest, manifest_name, repo_root):
                 f"paths, or a {{file, content_hash}} object, got {type(entry).__name__}"
             )
             continue
-        if "file" not in entry or "content_hash" not in entry:
-            errors.append(
-                f"{manifest_name}: {where}: object entries must carry both "
-                "'file' and 'content_hash'"
-            )
-            continue
-        rel = entry["file"]
-        if not isinstance(rel, str) or not rel:
-            errors.append(f"{manifest_name}: {where}: 'file' is not a path string")
+        if key in ("6", "6.digital") and "not_applicable" in entry:
+            form = entry["not_applicable"]
+            if not isinstance(form, dict):
+                errors.append(
+                    f"{manifest_name}: {where}.not_applicable: expected an object"
+                )
+                continue
+            for document in ("spec", "statement"):
+                location = f"{where}.not_applicable.{document}"
+                try:
+                    mismatch = _document_pin_mismatch(
+                        form.get(document), manifest_name, location, repo_root
+                    )
+                except EnvelopeError as exc:
+                    errors.append(str(exc))
+                    continue
+                checked += 1
+                if mismatch:
+                    failures.append(mismatch)
             continue
         try:
-            pin = _parse_content_hash(entry["content_hash"], manifest_name, where)
+            rel, pin = _parse_file_pin(entry, manifest_name, where)
         except EnvelopeError as exc:
             errors.append(str(exc))
             continue
@@ -281,7 +427,7 @@ def main(argv=None):
                         help="directory of *.json envelopes (default: manifests/envelopes)")
     parser.add_argument("--manifest", type=Path, default=None,
                         help="check the evidence pins of this block manifest "
-                             "against the envelopes they name, instead of "
+                             "against the envelopes or documents they name, instead of "
                              "walking the envelope directory (envelope-vs-tree "
                              "checking is skipped in this mode)")
     parser.add_argument("--repo-root", type=Path, default=DEFAULT_REPO_ROOT,
@@ -319,7 +465,7 @@ def main(argv=None):
                   file=sys.stderr)
             return 2
         print(f"check_attestations: {checked} evidence pins in {args.manifest.name} "
-              f"match the envelopes they name")
+              f"match the evidence they name")
         return 0
 
     envelopes = sorted(args.envelope_dir.glob("*.json"))
@@ -339,6 +485,11 @@ def main(argv=None):
             continue
         try:
             unique, mismatches = verify_records(envelope, path.name, repo_root)
+        except EnvelopeError as exc:
+            errors.append(str(exc))
+            continue
+        try:
+            failures.extend(pdk_pin_findings(envelope, path.name, repo_root))
         except EnvelopeError as exc:
             errors.append(str(exc))
             continue

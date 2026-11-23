@@ -328,6 +328,129 @@ def test_dirty_suffix_alone_does_not_double_as_a_mismatch(tree):
     assert len(problems) == 1, problems
 
 
+# --- PDK pin (issue #178) -----------------------------------------------------
+
+
+def sidecar_pdk(lib):
+    return json.loads(Path(str(lib) + ".provenance").read_text())["pdk"]
+
+
+def test_sidecar_without_pdk_pin_is_drift(tree):
+    # pdk is a REQUIRED_KEY, like repo_commit (#134): provenance that pins no
+    # PDK revision cannot pass unstated.
+    _, lib, _ = tree
+    prov = json.loads(Path(str(lib) + ".provenance").read_text())
+    del prov["pdk"]
+    Path(str(lib) + ".provenance").write_text(
+        json.dumps(prov, indent=2, sort_keys=True) + "\n")
+    assert any("pdk" in p for p in run(tree))
+
+
+def test_sidecar_pdk_without_a_name_is_drift(tree):
+    # A revision alone names a commit of no identified PDK.
+    _, lib, _ = tree
+    revision = sidecar_pdk(lib)["revision"]
+    edit_sidecar(lib, pdk={"revision": revision})
+    problems = run(tree)
+    assert any("names no PDK" in p for p in problems), problems
+    assert not any("another PDK revision" in p for p in problems), problems
+
+
+def test_sidecar_pdk_without_a_revision_is_drift(tree):
+    _, lib, _ = tree
+    edit_sidecar(lib, pdk={"name": "IHP-Open-PDK"})
+    problems = run(tree)
+    assert any("names no revision" in p for p in problems), problems
+    assert not any("another PDK revision" in p for p in problems), problems
+
+
+def test_sidecar_pdk_short_revision_is_drift(tree):
+    # A short SHA is not the full commit and is reported, not tolerated --
+    # the same exactness the commit-agreement check applies (#147).
+    _, lib, _ = tree
+    edit_sidecar(lib, pdk={"name": "IHP-Open-PDK", "revision": "5cccb161"})
+    problems = run(tree)
+    assert any("not a full commit SHA" in p for p in problems), problems
+    assert any("another PDK revision" in p for p in problems), problems
+
+
+def test_sidecar_pdk_repointed_at_another_revision_is_drift(tree):
+    # Sidecar names revision X, the record it cites stamps revision Y: the
+    # writer threads one pdk_provenance() snapshot through both, so this is
+    # a sidecar (or record) repointed at another PDK's measurement.
+    _, lib, _ = tree
+    edit_sidecar(lib, pdk={"name": "IHP-Open-PDK", "revision": "b" * 40})
+    problems = run(tree)
+    assert any("another PDK revision" in p for p in problems), problems
+    assert len(problems) == 1, problems
+
+
+def test_record_pdk_stamp_changed_alone_is_drift(tree):
+    # The mirror of the repointed sidecar: the record's stamp moved, the
+    # sidecar pin stayed -- same contradiction, caught from the other side.
+    _, _, records = tree
+    record = records / REAL_RECORD.name
+    record.write_text("".join(
+        f"**PDK**: IHP-Open-PDK @ {'b' * 40}\n" if line.startswith("**PDK**") else line
+        for line in record.read_text().splitlines(keepends=True)))
+    problems = run(tree)
+    assert any("another PDK revision" in p for p in problems), problems
+    assert len(problems) == 1, problems
+
+
+def test_record_without_a_pdk_stamp_is_drift(tree):
+    # A record with no PDK stamp names no PDK revision the tables are
+    # reproducible against -- the same finding shape as the missing commit
+    # stamp (issue #134), and the agreement check stays silent rather than
+    # adding a second finding for a stamp that is not there.
+    _, _, records = tree
+    record = records / REAL_RECORD.name
+    record.write_text("".join(
+        line for line in record.read_text().splitlines(keepends=True)
+        if not line.startswith("**PDK**")))
+    problems = run(tree)
+    assert any("no **PDK** stamp" in p for p in problems), problems
+    assert not any("another PDK revision" in p for p in problems), problems
+
+
+def test_record_pdk_stamp_short_revision_is_drift(tree):
+    _, _, records = tree
+    record = records / REAL_RECORD.name
+    record.write_text("".join(
+        "**PDK**: IHP-Open-PDK @ 5cccb161\n" if line.startswith("**PDK**") else line
+        for line in record.read_text().splitlines(keepends=True)))
+    problems = run(tree)
+    assert any("not a full commit SHA" in p for p in problems), problems
+    assert any("another PDK revision" in p for p in problems), problems
+
+
+def test_writer_pdk_format_is_what_the_checker_reads(tree):
+    """The PDK stamp the runner writes is the stamp the checker parses (#178).
+
+    In the spirit of `test_writer_stamp_format_is_what_the_checker_rejects`
+    and `test_default_paths_match_runner`: writer and checker must agree on
+    one stamp definition, so the `name @ revision` shape cannot drift apart
+    between what `runner.py` emits and what `check_library.py` parses.
+    """
+    from sim.characterize import runner
+
+    root, _, _ = tree
+    data = {"klt": {"version": "klt 0"}, "backend": "local",
+            "pdk": {"name": "IHP-Open-PDK", "revision": "5" * 40}}
+    record_text = runner.render("r", {"commit": "a" * 40, "short": "a" * 7,
+                                      "branch": "main", "dirty": False}, data, [])
+    stamp = next(l for l in record_text.splitlines() if l.startswith("**PDK**"))
+    assert check_library._record_pdk_stamp(record_text) == ("IHP-Open-PDK", "5" * 40)
+
+    lib_data = {**data, "cells": [{"cell": "c"}], "record_id": "r"}
+    prov = runner.provenance_for(root / "layout" / "example_config.json",
+                                 {"name": "tt"}, lib_data,
+                                 git={"commit": "a" * 40, "short": "a" * 7,
+                                      "branch": "main", "dirty": False})
+    assert prov["pdk"] == data["pdk"]
+    assert stamp == f"**PDK**: {prov['pdk']['name']} @ {prov['pdk']['revision']}"
+
+
 def test_record_without_a_commit_stamp_yields_no_mismatch_finding(tree):
     # With no record stamp the existing check reports the missing line;
     # the agreement check stays silent rather than adding a second finding

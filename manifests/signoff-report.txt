@@ -3,7 +3,7 @@ partition boundary:
   analog: transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS
   digital: add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline
 tier: none
-T1: 13/22 items met
+T1: 14/22 items met, 1 not_applicable
 
 [MET  ] T1 #1 [analog] Design sources
         cite: manifests/envelopes/item1.analog.attest.json (kind=generic, status=pass, content_hash=sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f, exit_status=0)
@@ -56,19 +56,34 @@ T1: 13/22 items met
         input: not re-hashed (content_hash compared against this envelope's own claim only -- the artifact itself was not read)
 [UNMET] T1 #6 [analog] Statistical claims carry Monte Carlo evidence
         reason: no_evidence
-[UNMET] T1 #6 [digital] Statistical claims carry Monte Carlo evidence
-        reason: no_evidence
+[N/A  ] T1 #6 [digital] Statistical claims carry Monte Carlo evidence
+        not applicable: spec spec/0001-target-specification.md (status=ratified, rows=12, content_hash=sha256:ba6ab55b1ad6c96ae911c49c33101b32fd57e04031874b1e620036b5c0813ea3)
+        statement: manifests/item6-na-statement.json (content_hash=sha256:5fe58d59cd80677e5788eb2cc9d132ebfcdc465a449f515f5ad4a05d9848c280)
+          1 [geometry]: The row height is a fixed layout dimension of 3.36 um (8 tracks).
+          2 [geometry]: The routing grid specifies a fixed pitch of 0.42 um on each axis.
+          3 [geometry]: Layer inspection determines whether all intra-cell routing uses Metal1.
+          4 [geometry]: Each pin location is checked against the specified routing grid.
+          5 [cell count]: Counting the combinational cells in the library determines whether it reaches the target or stretch count.
+          6 [cell count]: The target excludes sequential cells and the stretch specifies a count of eight.
+          7 [physical verification]: The DRC verdict depends on whether the SG13G2 deck reports a violation on the given layout.
+          8 [physical verification]: LVS compares the extracted layout netlist with the schematic and returns a match verdict.
+          9 [corner coverage]: The Liberty views are required at named process, voltage and temperature points, with TT at target and FF and SS added at stretch.
+          10 [benchmark ratio]: The area bound compares post-synthesis cell area for add8 mapped with each library under the same flow and constraints.
+          11 [benchmark ratio]: The energy bound compares total post-synthesis energy over one fixed seeded vector set at TT, using the same clock period and power tool for both libraries.
+          12 [benchmark ratio]: The period bound compares worst input-to-output path delays at each specified corner using the same virtual clock and I/O constraints for both post-synthesis netlists.
 [UNMET] T1 #7 [analog] Post-layout verification
         reason: no_evidence
 [UNMET] T1 #7 [digital] Post-layout verification
         reason: no_evidence
 [MET  ] T1 #8 [analog] Characterization report
-        cite: manifests/envelopes/item8.analog.attest.json (kind=generic, status=pass, content_hash=sha256:1910e308982aec47919dc6ba9d323533e1486ab4f1bfdc24e8a51d400ce61dea, exit_status=0)
+        cite: manifests/envelopes/item8.analog.attest.json (kind=generic, status=pass, content_hash=sha256:191c3c82a8bb01e2491602b530ac0b2b9f62a13f7ccef7027ff3a1cd47b0aecb, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
 [UNMET] T1 #8 [digital] Characterization report
         reason: no_evidence
-[UNMET] T1 #9 [analog] Testbenches shipped
-        reason: no_evidence
+[MET  ] T1 #9 [analog] Testbenches shipped
+        cite: manifests/envelopes/item9.analog.attest.json (kind=generic, status=pass, content_hash=sha256:6eeb0589342109571879d90bbc9863051c47993d5066160a3ffcf07615668333, exit_status=0)
+        input: re-hashed the artifact this envelope names -- matches
+        bound: T1 item #9 -> manifests/inventories/item9.analog.json (content_hash=sha256:6eeb0589342109571879d90bbc9863051c47993d5066160a3ffcf07615668333)
 [MET  ] T1 #9 [digital] Testbenches shipped
         cite: manifests/envelopes/item9.digital.attest.json (kind=generic, status=pass, content_hash=sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches

@@ -257,6 +257,73 @@ def test_manifest_pin_match_passes_both_provenance_shapes(tmp_path):
     assert run_manifest(root, manifest) == 0
 
 
+@pytest.fixture
+def item6_documents(tmp_path):
+    spec = b"Status: RATIFIED\r\n"
+    statement = b'{"rows": []}\n'
+    (tmp_path / "spec.md").write_bytes(spec)
+    (tmp_path / "statement.json").write_bytes(statement)
+    return {
+        "spec": {
+            "file": "spec.md",
+            "content_hash": sha(spec),
+            "format": "markdown-table",
+            "id_column": "#",
+        },
+        "statement": {"file": "statement.json", "content_hash": sha(statement)},
+    }
+
+
+def run_item6_manifest(root, documents):
+    manifest = {"evidence": {"6.digital": {"not_applicable": documents}}}
+    return run_manifest(root, write_manifest(root, manifest))
+
+
+def test_not_applicable_document_pins_match(tmp_path, item6_documents, capsys):
+    assert run_item6_manifest(tmp_path, item6_documents) == 0
+    assert "2 evidence pins" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("document", ["spec", "statement"])
+def test_not_applicable_missing_file(tmp_path, item6_documents, document, capsys):
+    rel = item6_documents[document]["file"]
+    (tmp_path / rel).unlink()
+    assert run_item6_manifest(tmp_path, item6_documents) == 2
+    err = capsys.readouterr().err
+    assert f'evidence["6.digital"].not_applicable.{document}' in err
+    assert rel in err
+
+
+@pytest.mark.parametrize("document", ["spec", "statement"])
+def test_not_applicable_changed_document(tmp_path, item6_documents, document, capsys):
+    pin = item6_documents[document]
+    path = tmp_path / pin["file"]
+    path.write_bytes(path.read_bytes() + b"\n")
+    assert run_item6_manifest(tmp_path, item6_documents) == 1
+    err = capsys.readouterr().err
+    assert f'evidence["6.digital"].not_applicable.{document}' in err
+    assert pin["content_hash"] in err
+    assert sha(path.read_bytes()) in err
+
+
+@pytest.mark.parametrize("document", ["spec", "statement"])
+def test_not_applicable_requires_both_documents(
+    tmp_path, item6_documents, document, capsys
+):
+    del item6_documents[document]
+    assert run_item6_manifest(tmp_path, item6_documents) == 2
+    assert f'evidence["6.digital"].not_applicable.{document}' in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("document", ["spec", "statement"])
+def test_not_applicable_malformed_pin(tmp_path, item6_documents, document, capsys):
+    item6_documents[document]["content_hash"] = "deadbeef"
+    assert run_item6_manifest(tmp_path, item6_documents) == 2
+    err = capsys.readouterr().err
+    assert f'evidence["6.digital"].not_applicable.{document}' in err
+    assert "content_hash" in err
+
+
 def test_manifest_pin_mismatch_fails_naming_key_envelope_and_digests(tmp_path, capsys):
     # Negative control: the #116 defect itself -- pin points at a stale
     # aggregate while the envelope is fresh. The failure must name the
@@ -542,3 +609,100 @@ def test_real_repo_envelopes_all_match():
     # The committed tree must satisfy its own gate; this also proves the walker
     # finds a non-zero number of recorded hashes in the real envelopes.
     assert ca.main([]) == 0
+
+
+# -- Focused item-9 PDK pin vs the measurement sidecar (issue #178) -----------
+#
+# The analog item-9 inventory pins the PDK its measurement consumed; the
+# envelope records that pin resolved, and the measurement's own sidecar
+# (views/*.lib.provenance) records the revision the runner captured. The
+# focused check compares them, so an inventory edited (or re-attested) against
+# a different PDK than the committed view was measured with fails CI even
+# though every content_hash still matches.
+
+PIN = {"name": "IHP-Open-PDK", "revision": "5" * 40}
+
+
+def item9_envelope(pdk_value=None, include_pin_check=True, inventory=b'{"pins": {}}'):
+    checks = []
+    if include_pin_check:
+        value = pdk_value if pdk_value is not None else dict(PIN)
+        checks.append({"check": "pin", "role": "pdk", "passed": True, "value": value})
+    return {
+        "schema_version": 1,
+        "kind": "generic",
+        "status": "pass",
+        "t1_item": 9,
+        "attestation": {"producer": "klt signoff --attest", "checks": checks},
+        "provenance": {
+            "input": {
+                "path": {"path": "inv/item9.json", "scope": "repo"},
+                "content_hash": sha(inventory),
+            }
+        },
+    }
+
+
+def make_item9_repo(tmp_path, envelope, sidecar_pdk="default"):
+    root, env_dir = make_repo(
+        tmp_path, {"inv/item9.json": b'{"pins": {}}'},
+        {"item9.attest.json": envelope},
+    )
+    if sidecar_pdk is not None:
+        pdk = dict(PIN) if sidecar_pdk == "default" else sidecar_pdk
+        (root / "views").mkdir()
+        (root / "views" / "sg13g2_stdcells_tt.lib.provenance").write_text(
+            json.dumps({"pdk": pdk}) + "\n"
+        )
+    return root, env_dir
+
+
+def test_item9_pdk_pin_matching_sidecar_passes(tmp_path):
+    root, env_dir = make_item9_repo(tmp_path, item9_envelope())
+    assert run(root, env_dir) == 0
+
+
+def test_item9_pdk_pin_disagreeing_with_sidecar_fails(tmp_path, capsys):
+    # The inventory revision moved (re-attested against another PDK) while
+    # the committed measurement still cites the old one: every content_hash
+    # matches, only the focused check sees it.
+    envelope = item9_envelope(pdk_value={"name": "IHP-Open-PDK", "revision": "b" * 40})
+    root, env_dir = make_item9_repo(tmp_path, envelope)
+    assert run(root, env_dir) == 1
+    err = capsys.readouterr().err
+    assert "item9.attest.json" in err and "was not taken against" in err, err
+
+
+def test_item9_pdk_pin_name_disagreement_fails(tmp_path):
+    envelope = item9_envelope(pdk_value={"name": "other-pdk", "revision": PIN["revision"]})
+    root, env_dir = make_item9_repo(tmp_path, envelope)
+    assert run(root, env_dir) == 1
+
+
+def test_item9_pin_against_sidecar_without_pdk_pin_fails(tmp_path):
+    # The measurement predates the PDK pin: the sidecar records none, so the
+    # inventory pins a PDK the committed view was not measured against.
+    root, env_dir = make_item9_repo(tmp_path, item9_envelope(), sidecar_pdk=None)
+    (root / "views").mkdir()
+    (root / "views" / "sg13g2_stdcells_tt.lib.provenance").write_text("{}\n")
+    assert run(root, env_dir) == 1
+
+
+def test_item9_none_pdk_form_skips_sidecar_comparison(tmp_path):
+    # The digital partition's no-PDK form consumes no PDK; there is nothing
+    # to compare and no sidecar is required.
+    envelope = item9_envelope(pdk_value={"none": True, "reason": "behavioral RTL"})
+    root, env_dir = make_item9_repo(tmp_path, envelope, sidecar_pdk=None)
+    assert run(root, env_dir) == 0
+
+
+def test_item9_envelope_without_pdk_pin_check_is_an_error(tmp_path):
+    # Silence never means "no PDK": an item-9 envelope recording no pdk pin
+    # check is malformed, not vacuously passing.
+    root, env_dir = make_item9_repo(tmp_path, item9_envelope(include_pin_check=False))
+    assert run(root, env_dir) == 2
+
+
+def test_item9_pdk_pin_with_no_sidecar_to_compare_is_an_error(tmp_path):
+    root, env_dir = make_item9_repo(tmp_path, item9_envelope(), sidecar_pdk=None)
+    assert run(root, env_dir) == 2

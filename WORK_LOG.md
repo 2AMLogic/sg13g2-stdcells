@@ -2,6 +2,11 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-21
+
+- **PR #185**: feat: verify document pins for digital item 6 signoff
+- **Issue #174** (closed): T1 item 6 digital: record not_applicable for the add8 partition by citing the ratified spec table directly, and teach check_attestations.py the form
+
 ### 2026-11-18
 
 - **Issue #159** (closed, not planned): Trim merge-lap narrative from layout/README.md: history already in git, WORK_LOG and the signoff report

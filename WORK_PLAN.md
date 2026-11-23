@@ -27,25 +27,36 @@ _None._
 Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
 - **#169**: layout: place cells that need a diffusion break in gen_layouts.py (XOR/mux, AOI/OAI, AND/OR, even-finger series stacks)
-- **#170**: layout: gen_layouts.py refuses a cell when the complementary device's width does not divide by the larger finger count on the width grid
+- **#171**: layout: gen_layouts.py cannot join two nets in the Metal1 channel of a 3.36 um / 0.42 um-pitch row (buf, folded nand2/nor2, and2)
+- **#173**: T1 item 11 digital: declare well/substrate ties in flow/erc-spec.json, re-run the flow and re-cite
+- **#176**: T1 item 7 digital: SDF-annotated klt functional-verification on the routed add8 netlist
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-- **#171**: layout: gen_layouts.py cannot join two nets in the Metal1 channel of a 3.36 um / 0.42 um-pitch row (buf, folded nand2/nor2, and2)
+- **#170**: layout: gen_layouts.py refuses a cell when the complementary device's width does not divide by the larger finger count on the width grid
+- **#175**: T1 item 5 digital: add klt sta and klt functional-verification to the add8 flow and cite both
+- **#178**: T1 item 9 analog: attest the cell characterization testbench with a cold-start command and a recorded, pinned PDK revision
+- **#179**: T1 item 11 analog: run klt erc supply checks on the four generated cells and cite them with their LVS reports
+- **#180**: T1 item 5 analog: commit klt sim corner evidence for the four generated cells with a declared spec-row set
+- **#188**: Link the roadmap evidence grade to the committed signoff report
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#184**: fix: keep per-device netlist finger counts when the common fold misses the grid
+- **#187**: Add klt erc supply/tie evidence: T1 item 11 analog MET (groups 4/4)
+- **#191**: docs: link roadmap evidence grade to the committed signoff report
+- **#193**: feat: pin IHP-Open-PDK in characterization records and attest T1 item 9 analog
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#121**: docs(spec): add decision record on attestation pin granularity (0002) — closes #110
+- **#186**: feat: add multi-corner STA and functional-verification evidence to the add8 flow (T1 item 5 digital) — closes #175
 
 ## Proposed
 
@@ -56,17 +67,19 @@ Issues carrying `loom:curated`.
 - **#169**: layout: place cells that need a diffusion break in gen_layouts.py (XOR/mux, AOI/OAI, AND/OR, even-finger series stacks) *(curated)*
 - **#170**: layout: gen_layouts.py refuses a cell when the complementary device's width does not divide by the larger finger count on the width grid *(curated)*
 - **#171**: layout: gen_layouts.py cannot join two nets in the Metal1 channel of a 3.36 um / 0.42 um-pitch row (buf, folded nand2/nor2, and2) *(curated)*
-- **#174**: T1 item 6 digital: record not_applicable for the add8 partition by citing the ratified spec table directly, and teach check_attestations.py the form *(curated)*
 - **#175**: T1 item 5 digital: add klt sta and klt functional-verification to the add8 flow and cite both *(curated)*
+- **#178**: T1 item 9 analog: attest the cell characterization testbench with a cold-start command and a recorded, pinned PDK revision *(curated)*
 - **#179**: T1 item 11 analog: run klt erc supply checks on the four generated cells and cite them with their LVS reports *(curated)*
 - **#180**: T1 item 5 analog: commit klt sim corner evidence for the four generated cells with a declared spec-row set *(curated)*
 - **#182**: T1 item 6 analog: propose a statistical spec row for the cells (decision record 0003) backed by a pilot klt yield campaign *(curated)*
+- **#188**: Link the roadmap evidence grade to the committed signoff report *(curated)*
 
 ## Proposed (Architect / Hermit)
 
 - **#59**: Collapse sim/harness/evidence.py to the one record kind in use and drop stale DRAFT corner markers *(hermit)* *(held)*
 - **#62**: Trim layout/toolchain.json to the fields toolchain_pin.py enforces: drop unread pin fields and stale bootstrap comment *(hermit)* *(held)*
 - **#69**: Write characterization records in one shape: drop the first-cell copy and per-cell run-level repeats in sim/characterize/runner.py *(hermit)* *(held)*
+- **#192**: Share the notch profile override between DRC controls and layout tests *(hermit)*
 
 ## Epics
 
@@ -79,11 +92,11 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
 | Important | 2 |
-| Ready (`loom:issue`, net of holds/building/merge-pending) | 2 |
-| In Progress (`loom:building`) | 1 |
-| PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
-| Curated | 10 |
-| Architect / Hermit proposals | 3 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 4 |
+| In Progress (`loom:building`) | 6 |
+| PRs awaiting review | 4 |
+| Approved PRs awaiting merge | 2 |
+| Curated | 11 |
+| Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
