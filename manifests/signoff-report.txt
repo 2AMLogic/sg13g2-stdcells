@@ -89,13 +89,13 @@ T1: 14/22 items met, 1 not_applicable
         input: re-hashed the artifact this envelope names -- matches
         bound: T1 item #9 -> manifests/inventories/item9.digital.json (content_hash=sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85)
 [MET  ] T1 #10 [analog] Repo hygiene
-        cite: manifests/envelopes/item10.attest.json (kind=generic, status=pass, content_hash=sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256, exit_status=0)
+        cite: manifests/envelopes/item10.attest.json (kind=generic, status=pass, content_hash=sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
-        bound: T1 item #10 -> manifests/inventories/item10.json (content_hash=sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256)
+        bound: T1 item #10 -> manifests/inventories/item10.json (content_hash=sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e)
 [MET  ] T1 #10 [digital] Repo hygiene
-        cite: manifests/envelopes/item10.attest.json (kind=generic, status=pass, content_hash=sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256, exit_status=0)
+        cite: manifests/envelopes/item10.attest.json (kind=generic, status=pass, content_hash=sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
-        bound: T1 item #10 -> manifests/inventories/item10.json (content_hash=sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256)
+        bound: T1 item #10 -> manifests/inventories/item10.json (content_hash=sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e)
 [UNMET] T1 #11 [analog] Power delivery (structural)
         reason: no_evidence
 [UNMET] T1 #11 [digital] Power delivery (structural)
