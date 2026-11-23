@@ -68,14 +68,12 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   holds the `add8` baseline on the stock `sg13g2_stdcell` only: synthesis,
   place-and-route with all three power gates, gate-level LVS `match`, routed
   GDS and a clean `klt drc` (#9, #41).
-- **Evidence grade.** `manifests/signoff-report.txt` (`klt signoff --manifest`):
-  tier none, **T1 14/22 items met, 1 not_applicable** (updated for item 5
-  analog, #180, on top of item 6 digital N/A, item 8 analog and item 9 analog
-  on `main`). Met: items 1-4 on both partitions, item 5 analog, item 8 analog,
-  items 9 and 10 on both partitions. Not applicable: item 6 digital. Unmet:
-  item 5 digital, item 6 analog, item 7 on both partitions, item 8 digital and
-  item 11 on both partitions — `no_evidence` except item 11 digital
-  (`supply_spec_incomplete`). Tracker: #3.
+- **Evidence grade.** See the committed
+  [`manifests/signoff-report.txt`](manifests/signoff-report.txt)
+  (`klt signoff --manifest`) — it contains the evidence tier, the T1 item
+  total and the per-item results for each partition. Tracker:
+  [#3](https://github.com/2AMLogic/sg13g2-stdcells/issues/3) collects
+  the remaining follow-up work.
 
 ### What the layout generator can place today
 
