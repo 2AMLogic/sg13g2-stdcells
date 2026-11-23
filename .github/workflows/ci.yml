@@ -36,3 +36,7 @@ jobs:
         run: ./check-ci.sh evidence-accept
       - name: evidence check rejects the negative control
         run: ./check-ci.sh evidence-reject
+      - name: STA/FV evidence check accepts the committed record
+        run: ./check-ci.sh evidence-sta-fv-accept
+      - name: STA/FV evidence check rejects mutants
+        run: ./check-ci.sh evidence-sta-fv-reject

@@ -191,6 +191,8 @@ call it too, so there is no second copy to drift. To reproduce CI locally, run
 - `layouts` — generated layouts are fresh
 - `evidence-accept` — the evidence check accepts the committed flow record
 - `evidence-reject` — the evidence check rejects the negative control
+- `evidence-sta-fv-accept` — the six-argument check (STA and functional-verification gates) accepts the committed record
+- `evidence-sta-fv-reject` — the six-argument check rejects jq-minted mutants of that record
 
 Which flow record CI gates on is the `FLOW_RECORD` line of that script.
 
