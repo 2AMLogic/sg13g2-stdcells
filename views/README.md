@@ -20,5 +20,9 @@ python3 -m sim.characterize --library --pdk-dir <ihp-sg13g2 dir>
 The command regenerates each cell's SPICE with `design/gen_netlists.py` from the
 same config, runs one `cells`-form `klt characterize` request (a single corner,
 so it runs locally), rewrites the `.lib` and its `.lib.provenance` sidecar
-(klt version, repo commit, corner, config path and SHA-256, evidence record id),
-and appends a record under `sim/characterize/records/`. Combinational arcs only.
+(klt version, repo commit, corner, config path and SHA-256, the IHP-Open-PDK
+commit the `--pdk-dir` checkout was at, evidence record id), and appends a
+record under `sim/characterize/records/`. Combinational arcs only. The
+`--pdk-dir` must be a clean IHP-Open-PDK git checkout — the run refuses
+otherwise, and how to make one at the pinned commit is in the root README
+("Reproducing the characterization").

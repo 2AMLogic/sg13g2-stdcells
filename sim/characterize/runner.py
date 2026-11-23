@@ -3,6 +3,11 @@
 Single corner per invocation. Multi-corner (FF/SS) is one invocation per corner
 with ``--backend batch`` -- never a local loop (host rule). Records are
 append-only: a new run mints a new record id; nothing is overwritten.
+
+Every run captures the PDK revision of its ``--pdk-dir`` checkout first
+(:func:`pdk_provenance`): the IHP-Open-PDK commit, written into the record
+header and the view's provenance sidecar. A PDK directory that is not a
+clean IHP-Open-PDK git checkout refuses the run before anything is written.
 """
 
 from __future__ import annotations
@@ -10,6 +15,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -42,6 +48,77 @@ def klt_version() -> str:
     except FileNotFoundError:  # tool-free environments (CI) have no klt
         return "unavailable"
     return (out.stdout or out.stderr).strip() or "unknown"
+
+
+#: The PDK this library is characterized against, and the origin-URL marker a
+#: ``--pdk-dir`` checkout must carry for :func:`pdk_provenance` to accept it.
+#: The remote check is what keeps a PDK copied inside another git tree (this
+#: repo's, for instance) from acquiring the enclosing project's SHA: the copy
+#: resolves to a repository whose origin is not IHP-Open-PDK, and the capture
+#: fails loudly instead of stamping a revision the PDK files never had.
+PDK_NAME = "IHP-Open-PDK"
+_PDK_ORIGIN_MARKER = "ihp-open-pdk"
+_HEX_SHA_RE = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+
+
+def pdk_provenance(pdk_dir) -> dict:
+    """``{"name": PDK_NAME, "revision": <full commit SHA>}`` of the ``--pdk-dir`` checkout.
+
+    Captured once per run, before klt is called or anything is written, so a
+    failing capture leaves no partial artifacts. Refuses to run
+    (:class:`CharacterizeFailed`) when the revision cannot be recorded
+    honestly:
+
+    - ``pdk_dir`` is not inside a git work tree, or the work tree has no
+      commit checked out (a plain unpacked tarball has no revision at all);
+    - the enclosing repository's ``origin`` does not name IHP-Open-PDK -- a
+      PDK copied into an unrelated git tree must never acquire that tree's
+      SHA, and a mirror of unknown provenance is not a pin;
+    - the checkout is dirty -- modified or untracked content means the
+      simulated models are not the ones the recorded commit describes.
+
+    The variant directory may be a subdirectory of the checkout (the usual
+    ``<clone>/ihp-sg13g2`` layout): git resolves from it, the SHA and the
+    cleanliness are the whole repository's.
+    """
+    pdk = Path(pdk_dir).resolve()
+
+    def git(*args: str) -> str:
+        try:
+            proc = subprocess.run(["git", "-C", str(pdk), *args],
+                                  capture_output=True, text=True, check=False)
+        except OSError as exc:
+            raise CharacterizeFailed(f"PDK revision capture failed: {exc}") from exc
+        if proc.returncode != 0:
+            detail = (proc.stderr or proc.stdout).strip().splitlines()
+            raise CharacterizeFailed(
+                f"cannot determine the PDK revision of {pdk}: git {' '.join(args)} "
+                f"exited {proc.returncode}"
+                + (f": {detail[-1]}" if detail else ""))
+        return proc.stdout.strip()
+
+    if git("rev-parse", "--is-inside-work-tree") != "true":
+        raise CharacterizeFailed(
+            f"cannot determine the PDK revision of {pdk}: not inside a git work "
+            f"tree -- check out IHP-Open-PDK at a named commit and pass its "
+            f"ihp-sg13g2 variant directory")
+    revision = git("rev-parse", "HEAD")
+    if not _HEX_SHA_RE.fullmatch(revision):
+        raise CharacterizeFailed(
+            f"cannot determine the PDK revision of {pdk}: HEAD is {revision!r}, "
+            f"not a commit SHA -- the checkout names no revision to record")
+    origin = git("remote", "get-url", "origin")
+    if _PDK_ORIGIN_MARKER not in origin.lower():
+        raise CharacterizeFailed(
+            f"{pdk} is inside a git repository whose origin is {origin!r}, not "
+            f"an IHP-Open-PDK checkout -- a PDK copied into another project's "
+            f"tree would silently stamp that project's SHA; refusing")
+    if git("status", "--porcelain"):
+        raise CharacterizeFailed(
+            f"the IHP-Open-PDK checkout at {pdk} is dirty -- the models about "
+            f"to be simulated would not be the ones commit {revision[:12]} "
+            f"describes; re-checkout clean and retry")
+    return {"name": PDK_NAME, "revision": revision}
 
 
 def run_klt(request: dict, backend: str = "local", workdir: Path | None = None,
@@ -188,6 +265,9 @@ def render(record_id: str, git: dict, data: dict, exts: list[CharacterizationExt
         data = {**data, **{k: v for k, v in data["cells"][0].items() if k not in data}}
     lines = [f"# {record_id}", "", "**Kind**: characterization (raw klt characterize measurements)",
              f"**Repo commit**: {commit_stamp(git)}", ""]
+    pdk = data.get("pdk")
+    if pdk:
+        lines.insert(3, f"**PDK**: {pdk['name']} @ {pdk['revision']}")
     klt_ver = str(data['klt']['version']).removeprefix("klt ")
     lines += [f"**Notes**: klt {klt_ver}, backend {data['backend']}, "
               f"simulator {simulator_str(data)}; "
@@ -224,10 +304,12 @@ def record(data: dict, records_dir: Path = RECORDS_DIR, repo_root: Path = REPO_R
 
 def characterize_and_record(cell: CellSpec, corner: str, pdk_dir, backend: str = "local",
                             records_dir: Path = RECORDS_DIR, **axes) -> Path:
+    pdk = pdk_provenance(pdk_dir)
     with tempfile.TemporaryDirectory(prefix="sg13g2-char-") as tmp:
         response = run_klt(build_request(cell, corner, pdk_dir, **axes), backend=backend,
                            workdir=Path(tmp) / "work")
-        return record(build_record_data(response, cell, backend), records_dir=records_dir)
+        return record({**build_record_data(response, cell, backend), "pdk": pdk},
+                      records_dir=records_dir)
 
 
 DEFAULT_CONFIG = REPO_ROOT / "layout" / "example_config.json"
@@ -253,7 +335,7 @@ def generate_netlists(config: Path, out: Path) -> None:
 def provenance_for(config: Path, corner: dict, data: dict, git: dict | None = None) -> dict:
     git = git or git_provenance(REPO_ROOT)
     rel = os.path.relpath(config, REPO_ROOT)
-    return {
+    prov = {
         "library": library_view_name(corner["name"]),
         "klt_version": data["klt"]["version"],
         "simulator": simulator_str(data),
@@ -264,6 +346,9 @@ def provenance_for(config: Path, corner: dict, data: dict, git: dict | None = No
         "cells": [c["cell"] for c in data["cells"]],
         "evidence_record": data.get("record_id"),
     }
+    if data.get("pdk"):
+        prov["pdk"] = data["pdk"]
+    return prov
 
 
 def characterize_library(config: Path, corner: str, pdk_dir, lib_path: Path | None = None,
@@ -273,7 +358,12 @@ def characterize_library(config: Path, corner: str, pdk_dir, lib_path: Path | No
     The view defaults to the corner-named path under ``views/``
     (:func:`default_lib_path`), and the request's ``library.name`` is the name
     derived from the same corner -- view name and contents never disagree.
+
+    The PDK revision is captured from the ``pdk_dir`` checkout before klt
+    runs (:func:`pdk_provenance`), so a checkout that is dirty, foreign or
+    not a git checkout at all refuses the run before anything is written.
     """
+    pdk = pdk_provenance(pdk_dir)
     lib_path = lib_path or default_lib_path(corner)
     git = git_provenance(REPO_ROOT)
     with tempfile.TemporaryDirectory(prefix="sg13g2-lib-") as tmp:
@@ -284,7 +374,7 @@ def characterize_library(config: Path, corner: str, pdk_dir, lib_path: Path | No
                                         library_name=library_view_name(corner))
         response = run_klt(request, backend=backend, workdir=tmp / "work", lib_path=lib_path)
     per_cell = [build_record_data(response, c, backend) for c in cells]
-    data = {**per_cell[0], "cells": per_cell,
+    data = {**per_cell[0], "cells": per_cell, "pdk": pdk,
             "netlist_provenance": f"design/gen_netlists.py --config {os.path.relpath(config, REPO_ROOT)}"}
     path = record(data, records_dir=records_dir, git=git)
     data["record_id"] = path.stem

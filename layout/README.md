@@ -108,6 +108,16 @@ width is `(columns + 1) * gate_pitch_nm`, counting block columns. Each strip
 must be a single chain of devices sharing source/drain nets, and both chains
 must have the same gate-net sequence.
 
+A gate whose net is also driven from diffusion (a multi-stage cell's internal
+net, e.g. `buf`'s `Y_i`) is routed as a terminal of that net (issue #201):
+the gate pad grows into a Metal1 riser running down to the net's channel
+track, and the track grows out to meet it, so pad, track and the driving
+diffusion stubs are one conductor rather than a labelled island the extractor
+reads as a split net. Nets that need a riser take the topmost tracks, so a
+riser crosses no other net's track; an ordinary input keeps the standalone
+pad. The riser and the widened track are cleared against every other net's
+Metal1 at `m1_space_nm` like any other piece of the route.
+
 A strip may hold devices of **different drawn finger widths** (issue #74). Each
 strip keeps a fixed outer edge -- the NMOS strip grows up from `n_diff_y0_nm`,
 the PMOS strip grows down from `row_height_nm - p_diff_top_margin_nm` -- and its
@@ -182,7 +192,11 @@ Outside that model the generator exits `3` naming the cell and the reason:
   for a contact (both above);
 * a channel narrower than the two implant enclosures (`2 * sd_enc_activ_nm`),
   where `psd` over the PMOS strip would overlap `nsd` over the NMOS strip;
-* a row/channel too short, or no Metal1-clean place for a gate contact.
+* a row/channel too short, or no Metal1-clean place for a gate contact -- or,
+  for a gate its net drives from diffusion, no Metal1-clean riser from that
+  net's track up to the pad (issue #201; the standalone labelled pad that
+  would otherwise be drawn is exactly the split net the riser exists to
+  avoid, so the refusal is the only other outcome).
 
 A failure message names the **netlist** finger width and the **drawn**
 (post-fold) one separately, because the fold divides a width that can be uniform
@@ -411,6 +425,21 @@ on klt `0.9.3.dev3+gd5d57daf9a14` (klayout `0.30.13`). The deck's
 the value every four reports carry), so the three earlier controls remain
 valid evidence without re-recording.
 
+**The two 840-pitch `and2` controls were re-recorded on 2026-11-22** (issue
+#201): the driven-gate routing fix above changed their streams -- `and2`'s
+internal `X_i` gate now lands on its net's route, which adds one Metal1 box
+per stream (the track extension; the pad itself becomes the riser's top) --
+so the committed GDS and the two reports next to them were regenerated
+together. The verdicts are unchanged: `notch-nmos-p840-admitted` is still
+`clean` with 0 violations (`metal1.space.1` and `metal1.width.1` in
+`rules_checked`), and `notch-pmos-p840-refused` still flags exactly one
+`psd.space.1` at the same bbox (the notch sits in the PMOS strip and is
+untouched by Metal1), negative control passing. Both were re-recorded on the
+same klt `0.9.2.dev1029+g76f47afa48f1` / klayout `0.30.13` and the same
+released deck (`sha256:cf6d...`) as the original set, so all four reports
+still carry one deck hash. The two `inv_4`-based controls (420/600) are
+byte-unchanged -- an inverter has no driven gate.
+
 ### Recorded LVS evidence (issues #42, #73)
 
 `layout/run_lvs.py` runs `klt lvs` (inline extraction, deck `sg13g2`, reference
@@ -428,6 +457,90 @@ Run from the repo root (klt gets cwd-relative paths). The runner first checks
 `klt --help` against `layout/toolchain.json` (`layout/toolchain_pin.py`). Exit
 codes: `0` all `match`; `1` tooling error or `--check` drift; `2` invalid
 config; `4` reports written but a cell is not `match`.
+
+#### Re-verifying the committed reports (issue #198)
+
+`--check` re-hashes, through whatever `klt` is first on `PATH`, the layout,
+the reference netlist and the bundled `sg13g2` deck each report pins -- so
+whether the committed evidence re-verifies is a property of the install, not
+only of the tree: a klt build bundling a different deck than the recorded
+`provenance.deck.content_hash` drifts on all four reports on a clean tree.
+Each report names the toolchain it was minted with --
+`provenance.klt_reinstall_spec` (a PEP 508 install requirement for klt) and
+`provenance.klayout_version` (the engine wheel). Read them out of any report
+(all four carry the same pair), install that exact toolchain into a
+throwaway venv -- never into a host-wide install -- and put its `bin` first
+on `PATH`, since the runner and `layout/toolchain_pin.py` both shell out to
+`klt` by name:
+
+```
+python3 -c "import json; p = json.load(open('layout/lvs/sg13g2_inv_1.json'))['provenance']; print(p['klt_reinstall_spec'], p['klayout_version'])"
+
+uv venv /tmp/lvs-verify
+uv pip install --python /tmp/lvs-verify/bin/python \
+  'klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@2a9c52b27ce7986b4372ae5d73129dac4773e02c' \
+  'klayout==0.30.13'
+/tmp/lvs-verify/bin/klt --version    # the recorded klt: 0.9.2.dev1022+g2a9c52b27ce7
+
+PATH=/tmp/lvs-verify/bin:$PATH \
+  python3 layout/run_lvs.py --config layout/example_config.json --check    # exit 0
+git diff --exit-code -- layout/gds layout/lvs    # the check wrote nothing
+```
+
+Installing `klayout==<provenance.klayout_version>` alongside the spec pins
+the engine wheel too. A newer klt is not disqualified: on
+`0.9.3.dev3+gd5d57daf9a14` (klayout `0.30.13`) the same runner check also
+exits 0 with every hash `[OK]`, plus one informational
+`[DRIFT] provenance.klt_version` line per report, and
+`layout/toolchain_pin.py` checks subcommands rather than versions, so the
+capability pin does not force the recorded build. Both installs verified at
+`aeb7c25`.
+
+**Reading a failure.** The runner's per-cell lines truncate `klt`'s stdout to
+200 characters (`do_check` in `layout/run_lvs.py`; the absolute report path
+eats about half the budget on its own), which on a drifting install cuts the
+output mid-field and hides *which* field drifted. Run the check on one report
+directly for the full diagnostic:
+
+```
+klt lvs --check layout/lvs/sg13g2_inv_1.json
+```
+
+On a host-wide install (`klt 0.9.3.dev2586+g9bac82596e2f`, klayout
+`0.30.12`, clean tree at `aeb7c25`) that prints:
+
+```
+status: drifted
+  [OK] environment.layout_sha256
+  [OK] environment.reference_sha256
+  [DRIFTED] provenance.deck.content_hash
+      expected: sha256:cf6dfead…
+      actual:   sha256:eaaf2989…
+  [DRIFT] provenance.klt_version: 0.9.2.dev1022+g2a9c52b27ce7 (report) vs 0.9.3.dev2586+g9bac82596e2f (current)
+  [DRIFT] provenance.klayout_version: 0.30.13 (report) vs 0.30.12 (current)
+```
+
+and exits `3` (the runner folds that into its exit `1`). The prefix is the
+signal:
+
+* `[DRIFT]` (singular) is an informational **tool-version** difference
+  (`provenance.klt_version`, `provenance.klayout_version`): the checking
+  install is not the minting one. It appears in passing runs too -- the
+  `0.9.3.dev3` build above graded `status: match`, exit `0` -- so it never
+  fails a check on its own.
+* `[DRIFTED]` is a failing field, with expected vs actual on the two lines
+  under it. In the example the failing field is
+  `provenance.deck.content_hash`: that install bundles a different `sg13g2`
+  deck than the report recorded, while both input hashes are still `[OK]`,
+  so the committed GDS and reference netlist are intact and the *deck* is
+  what moved -- re-verify under the recorded build (the recipe above)
+  before suspecting the evidence. A `[DRIFTED]` on
+  `environment.layout_sha256` or `environment.reference_sha256` instead is a
+  real input drift: the committed bytes are not what the report graded, and
+  the answer is a re-mint -- a new record, never an edit, the same
+  append-only discipline as the supersession chains below.
+
+#### The recorded result (issues #42, #73)
 
 The request sends `options.combine_devices: true`, recorded in each report's
 `options` block. It is there because this generator *folds*: a device of F
@@ -481,6 +594,8 @@ in this slice moved the verdict, in this order:
 So the signal topology of the folded cells -- the poly bridge and the per-finger
 source/drain alternation that the earlier record left unverified -- is now
 verified against the generated netlist.
+
+### Signoff manifest and attestation envelopes (issues #75, #103)
 
 Manifest: `manifests/sg13g2-stdcells.json` cites analog items 1 (attested
 inventory `manifests/inventories/item1.analog.json`: generator, config and
@@ -555,6 +670,8 @@ the gate. The envelope hash check is deliberately *not* delegated to
 `klt signoff --attest --check` in CI: that would break CI's tool-free
 constraint; the `klt` check stays the deeper local verification (it also
 re-runs each inventory's commands).
+
+### Characterization records and their supersession chain (issues #82, #134)
 
 `T1 #8 [analog] Characterization report` is **not** cited, and stays
 `no_evidence` — deliberately, with the attestation committed as it graded. Its
