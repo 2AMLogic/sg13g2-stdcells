@@ -1,0 +1,4935 @@
+{
+  "schema_version": 3,
+  "netlist": {
+    "path": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_2.timing.spice",
+    "scope": "repo"
+  },
+  "status": "pass",
+  "corner_count": 1,
+  "passed": 1,
+  "failed": 0,
+  "errored": 0,
+  "inconclusive": 0,
+  "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+  },
+  "metrics": {
+    "sim__corner__count": 1,
+    "sim__corner__passed_count": 1,
+    "sim__corner__failed_count": 0,
+    "sim__corner__errored_count": 0,
+    "sim__corner__inconclusive_count": 0
+  },
+  "environment": {
+    "engine": "ngspice",
+    "engine_version": "47",
+    "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "engine_build": {
+      "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******",
+      "binary_sha256": "39ca1adb826660324c3626f72bd946ec40704f0f3fc8e243c623f76e24b3eee2",
+      "probe": "ok",
+      "reason": null
+    },
+    "ngspice_init": {
+      "source": "none",
+      "lines": null,
+      "sha256": null
+    },
+    "models_lib": {
+      "path": null,
+      "scope": "external"
+    },
+    "models_lib_sha256": "03d505847c880d233b341be115a1e5460edf4d8e9b3e8a7df791a52fa4455d67",
+    "models_lib_sha256_scope": "local",
+    "netlist_sha256": "8837656fd8f6b0db6efa438e938939fb98688740d246a045b69697a927bb7938",
+    "netlist_sha256_scope": "staged",
+    "netlist_closure": [
+      {
+        "path": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_2.timing.spice",
+        "scope": "repo",
+        "sha256": "8837656fd8f6b0db6efa438e938939fb98688740d246a045b69697a927bb7938"
+      },
+      {
+        "path": "layout/lvs/netlists/sg13g2_inv_2.spice",
+        "scope": "repo",
+        "sha256": "da42c9d5d4790a03f7959d0416799651ad1425a770ce08e879fde32741851d9f"
+      }
+    ],
+    "netlist_identity": "sha256:1e1bdf8de7f54bcea27219c8ed0ce512771b734d1cf094f4e3aa22284761a931",
+    "osdi_preload": [
+      {
+        "name": "psp103.osdi",
+        "path": null,
+        "scope": "external",
+        "sha256": "2e4299c4683997e26469410dc1ab36b02ced924b1ac0972d6c4eae360e1fc796"
+      }
+    ],
+    "engine_host": "local",
+    "backend": {
+      "resolved": "local",
+      "source": "flag",
+      "requested": "local"
+    },
+    "timeout_preflight_warning": "options.timeout_s (120s) looks implausible for a tran analysis with ~8e+03 timepoints (1e-12 step, 8e-09 window) -- even 50 timepoints/s (a generous floor, not a real engine-rate estimate) would need 160s per corner. This is only a coarse, advisory pre-grid heuristic -- it does not block the sweep, and a plausible-looking budget can still turn out to be too short in practice."
+  },
+  "coverage": {
+    "corners_simulated": 1,
+    "measurements_declared": 150,
+    "measurements_with_limits": 150,
+    "unrecognized_limit_keys": [],
+    "schema_version": 1,
+    "known": true,
+    "checked": [
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p001_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p001_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p001_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p001_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p001_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p001_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p001_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p001_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p001_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p001_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p001_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p001_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p003_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p003_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p003_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p003_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p003_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p003_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p003_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p003_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p003_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p003_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p003_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p003_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p01_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p01_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p01_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p01_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p01_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p01_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p01_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p01_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p01_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p01_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p01_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p01_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p03_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p03_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p03_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p03_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p03_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p03_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p03_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p03_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p03_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p03_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p03_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p03_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p1_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p1_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p1_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p1_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p1_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p1_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p1_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p1_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p1_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p1_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p1_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p02_l0p1_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p001_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p001_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p001_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p001_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p001_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p001_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p001_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p001_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p001_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p001_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p001_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p001_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p003_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p003_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p003_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p003_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p003_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p003_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p003_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p003_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p003_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p003_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p003_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p003_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p01_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p01_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p01_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p01_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p01_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p01_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p01_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p01_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p01_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p01_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p01_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p01_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p03_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p03_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p03_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p03_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p03_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p03_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p03_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p03_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p03_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p03_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p03_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p03_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p1_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p1_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p1_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p1_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p1_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p1_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p1_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p1_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p1_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p1_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p1_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p05_l0p1_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p001_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p001_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p001_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p001_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p001_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p001_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p001_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p001_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p001_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p001_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p001_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p001_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p003_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p003_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p003_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p003_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p003_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p003_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p003_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p003_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p003_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p003_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p003_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p003_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p01_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p01_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p01_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p01_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p01_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p01_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p01_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p01_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p01_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p01_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p01_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p01_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p03_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p03_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p03_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p03_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p03_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p03_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p03_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p03_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p03_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p03_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p03_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p03_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p1_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p1_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p1_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p1_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p1_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p1_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p1_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p1_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p1_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p1_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p1_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p1_l0p1_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p001_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p001_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p001_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p001_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p001_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p001_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p001_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p001_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p001_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p001_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p001_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p001_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p003_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p003_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p003_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p003_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p003_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p003_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p003_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p003_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p003_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p003_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p003_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p003_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p01_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p01_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p01_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p01_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p01_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p01_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p01_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p01_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p01_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p01_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p01_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p01_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p03_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p03_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p03_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p03_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p03_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p03_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p03_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p03_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p03_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p03_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p03_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p03_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p1_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p1_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p1_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p1_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p1_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p1_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p1_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p1_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p1_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p1_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p1_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p2_l0p1_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p001_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p001_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p001_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p001_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p001_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p001_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p001_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p001_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p001_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p001_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p001_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p001_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p003_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p003_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p003_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p003_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p003_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p003_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p003_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p003_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p003_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p003_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p003_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p003_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p01_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p01_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p01_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p01_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p01_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p01_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p01_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p01_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p01_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p01_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p01_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p01_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p03_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p03_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p03_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p03_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p03_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p03_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p03_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p03_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p03_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p03_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p03_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p03_rise_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p1_cell_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p1_cell_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p1_cell_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p1_cell_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p1_fall_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p1_fall_transition\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p1_in_slew_fall\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p1_in_slew_fall\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p1_in_slew_rise\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p1_in_slew_rise\",\"min\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p1_rise_transition\",\"max\"]",
+      "limit:[0,\"mos_tt/1.200V/25C\",\"A_s0p4_l0p1_rise_transition\",\"min\"]"
+    ],
+    "skipped": [],
+    "inapplicable": [],
+    "unknown": [],
+    "nothing_checked": false,
+    "nothing_checked_reasons": []
+  },
+  "provenance": {
+    "klt_version": "0.9.3.dev2575+g6bd18bbc8637",
+    "klt_git_commit": "6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
+    "klayout_version": "0.30.12",
+    "pdk": null,
+    "deck": {
+      "name": "cornerMOSlv.lib",
+      "content_hash": "sha256:03d505847c880d233b341be115a1e5460edf4d8e9b3e8a7df791a52fa4455d67",
+      "released": false
+    },
+    "input": {
+      "content_hash": "sha256:8837656fd8f6b0db6efa438e938939fb98688740d246a045b69697a927bb7938",
+      "role": "netlist"
+    }
+  },
+  "measurements": [
+    {
+      "name": "A_s0p02_l0p001_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.7725652e-11,
+        "max": 1.8449148e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.80874e-11,
+        "margin": 3.617480000000002e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.80874e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.80874e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p001_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.6855902000000003e-11,
+        "max": 1.7543898000000003e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.71998e-11,
+        "margin": 3.43897999999997e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.71998e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.71998e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p001_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 9.1690858e-12,
+        "max": 9.5433342e-12
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.35621e-12,
+        "margin": 1.8712420000000052e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.35621e-12
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.35621e-12
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p001_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 7.207125799999999e-12,
+        "max": 7.501294199999999e-12
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.35417e-12,
+        "margin": 1.4704420000000136e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.35417e-12
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.35417e-12
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p001_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11,
+        "margin": 3.999999999999967e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p001_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11,
+        "margin": 3.999999999999967e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p003_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 2.1807646e-11,
+        "max": 2.2697754000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.22526e-11,
+        "margin": 4.449539999999975e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.22526e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.22526e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p003_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 2.0319908000000002e-11,
+        "max": 2.1149292e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.07346e-11,
+        "margin": 4.1469199999999603e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.07346e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.07346e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p003_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 1.3788306e-11,
+        "max": 1.4351093999999999e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.40697e-11,
+        "margin": 2.8139399999999976e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.40697e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.40697e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p003_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 1.061536e-11,
+        "max": 1.1048640000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.0832e-11,
+        "margin": 2.1664000000000098e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.0832e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.0832e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p003_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11,
+        "margin": 3.999999999999967e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p003_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11,
+        "margin": 3.999999999999967e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p01_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 3.5603988e-11,
+        "max": 3.7057212000000005e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.63314e-11,
+        "margin": 7.258120000000061e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.63314e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.63314e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p01_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 3.1777872e-11,
+        "max": 3.3074928e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.24264e-11,
+        "margin": 6.485280000000023e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.24264e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.24264e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p01_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 3.2710636e-11,
+        "max": 3.4045764e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.33789e-11,
+        "margin": 6.668640000000018e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.33789e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.33789e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p01_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.5035374e-11,
+        "max": 2.6057226000000003e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.55463e-11,
+        "margin": 5.109260000000015e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.55463e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.55463e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p01_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11,
+        "margin": 3.999999999999967e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p01_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11,
+        "margin": 3.999999999999967e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p03_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 7.368522e-11,
+        "max": 7.669278000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.51895e-11,
+        "margin": 1.5032800000000142e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.51895e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.51895e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p03_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 6.3156002e-11,
+        "max": 6.5733798e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.44448e-11,
+        "margin": 1.2887980000000068e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.44448e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.44448e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p03_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 8.7072412e-11,
+        "max": 9.0626388e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.88492e-11,
+        "margin": 1.7767879999999998e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.88492e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.88492e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p03_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 6.6835118e-11,
+        "max": 6.956308200000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.81991e-11,
+        "margin": 1.3639820000000068e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.81991e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.81991e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p03_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11,
+        "margin": 3.999999999999967e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p03_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11,
+        "margin": 3.999999999999967e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p1_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 2.0539624e-10,
+        "max": 2.1377976e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.09588e-10,
+        "margin": 4.1917599999999955e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.09588e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.09588e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p1_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.7167248e-10,
+        "max": 1.7867952e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.75176e-10,
+        "margin": 3.5035200000000036e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.75176e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.75176e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p1_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.7735372e-10,
+        "max": 2.8867428000000004e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.83015e-10,
+        "margin": 5.659280000000059e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.83015e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.83015e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p1_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.1314412e-10,
+        "max": 2.2184388e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.17493e-10,
+        "margin": 4.34887999999999e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.17493e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.17493e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p1_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11,
+        "margin": 3.999999999999967e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p02_l0p1_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-11,
+        "max": 2.0400000000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11,
+        "margin": 3.999999999999967e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p001_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 2.6386010000000003e-11,
+        "max": 2.7462990000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.69258e-11,
+        "margin": 5.371900000000021e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.69258e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.69258e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p001_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 2.5537526e-11,
+        "max": 2.6579874000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.60587e-11,
+        "margin": 5.21174000000001e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.60587e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.60587e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p001_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 1.6449594e-11,
+        "max": 1.7121006000000004e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.67756e-11,
+        "margin": 3.2600599999999864e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.67756e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.67756e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p001_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 1.3606418e-11,
+        "max": 1.4161782000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.38841e-11,
+        "margin": 2.776819999999992e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.38841e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.38841e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p001_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11,
+        "margin": 9.999999999999965e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p001_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11,
+        "margin": 9.999999999999965e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p003_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 3.294779600000001e-11,
+        "max": 3.429260400000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.36206e-11,
+        "margin": 6.720040000000091e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.36206e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.36206e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p003_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 3.1405668000000005e-11,
+        "max": 3.2687532e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.20466e-11,
+        "margin": 6.409319999999924e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.20466e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.20466e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p003_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.0278258000000003e-11,
+        "max": 2.1105942000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.06897e-11,
+        "margin": 4.1144199999999723e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.06897e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.06897e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p003_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 1.6841888e-11,
+        "max": 1.7529312e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.71856e-11,
+        "margin": 3.437119999999995e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.71856e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.71856e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p003_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11,
+        "margin": 9.999999999999965e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p003_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11,
+        "margin": 9.999999999999965e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p01_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 4.8080466e-11,
+        "max": 5.0042934e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.90617e-11,
+        "margin": 9.81234000000001e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.90617e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.90617e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p01_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 4.4719751999999994e-11,
+        "max": 4.6545048e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.56323e-11,
+        "margin": 9.125480000000039e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.56323e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.56323e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p01_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 3.4422304e-11,
+        "max": 3.5827296000000004e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.51262e-11,
+        "margin": 7.010960000000008e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.51262e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.51262e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p01_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.7087984e-11,
+        "max": 2.8193616000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.76408e-11,
+        "margin": 5.52816000000001e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.76408e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.76408e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p01_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11,
+        "margin": 9.999999999999965e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p01_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11,
+        "margin": 9.999999999999965e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p03_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 8.623706e-11,
+        "max": 8.975694000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.7997e-11,
+        "margin": 1.7599400000000063e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.7997e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.7997e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p03_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 7.6227928e-11,
+        "max": 7.9339272e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.77836e-11,
+        "margin": 1.5556720000000015e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.77836e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.77836e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p03_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 8.707260800000001e-11,
+        "max": 9.062659200000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.88498e-11,
+        "margin": 1.776792000000015e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.88498e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.88498e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p03_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 6.6834138e-11,
+        "max": 6.956206199999999e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.81981e-11,
+        "margin": 1.3639619999999953e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.81981e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.81981e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p03_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11,
+        "margin": 9.999999999999965e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p03_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11,
+        "margin": 9.999999999999965e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p1_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 2.1816074000000001e-10,
+        "max": 2.2706526000000003e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.22613e-10,
+        "margin": 4.452259999999981e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.22613e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.22613e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p1_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.8492600000000002e-10,
+        "max": 1.9247400000000004e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.887e-10,
+        "margin": 3.773999999999986e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.887e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.887e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p1_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.7735372e-10,
+        "max": 2.8867428000000004e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.83014e-10,
+        "margin": 5.660280000000016e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.83014e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.83014e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p1_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.1314314e-10,
+        "max": 2.2184286000000003e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.17493e-10,
+        "margin": 4.349859999999987e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.17493e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.17493e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p1_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11,
+        "margin": 9.999999999999965e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p05_l0p1_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 4.9000000000000005e-11,
+        "max": 5.100000000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11,
+        "margin": 9.999999999999965e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p001_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 3.4799114000000004e-11,
+        "max": 3.6219486000000006e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.55072e-11,
+        "margin": 7.080859999999969e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.55072e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.55072e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p001_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 3.4587532000000004e-11,
+        "max": 3.599926800000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.52935e-11,
+        "margin": 7.057680000000095e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.52935e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.52935e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p001_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.5372592000000002e-11,
+        "max": 2.6408208000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.58815e-11,
+        "margin": 5.089079999999965e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.58815e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.58815e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p001_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.2008644000000003e-11,
+        "max": 2.2906956000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.24577e-11,
+        "margin": 4.49055999999997e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.24577e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.24577e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p001_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10,
+        "margin": 1.999999999999993e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p001_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10,
+        "margin": 1.999999999999993e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p003_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 4.4695644e-11,
+        "max": 4.6519956000000005e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.56066e-11,
+        "margin": 9.109560000000025e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.56066e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.56066e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p003_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 4.351739e-11,
+        "max": 4.529361000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.44056e-11,
+        "margin": 8.880100000000109e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.44056e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.44056e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p003_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 3.1295222e-11,
+        "max": 3.2572578000000005e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.19291e-11,
+        "margin": 6.338779999999982e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.19291e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.19291e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p003_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.6851216e-11,
+        "max": 2.7947184e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.73992e-11,
+        "margin": 5.479840000000001e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.73992e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.73992e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p003_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10,
+        "margin": 1.999999999999993e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p003_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10,
+        "margin": 1.999999999999993e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p01_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 6.7315318e-11,
+        "max": 7.006288200000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.86887e-11,
+        "margin": 1.3733819999999918e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.86887e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.86887e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p01_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 6.3810348e-11,
+        "max": 6.641485200000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.51126e-11,
+        "margin": 1.3022519999999927e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.51126e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.51126e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p01_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 4.505109e-11,
+        "max": 4.6889910000000005e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.5969e-11,
+        "margin": 9.179100000000037e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.5969e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.5969e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p01_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 3.7970296e-11,
+        "max": 3.9520104000000005e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.87452e-11,
+        "margin": 7.749039999999949e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.87452e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.87452e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p01_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10,
+        "margin": 1.999999999999993e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p01_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10,
+        "margin": 1.999999999999993e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p03_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.0748346000000001e-10,
+        "max": 1.1187054e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.09677e-10,
+        "margin": 2.193539999999996e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.09677e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.09677e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p03_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 9.828224000000001e-11,
+        "max": 1.0229376e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.00288e-10,
+        "margin": 2.0057599999999965e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.00288e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.00288e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p03_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 8.893862600000001e-11,
+        "max": 9.256877400000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.07545e-11,
+        "margin": 1.8142740000000161e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.07545e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.07545e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p03_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 6.949523e-11,
+        "max": 7.233177000000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.09135e-11,
+        "margin": 1.41826999999999e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.09135e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.09135e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p03_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10,
+        "margin": 1.999999999999993e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p03_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10,
+        "margin": 1.999999999999993e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p1_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 2.3950416e-10,
+        "max": 2.4927984000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.44392e-10,
+        "margin": 4.8878399999999636e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.44392e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.44392e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p1_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 2.0707106000000003e-10,
+        "max": 2.1552294000000004e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.11297e-10,
+        "margin": 4.2259399999999774e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.11297e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.11297e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p1_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.7735470000000003e-10,
+        "max": 2.8867530000000003e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.83014e-10,
+        "margin": 5.659299999999993e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.83014e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.83014e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p1_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.1314412e-10,
+        "max": 2.2184388e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.17494e-10,
+        "margin": 4.3498799999999984e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.17494e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.17494e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p1_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10,
+        "margin": 1.999999999999993e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p1_l0p1_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 9.800000000000001e-11,
+        "max": 1.0200000000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10,
+        "margin": 1.999999999999993e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p001_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 4.4998268e-11,
+        "max": 4.6834932000000005e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.59189e-11,
+        "margin": 9.160320000000053e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.59189e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.59189e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p001_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 4.619475e-11,
+        "max": 4.8080250000000006e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.71377e-11,
+        "margin": 9.425500000000039e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.71377e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.71377e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p001_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 3.8882382000000004e-11,
+        "max": 4.0469418000000004e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.96775e-11,
+        "margin": 7.919180000000066e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.96775e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.96775e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p001_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 3.517631600000001e-11,
+        "max": 3.6612084000000004e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.5894e-11,
+        "margin": 7.176839999999928e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.5894e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.5894e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p001_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10,
+        "margin": 3.999999999999986e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p001_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10,
+        "margin": 3.999999999999986e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p003_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 5.944964200000001e-11,
+        "max": 6.1876158e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.06636e-11,
+        "margin": 1.2125580000000047e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.06636e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.06636e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p003_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 5.948805800000001e-11,
+        "max": 6.1916142e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.07022e-11,
+        "margin": 1.2139420000000023e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.07022e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.07022e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p003_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 4.7951890000000005e-11,
+        "max": 4.990911e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.89285e-11,
+        "margin": 9.766099999999942e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.89285e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.89285e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p003_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 4.2766905999999996e-11,
+        "max": 4.4512494e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.36396e-11,
+        "margin": 8.726940000000035e-13
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.36396e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4.36396e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p003_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10,
+        "margin": 3.999999999999986e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p003_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10,
+        "margin": 3.999999999999986e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p01_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 9.342144e-11,
+        "max": 9.723456e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.5328e-11,
+        "margin": 1.906560000000001e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.5328e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.5328e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p01_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 9.030435400000001e-11,
+        "max": 9.3990246e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.21473e-11,
+        "margin": 1.842945999999998e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.21473e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.21473e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p01_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 6.848200800000001e-11,
+        "max": 7.1277192e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.98823e-11,
+        "margin": 1.394892000000001e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.98823e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.98823e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p01_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 5.948854800000001e-11,
+        "max": 6.191665200000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.06998e-11,
+        "margin": 1.2112519999999875e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.06998e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.06998e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p01_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10,
+        "margin": 3.999999999999986e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p01_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10,
+        "margin": 3.999999999999986e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p03_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.4938336000000003e-10,
+        "max": 1.5548064000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.52432e-10,
+        "margin": 3.0486399999999695e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.52432e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.52432e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p03_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.4050064e-10,
+        "max": 1.4623536000000001e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.43368e-10,
+        "margin": 2.867360000000013e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.43368e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.43368e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p03_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 1.0612028e-10,
+        "max": 1.1045172e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.08285e-10,
+        "margin": 2.164720000000006e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.08285e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.08285e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p03_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 8.787258200000001e-11,
+        "max": 9.145921800000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.96652e-11,
+        "margin": 1.7926179999999872e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.96652e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.96652e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p03_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10,
+        "margin": 3.999999999999986e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p03_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10,
+        "margin": 3.999999999999986e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p1_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 2.8239778e-10,
+        "max": 2.9392422000000004e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.88161e-10,
+        "margin": 5.763220000000012e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.88161e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.88161e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p1_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 2.5155228000000005e-10,
+        "max": 2.6181972000000003e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.56686e-10,
+        "margin": 5.133719999999937e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.56686e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.56686e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p1_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.7735470000000003e-10,
+        "max": 2.8867530000000003e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.83012e-10,
+        "margin": 5.657299999999976e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.83012e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.83012e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p1_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.1362628000000004e-10,
+        "max": 2.2234572000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.17985e-10,
+        "margin": 4.3587199999999574e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.17985e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.17985e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p1_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10,
+        "margin": 3.999999999999986e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p2_l0p1_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.9600000000000002e-10,
+        "max": 2.0400000000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10,
+        "margin": 3.999999999999986e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p001_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 5.6979454e-11,
+        "max": 5.9305146e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5.81506e-11,
+        "margin": 1.1545460000000043e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5.81506e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5.81506e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p001_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 6.0905236e-11,
+        "max": 6.339116400000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.21491e-11,
+        "margin": 1.2420640000000157e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.21491e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.21491e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p001_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 5.9676022e-11,
+        "max": 6.2111778e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.08744e-11,
+        "margin": 1.1983780000000004e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.08744e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.08744e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p001_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 5.5819036e-11,
+        "max": 5.809736400000001e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5.69568e-11,
+        "margin": 1.1377639999999973e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5.69568e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 5.69568e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p001_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10,
+        "margin": 7.999999999999972e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p001_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10,
+        "margin": 7.999999999999972e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p003_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 7.736708000000001e-11,
+        "max": 8.052492000000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.89542e-11,
+        "margin": 1.5707200000000157e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.89542e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.89542e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p003_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 8.006129599999999e-11,
+        "max": 8.3329104e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.16958e-11,
+        "margin": 1.633303999999993e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.16958e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 8.16958e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p003_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 7.309839599999999e-11,
+        "max": 7.6082004e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.4579e-11,
+        "margin": 1.4806040000000039e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.4579e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 7.4579e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p003_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 6.749103199999999e-11,
+        "max": 7.0245768e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.88677e-11,
+        "margin": 1.3766680000000017e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.88677e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 6.88677e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p003_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10,
+        "margin": 7.999999999999972e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p003_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10,
+        "margin": 7.999999999999972e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p01_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 1.2682474e-10,
+        "max": 1.3200126e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.29418e-10,
+        "margin": 2.5832599999999746e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.29418e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.29418e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p01_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 1.2574478000000002e-10,
+        "max": 1.3087722000000004e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.28312e-10,
+        "margin": 2.5652200000000297e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.28312e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.28312e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p01_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 1.0432394000000002e-10,
+        "max": 1.0858206000000001e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.06446e-10,
+        "margin": 2.1220599999999757e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.06446e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.06446e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p01_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 9.357961200000001e-11,
+        "max": 9.739918800000002e-11
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.54847e-11,
+        "margin": 1.9050879999999915e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.54847e-11
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 9.54847e-11
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p01_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10,
+        "margin": 7.999999999999972e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p01_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10,
+        "margin": 7.999999999999972e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p03_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 2.1105378e-10,
+        "max": 2.1966822e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.15364e-10,
+        "margin": 4.304220000000007e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.15364e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.15364e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p03_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 2.0205248000000003e-10,
+        "max": 2.1029952000000002e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.06177e-10,
+        "margin": 4.122520000000015e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.06177e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.06177e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p03_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 1.5525356000000002e-10,
+        "max": 1.6159044000000003e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.58419e-10,
+        "margin": 3.165439999999979e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.58419e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.58419e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p03_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 1.346961e-10,
+        "max": 1.401939e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.37436e-10,
+        "margin": 2.739900000000002e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.37436e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 1.37436e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p03_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10,
+        "margin": 7.999999999999972e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p03_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10,
+        "margin": 7.999999999999972e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p1_cell_rise",
+      "unit": "s",
+      "limits": {
+        "min": 3.6862014e-10,
+        "max": 3.8366586000000004e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.76143e-10,
+        "margin": 7.522859999999961e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.76143e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.76143e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p1_cell_fall",
+      "unit": "s",
+      "limits": {
+        "min": 3.4107332e-10,
+        "max": 3.5499468000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.48034e-10,
+        "margin": 6.960680000000025e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.48034e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.48034e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p1_rise_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.9534946e-10,
+        "max": 3.0740454000000005e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.01376e-10,
+        "margin": 6.026540000000023e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.01376e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 3.01376e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p1_fall_transition",
+      "unit": "s",
+      "limits": {
+        "min": 2.3552241999999995e-10,
+        "max": 2.4513558e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.40328e-10,
+        "margin": 4.8055800000000664e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.40328e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 2.40328e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p1_in_slew_rise",
+      "unit": "s",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10,
+        "margin": 7.999999999999972e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "spec_row": "9"
+    },
+    {
+      "name": "A_s0p4_l0p1_in_slew_fall",
+      "unit": "s",
+      "limits": {
+        "min": 3.9200000000000004e-10,
+        "max": 4.080000000000001e-10
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10,
+        "margin": 7.999999999999972e-12
+      },
+      "min": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "max": {
+        "corner_id": "mos_tt/1.200V/25C",
+        "value": 4e-10
+      },
+      "spec_row": "9"
+    }
+  ],
+  "corners": [
+    {
+      "corner_id": "mos_tt/1.200V/25C",
+      "process": "mos_tt",
+      "supply_v": {
+        "Vdd": 1.2
+      },
+      "temperature_c": 25.0,
+      "status": "pass",
+      "runtime_s": 3.286,
+      "peak_rss_bytes": 117846016,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "A_s0p02_l0p001_cell_rise",
+          "value": 1.80874e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.617480000000002e-13
+        },
+        {
+          "name": "A_s0p02_l0p001_cell_fall",
+          "value": 1.71998e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.43897999999997e-13
+        },
+        {
+          "name": "A_s0p02_l0p001_rise_transition",
+          "value": 9.35621e-12,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.8712420000000052e-13
+        },
+        {
+          "name": "A_s0p02_l0p001_fall_transition",
+          "value": 7.35417e-12,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.4704420000000136e-13
+        },
+        {
+          "name": "A_s0p02_l0p001_in_slew_rise",
+          "value": 2e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999967e-13
+        },
+        {
+          "name": "A_s0p02_l0p001_in_slew_fall",
+          "value": 2e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999967e-13
+        },
+        {
+          "name": "A_s0p02_l0p003_cell_rise",
+          "value": 2.22526e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.449539999999975e-13
+        },
+        {
+          "name": "A_s0p02_l0p003_cell_fall",
+          "value": 2.07346e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.1469199999999603e-13
+        },
+        {
+          "name": "A_s0p02_l0p003_rise_transition",
+          "value": 1.40697e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 2.8139399999999976e-13
+        },
+        {
+          "name": "A_s0p02_l0p003_fall_transition",
+          "value": 1.0832e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 2.1664000000000098e-13
+        },
+        {
+          "name": "A_s0p02_l0p003_in_slew_rise",
+          "value": 2e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999967e-13
+        },
+        {
+          "name": "A_s0p02_l0p003_in_slew_fall",
+          "value": 2e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999967e-13
+        },
+        {
+          "name": "A_s0p02_l0p01_cell_rise",
+          "value": 3.63314e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.258120000000061e-13
+        },
+        {
+          "name": "A_s0p02_l0p01_cell_fall",
+          "value": 3.24264e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 6.485280000000023e-13
+        },
+        {
+          "name": "A_s0p02_l0p01_rise_transition",
+          "value": 3.33789e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 6.668640000000018e-13
+        },
+        {
+          "name": "A_s0p02_l0p01_fall_transition",
+          "value": 2.55463e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 5.109260000000015e-13
+        },
+        {
+          "name": "A_s0p02_l0p01_in_slew_rise",
+          "value": 2e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999967e-13
+        },
+        {
+          "name": "A_s0p02_l0p01_in_slew_fall",
+          "value": 2e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999967e-13
+        },
+        {
+          "name": "A_s0p02_l0p03_cell_rise",
+          "value": 7.51895e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.5032800000000142e-12
+        },
+        {
+          "name": "A_s0p02_l0p03_cell_fall",
+          "value": 6.44448e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.2887980000000068e-12
+        },
+        {
+          "name": "A_s0p02_l0p03_rise_transition",
+          "value": 8.88492e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.7767879999999998e-12
+        },
+        {
+          "name": "A_s0p02_l0p03_fall_transition",
+          "value": 6.81991e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.3639820000000068e-12
+        },
+        {
+          "name": "A_s0p02_l0p03_in_slew_rise",
+          "value": 2e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999967e-13
+        },
+        {
+          "name": "A_s0p02_l0p03_in_slew_fall",
+          "value": 2e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999967e-13
+        },
+        {
+          "name": "A_s0p02_l0p1_cell_rise",
+          "value": 2.09588e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.1917599999999955e-12
+        },
+        {
+          "name": "A_s0p02_l0p1_cell_fall",
+          "value": 1.75176e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.5035200000000036e-12
+        },
+        {
+          "name": "A_s0p02_l0p1_rise_transition",
+          "value": 2.83015e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 5.659280000000059e-12
+        },
+        {
+          "name": "A_s0p02_l0p1_fall_transition",
+          "value": 2.17493e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.34887999999999e-12
+        },
+        {
+          "name": "A_s0p02_l0p1_in_slew_rise",
+          "value": 2e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999967e-13
+        },
+        {
+          "name": "A_s0p02_l0p1_in_slew_fall",
+          "value": 2e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999967e-13
+        },
+        {
+          "name": "A_s0p05_l0p001_cell_rise",
+          "value": 2.69258e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 5.371900000000021e-13
+        },
+        {
+          "name": "A_s0p05_l0p001_cell_fall",
+          "value": 2.60587e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 5.21174000000001e-13
+        },
+        {
+          "name": "A_s0p05_l0p001_rise_transition",
+          "value": 1.67756e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.2600599999999864e-13
+        },
+        {
+          "name": "A_s0p05_l0p001_fall_transition",
+          "value": 1.38841e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 2.776819999999992e-13
+        },
+        {
+          "name": "A_s0p05_l0p001_in_slew_rise",
+          "value": 5e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.999999999999965e-13
+        },
+        {
+          "name": "A_s0p05_l0p001_in_slew_fall",
+          "value": 5e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.999999999999965e-13
+        },
+        {
+          "name": "A_s0p05_l0p003_cell_rise",
+          "value": 3.36206e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 6.720040000000091e-13
+        },
+        {
+          "name": "A_s0p05_l0p003_cell_fall",
+          "value": 3.20466e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 6.409319999999924e-13
+        },
+        {
+          "name": "A_s0p05_l0p003_rise_transition",
+          "value": 2.06897e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.1144199999999723e-13
+        },
+        {
+          "name": "A_s0p05_l0p003_fall_transition",
+          "value": 1.71856e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.437119999999995e-13
+        },
+        {
+          "name": "A_s0p05_l0p003_in_slew_rise",
+          "value": 5e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.999999999999965e-13
+        },
+        {
+          "name": "A_s0p05_l0p003_in_slew_fall",
+          "value": 5e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.999999999999965e-13
+        },
+        {
+          "name": "A_s0p05_l0p01_cell_rise",
+          "value": 4.90617e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.81234000000001e-13
+        },
+        {
+          "name": "A_s0p05_l0p01_cell_fall",
+          "value": 4.56323e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.125480000000039e-13
+        },
+        {
+          "name": "A_s0p05_l0p01_rise_transition",
+          "value": 3.51262e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.010960000000008e-13
+        },
+        {
+          "name": "A_s0p05_l0p01_fall_transition",
+          "value": 2.76408e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 5.52816000000001e-13
+        },
+        {
+          "name": "A_s0p05_l0p01_in_slew_rise",
+          "value": 5e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.999999999999965e-13
+        },
+        {
+          "name": "A_s0p05_l0p01_in_slew_fall",
+          "value": 5e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.999999999999965e-13
+        },
+        {
+          "name": "A_s0p05_l0p03_cell_rise",
+          "value": 8.7997e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.7599400000000063e-12
+        },
+        {
+          "name": "A_s0p05_l0p03_cell_fall",
+          "value": 7.77836e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.5556720000000015e-12
+        },
+        {
+          "name": "A_s0p05_l0p03_rise_transition",
+          "value": 8.88498e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.776792000000015e-12
+        },
+        {
+          "name": "A_s0p05_l0p03_fall_transition",
+          "value": 6.81981e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.3639619999999953e-12
+        },
+        {
+          "name": "A_s0p05_l0p03_in_slew_rise",
+          "value": 5e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.999999999999965e-13
+        },
+        {
+          "name": "A_s0p05_l0p03_in_slew_fall",
+          "value": 5e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.999999999999965e-13
+        },
+        {
+          "name": "A_s0p05_l0p1_cell_rise",
+          "value": 2.22613e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.452259999999981e-12
+        },
+        {
+          "name": "A_s0p05_l0p1_cell_fall",
+          "value": 1.887e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.773999999999986e-12
+        },
+        {
+          "name": "A_s0p05_l0p1_rise_transition",
+          "value": 2.83014e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 5.660280000000016e-12
+        },
+        {
+          "name": "A_s0p05_l0p1_fall_transition",
+          "value": 2.17493e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.349859999999987e-12
+        },
+        {
+          "name": "A_s0p05_l0p1_in_slew_rise",
+          "value": 5e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.999999999999965e-13
+        },
+        {
+          "name": "A_s0p05_l0p1_in_slew_fall",
+          "value": 5e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.999999999999965e-13
+        },
+        {
+          "name": "A_s0p1_l0p001_cell_rise",
+          "value": 3.55072e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.080859999999969e-13
+        },
+        {
+          "name": "A_s0p1_l0p001_cell_fall",
+          "value": 3.52935e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.057680000000095e-13
+        },
+        {
+          "name": "A_s0p1_l0p001_rise_transition",
+          "value": 2.58815e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 5.089079999999965e-13
+        },
+        {
+          "name": "A_s0p1_l0p001_fall_transition",
+          "value": 2.24577e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.49055999999997e-13
+        },
+        {
+          "name": "A_s0p1_l0p001_in_slew_rise",
+          "value": 1e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.999999999999993e-12
+        },
+        {
+          "name": "A_s0p1_l0p001_in_slew_fall",
+          "value": 1e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.999999999999993e-12
+        },
+        {
+          "name": "A_s0p1_l0p003_cell_rise",
+          "value": 4.56066e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.109560000000025e-13
+        },
+        {
+          "name": "A_s0p1_l0p003_cell_fall",
+          "value": 4.44056e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 8.880100000000109e-13
+        },
+        {
+          "name": "A_s0p1_l0p003_rise_transition",
+          "value": 3.19291e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 6.338779999999982e-13
+        },
+        {
+          "name": "A_s0p1_l0p003_fall_transition",
+          "value": 2.73992e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 5.479840000000001e-13
+        },
+        {
+          "name": "A_s0p1_l0p003_in_slew_rise",
+          "value": 1e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.999999999999993e-12
+        },
+        {
+          "name": "A_s0p1_l0p003_in_slew_fall",
+          "value": 1e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.999999999999993e-12
+        },
+        {
+          "name": "A_s0p1_l0p01_cell_rise",
+          "value": 6.86887e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.3733819999999918e-12
+        },
+        {
+          "name": "A_s0p1_l0p01_cell_fall",
+          "value": 6.51126e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.3022519999999927e-12
+        },
+        {
+          "name": "A_s0p1_l0p01_rise_transition",
+          "value": 4.5969e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.179100000000037e-13
+        },
+        {
+          "name": "A_s0p1_l0p01_fall_transition",
+          "value": 3.87452e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.749039999999949e-13
+        },
+        {
+          "name": "A_s0p1_l0p01_in_slew_rise",
+          "value": 1e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.999999999999993e-12
+        },
+        {
+          "name": "A_s0p1_l0p01_in_slew_fall",
+          "value": 1e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.999999999999993e-12
+        },
+        {
+          "name": "A_s0p1_l0p03_cell_rise",
+          "value": 1.09677e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 2.193539999999996e-12
+        },
+        {
+          "name": "A_s0p1_l0p03_cell_fall",
+          "value": 1.00288e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 2.0057599999999965e-12
+        },
+        {
+          "name": "A_s0p1_l0p03_rise_transition",
+          "value": 9.07545e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.8142740000000161e-12
+        },
+        {
+          "name": "A_s0p1_l0p03_fall_transition",
+          "value": 7.09135e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.41826999999999e-12
+        },
+        {
+          "name": "A_s0p1_l0p03_in_slew_rise",
+          "value": 1e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.999999999999993e-12
+        },
+        {
+          "name": "A_s0p1_l0p03_in_slew_fall",
+          "value": 1e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.999999999999993e-12
+        },
+        {
+          "name": "A_s0p1_l0p1_cell_rise",
+          "value": 2.44392e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.8878399999999636e-12
+        },
+        {
+          "name": "A_s0p1_l0p1_cell_fall",
+          "value": 2.11297e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.2259399999999774e-12
+        },
+        {
+          "name": "A_s0p1_l0p1_rise_transition",
+          "value": 2.83014e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 5.659299999999993e-12
+        },
+        {
+          "name": "A_s0p1_l0p1_fall_transition",
+          "value": 2.17494e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.3498799999999984e-12
+        },
+        {
+          "name": "A_s0p1_l0p1_in_slew_rise",
+          "value": 1e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.999999999999993e-12
+        },
+        {
+          "name": "A_s0p1_l0p1_in_slew_fall",
+          "value": 1e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.999999999999993e-12
+        },
+        {
+          "name": "A_s0p2_l0p001_cell_rise",
+          "value": 4.59189e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.160320000000053e-13
+        },
+        {
+          "name": "A_s0p2_l0p001_cell_fall",
+          "value": 4.71377e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.425500000000039e-13
+        },
+        {
+          "name": "A_s0p2_l0p001_rise_transition",
+          "value": 3.96775e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.919180000000066e-13
+        },
+        {
+          "name": "A_s0p2_l0p001_fall_transition",
+          "value": 3.5894e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.176839999999928e-13
+        },
+        {
+          "name": "A_s0p2_l0p001_in_slew_rise",
+          "value": 2e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999986e-12
+        },
+        {
+          "name": "A_s0p2_l0p001_in_slew_fall",
+          "value": 2e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999986e-12
+        },
+        {
+          "name": "A_s0p2_l0p003_cell_rise",
+          "value": 6.06636e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.2125580000000047e-12
+        },
+        {
+          "name": "A_s0p2_l0p003_cell_fall",
+          "value": 6.07022e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.2139420000000023e-12
+        },
+        {
+          "name": "A_s0p2_l0p003_rise_transition",
+          "value": 4.89285e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 9.766099999999942e-13
+        },
+        {
+          "name": "A_s0p2_l0p003_fall_transition",
+          "value": 4.36396e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 8.726940000000035e-13
+        },
+        {
+          "name": "A_s0p2_l0p003_in_slew_rise",
+          "value": 2e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999986e-12
+        },
+        {
+          "name": "A_s0p2_l0p003_in_slew_fall",
+          "value": 2e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999986e-12
+        },
+        {
+          "name": "A_s0p2_l0p01_cell_rise",
+          "value": 9.5328e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.906560000000001e-12
+        },
+        {
+          "name": "A_s0p2_l0p01_cell_fall",
+          "value": 9.21473e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.842945999999998e-12
+        },
+        {
+          "name": "A_s0p2_l0p01_rise_transition",
+          "value": 6.98823e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.394892000000001e-12
+        },
+        {
+          "name": "A_s0p2_l0p01_fall_transition",
+          "value": 6.06998e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.2112519999999875e-12
+        },
+        {
+          "name": "A_s0p2_l0p01_in_slew_rise",
+          "value": 2e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999986e-12
+        },
+        {
+          "name": "A_s0p2_l0p01_in_slew_fall",
+          "value": 2e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999986e-12
+        },
+        {
+          "name": "A_s0p2_l0p03_cell_rise",
+          "value": 1.52432e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.0486399999999695e-12
+        },
+        {
+          "name": "A_s0p2_l0p03_cell_fall",
+          "value": 1.43368e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 2.867360000000013e-12
+        },
+        {
+          "name": "A_s0p2_l0p03_rise_transition",
+          "value": 1.08285e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 2.164720000000006e-12
+        },
+        {
+          "name": "A_s0p2_l0p03_fall_transition",
+          "value": 8.96652e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.7926179999999872e-12
+        },
+        {
+          "name": "A_s0p2_l0p03_in_slew_rise",
+          "value": 2e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999986e-12
+        },
+        {
+          "name": "A_s0p2_l0p03_in_slew_fall",
+          "value": 2e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999986e-12
+        },
+        {
+          "name": "A_s0p2_l0p1_cell_rise",
+          "value": 2.88161e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 5.763220000000012e-12
+        },
+        {
+          "name": "A_s0p2_l0p1_cell_fall",
+          "value": 2.56686e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 5.133719999999937e-12
+        },
+        {
+          "name": "A_s0p2_l0p1_rise_transition",
+          "value": 2.83012e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 5.657299999999976e-12
+        },
+        {
+          "name": "A_s0p2_l0p1_fall_transition",
+          "value": 2.17985e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.3587199999999574e-12
+        },
+        {
+          "name": "A_s0p2_l0p1_in_slew_rise",
+          "value": 2e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999986e-12
+        },
+        {
+          "name": "A_s0p2_l0p1_in_slew_fall",
+          "value": 2e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.999999999999986e-12
+        },
+        {
+          "name": "A_s0p4_l0p001_cell_rise",
+          "value": 5.81506e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.1545460000000043e-12
+        },
+        {
+          "name": "A_s0p4_l0p001_cell_fall",
+          "value": 6.21491e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.2420640000000157e-12
+        },
+        {
+          "name": "A_s0p4_l0p001_rise_transition",
+          "value": 6.08744e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.1983780000000004e-12
+        },
+        {
+          "name": "A_s0p4_l0p001_fall_transition",
+          "value": 5.69568e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.1377639999999973e-12
+        },
+        {
+          "name": "A_s0p4_l0p001_in_slew_rise",
+          "value": 4e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.999999999999972e-12
+        },
+        {
+          "name": "A_s0p4_l0p001_in_slew_fall",
+          "value": 4e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.999999999999972e-12
+        },
+        {
+          "name": "A_s0p4_l0p003_cell_rise",
+          "value": 7.89542e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.5707200000000157e-12
+        },
+        {
+          "name": "A_s0p4_l0p003_cell_fall",
+          "value": 8.16958e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.633303999999993e-12
+        },
+        {
+          "name": "A_s0p4_l0p003_rise_transition",
+          "value": 7.4579e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.4806040000000039e-12
+        },
+        {
+          "name": "A_s0p4_l0p003_fall_transition",
+          "value": 6.88677e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.3766680000000017e-12
+        },
+        {
+          "name": "A_s0p4_l0p003_in_slew_rise",
+          "value": 4e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.999999999999972e-12
+        },
+        {
+          "name": "A_s0p4_l0p003_in_slew_fall",
+          "value": 4e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.999999999999972e-12
+        },
+        {
+          "name": "A_s0p4_l0p01_cell_rise",
+          "value": 1.29418e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 2.5832599999999746e-12
+        },
+        {
+          "name": "A_s0p4_l0p01_cell_fall",
+          "value": 1.28312e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 2.5652200000000297e-12
+        },
+        {
+          "name": "A_s0p4_l0p01_rise_transition",
+          "value": 1.06446e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 2.1220599999999757e-12
+        },
+        {
+          "name": "A_s0p4_l0p01_fall_transition",
+          "value": 9.54847e-11,
+          "unit": "s",
+          "status": "pass",
+          "margin": 1.9050879999999915e-12
+        },
+        {
+          "name": "A_s0p4_l0p01_in_slew_rise",
+          "value": 4e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.999999999999972e-12
+        },
+        {
+          "name": "A_s0p4_l0p01_in_slew_fall",
+          "value": 4e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.999999999999972e-12
+        },
+        {
+          "name": "A_s0p4_l0p03_cell_rise",
+          "value": 2.15364e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.304220000000007e-12
+        },
+        {
+          "name": "A_s0p4_l0p03_cell_fall",
+          "value": 2.06177e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.122520000000015e-12
+        },
+        {
+          "name": "A_s0p4_l0p03_rise_transition",
+          "value": 1.58419e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 3.165439999999979e-12
+        },
+        {
+          "name": "A_s0p4_l0p03_fall_transition",
+          "value": 1.37436e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 2.739900000000002e-12
+        },
+        {
+          "name": "A_s0p4_l0p03_in_slew_rise",
+          "value": 4e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.999999999999972e-12
+        },
+        {
+          "name": "A_s0p4_l0p03_in_slew_fall",
+          "value": 4e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.999999999999972e-12
+        },
+        {
+          "name": "A_s0p4_l0p1_cell_rise",
+          "value": 3.76143e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.522859999999961e-12
+        },
+        {
+          "name": "A_s0p4_l0p1_cell_fall",
+          "value": 3.48034e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 6.960680000000025e-12
+        },
+        {
+          "name": "A_s0p4_l0p1_rise_transition",
+          "value": 3.01376e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 6.026540000000023e-12
+        },
+        {
+          "name": "A_s0p4_l0p1_fall_transition",
+          "value": 2.40328e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 4.8055800000000664e-12
+        },
+        {
+          "name": "A_s0p4_l0p1_in_slew_rise",
+          "value": 4e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.999999999999972e-12
+        },
+        {
+          "name": "A_s0p4_l0p1_in_slew_fall",
+          "value": 4e-10,
+          "unit": "s",
+          "status": "pass",
+          "margin": 7.999999999999972e-12
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": null,
+        "raw": null,
+        "waveform": null,
+        "deck": null
+      },
+      "monte_carlo": null
+    }
+  ]
+}
