@@ -22,8 +22,8 @@ from pathlib import Path
 
 from ..harness.evidence import CharacterizationExtensions
 from ..harness.report import allocate_record_id, commit_stamp, git_provenance
-from .request import (DEFAULT_CORNER, CellSpec, build_library_request, build_request,
-                      cells_from_config, library_view_name)
+from .request import (DEFAULT_CORNER, CellSpec, build_library_request, cells_from_config,
+                      library_view_name)
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
@@ -302,16 +302,6 @@ def record(data: dict, records_dir: Path = RECORDS_DIR, repo_root: Path = REPO_R
             continue
 
 
-def characterize_and_record(cell: CellSpec, corner: str, pdk_dir, backend: str = "local",
-                            records_dir: Path = RECORDS_DIR, **axes) -> Path:
-    pdk = pdk_provenance(pdk_dir)
-    with tempfile.TemporaryDirectory(prefix="sg13g2-char-") as tmp:
-        response = run_klt(build_request(cell, corner, pdk_dir, **axes), backend=backend,
-                           workdir=Path(tmp) / "work")
-        return record({**build_record_data(response, cell, backend), "pdk": pdk},
-                      records_dir=records_dir)
-
-
 DEFAULT_CONFIG = REPO_ROOT / "layout" / "example_config.json"
 
 
@@ -385,7 +375,6 @@ def characterize_library(config: Path, corner: str, pdk_dir, lib_path: Path | No
 
 def main(argv=None) -> int:
     import argparse
-    from .request import SG13G2_INV_1
     ap = argparse.ArgumentParser(prog="python3 -m sim.characterize")
     ap.add_argument("--pdk-dir", default=os.environ.get("SG13G2_PDK_PATH") or
                     os.path.join(os.environ.get("PDK_ROOT", ""), "ihp-sg13g2"))
@@ -393,22 +382,13 @@ def main(argv=None) -> int:
     from ..harness.corners import CHAR_CORNER_PVT
     ap.add_argument("--corner", default=DEFAULT_CORNER, choices=list(CHAR_CORNER_PVT),
                     help="characterization corner (default: %(default)s)")
-    ap.add_argument("--library", action="store_true",
-                    help="characterize every cell of --config into the corner-named "
-                         "view under views/")
-    ap.add_argument("--config", type=Path, default=None,
-                    help=f"cell config, used with --library (default: {DEFAULT_CONFIG.relative_to(REPO_ROOT)})")
+    ap.add_argument("--config", type=Path, default=DEFAULT_CONFIG,
+                    help="cell config (default: %(default)s)")
     ap.add_argument("--lib", type=Path, default=None,
-                    help="Liberty output path, used with --library (default: the "
-                         "corner-named view path under views/)")
+                    help="Liberty output path (default: the corner-named view path "
+                         "under views/)")
     args = ap.parse_args(argv)
-    if args.library:
-        config = args.config or DEFAULT_CONFIG
-        lib = args.lib or default_lib_path(args.corner)
-        print(characterize_library(config.resolve(), args.corner, args.pdk_dir,
-                                   lib_path=lib.resolve(), backend=args.backend))
-        return 0
-    if args.config is not None or args.lib is not None:
-        ap.error("--config/--lib are only used with --library")
-    print(characterize_and_record(SG13G2_INV_1, args.corner, args.pdk_dir, backend=args.backend))
+    lib = args.lib or default_lib_path(args.corner)
+    print(characterize_library(args.config.resolve(), args.corner, args.pdk_dir,
+                               lib_path=lib.resolve(), backend=args.backend))
     return 0

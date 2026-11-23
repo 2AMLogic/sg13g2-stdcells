@@ -23,7 +23,7 @@
   "cold_start": {
     "argv": ["sh", "sim/characterize/cold_start.sh"],
     "timeout_s": 1800,
-    "documented_argv": ["python3", "-m", "sim.characterize", "--library", "--pdk-dir", "<IHP-Open-PDK git checkout at commit 5cccb161f7492697cfa52eb14dc03beb00bdca9e>/ihp-sg13g2"]
+    "documented_argv": ["python3", "-m", "sim.characterize", "--pdk-dir", "<IHP-Open-PDK git checkout at commit 5cccb161f7492697cfa52eb14dc03beb00bdca9e>/ihp-sg13g2"]
   },
   "pins": {
     "pdk": {

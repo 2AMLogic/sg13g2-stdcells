@@ -622,7 +622,7 @@ rejected — narrowing makes a claim about what provenance must cover (that a
 digest over `process` + `cells` is adequate), which belongs in a `spec/`
 decision record of its own, deferred until the coarse pin goes stale again;
 this regeneration is the first data point on what that recurrence costs. The
-regeneration (`python3 -m sim.characterize --library --pdk-dir
+regeneration (`python3 -m sim.characterize --pdk-dir
 /home/ubuntu/share/pdk/ihp-sg13g2`) ran on a clean worktree and appended
 record `sim/characterize/records/20261114-222806-f1cf294.md`; the superseded
 record `20261107-222836-6ee1577.md` is kept, append-only. It re-measured under
@@ -652,7 +652,7 @@ main's PR #104 added three more `layout.rules` keys (`psd_space_nm`,
 on any merge of this branch — the second recurrence lap in eight days, and the
 reason the narrowing option (a `spec/` decision record) is deferred no longer
 lightly: it is filed structurally as #110/#116. Regenerated again exactly as
-above — `python3 -m sim.characterize --library --pdk-dir
+above — `python3 -m sim.characterize --pdk-dir
 /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged tree (`921b1a8`) before
 any bookkeeping edit, single corner TT/1.20 V/25 C, local backend — appending
 record `sim/characterize/records/20261115-105337-921b1a8.md`, keeping both
@@ -689,7 +689,7 @@ pre-capture fix exists to close. Seven files conflicted; the only code hunk
 was `runner.py`'s `render()` Notes line, where both halves are load-bearing and
 both are kept: main's simulator key and this branch's doubled-`klt `-prefix
 strip. Regenerated exactly as every lap above — `python3 -m sim.characterize
---library --pdk-dir /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged
+--pdk-dir /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged
 tree (`13dc481`) before any bookkeeping edit, single corner TT/1.20 V/25 C,
 local backend — appending record
 `sim/characterize/records/20261115-220740-13dc481.md`, keeping all four
