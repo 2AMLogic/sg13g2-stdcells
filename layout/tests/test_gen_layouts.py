@@ -845,6 +845,77 @@ class Failures(unittest.TestCase):
             gl.generate(cfg)
 
 
+class T1Fixture(unittest.TestCase):
+    """Issue #171: the consumer shapes (buffer, folded nand2, folded nor2) on a
+    3360 nm row at 420 nm pitch, margins 350/330, from a committed synthetic
+    config so the consumer case is exercised here without reading another repo.
+
+    None of the seven places in the Metal1-only single-row model; the point of
+    these tests is that each one still exits 3 with the *measured* named limit,
+    at every track count the config could allow, and writes no partial GDS. If
+    a generator change places one of them, the matching row fails here and the
+    README table (\"What still blocks buf / folded nand2 / folded nor2\") must
+    be re-measured in the same change."""
+    FIXTURE = json.loads((pathlib.Path(__file__).resolve().parent / "fixtures" / "t1_row3360.json").read_text())
+    EXPECT = {
+        1: {"buf": "need 2 channel tracks, config allows 1", "nand2": "need 2 channel tracks, config allows 1",
+            "nor2": "need 2 channel tracks, config allows 1"},
+        2: {"buf": "channel too short for track 2 of net X_i", "nand2": "Metal1 of Y overlaps n1",
+            "nor2": "no Metal1-clean spot for the gate contact of A"},
+        3: {"buf": "channel too short for track 2 of net X_i", "nand2": "Metal1 of Y overlaps n1",
+            "nor2": "no Metal1-clean spot for the gate contact of A"},
+    }
+
+    def one(self, cell, tracks):
+        cfg = copy.deepcopy(self.FIXTURE)
+        cfg["layout"]["channel_tracks"] = tracks
+        cfg["cells"] = [cell]
+        return cfg
+
+    def test_geometry_is_the_consumer_sizing(self):
+        lay = self.FIXTURE["layout"]
+        self.assertEqual((lay["row_height_nm"], lay["gate_pitch_nm"], lay["n_diff_y0_nm"], lay["p_diff_top_margin_nm"]),
+                         (3360, 420, 350, 330))
+        self.assertEqual([c["name"] for c in self.FIXTURE["cells"]],
+                         ["fx_buf_1", "fx_buf_2", "fx_buf_4", "fx_nand2_1", "fx_nand2_2", "fx_nor2_1", "fx_nor2_2"])
+
+    def test_each_shape_exits_3_with_its_measured_limit(self):
+        for tracks, want in self.EXPECT.items():
+            for cell in self.FIXTURE["cells"]:
+                with self.subTest(cell=cell["name"], channel_tracks=tracks):
+                    with self.assertRaises(gl.PlaceError) as cm:
+                        gl.generate(self.one(cell, tracks))
+                    self.assertIn(cell["name"], str(cm.exception))
+                    self.assertIn(want[cell["family"]], str(cm.exception))
+
+    def test_failure_is_deterministic_and_writes_no_gds(self):
+        cell = self.FIXTURE["cells"][1]
+        msgs = []
+        for _ in range(2):
+            with self.assertRaises(gl.PlaceError) as cm:
+                gl.generate(self.one(cell, 2))
+            msgs.append(str(cm.exception))
+        self.assertEqual(msgs[0], msgs[1])
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d) / "c.json"
+            p.write_text(json.dumps(self.one(cell, 2)))
+            r = run("--config", str(p))
+            self.assertEqual(r.returncode, 3)
+            self.assertEqual(list((pathlib.Path(d) / "gds").glob("*.gds")) if (pathlib.Path(d) / "gds").exists() else [], [])
+
+    def test_demo_buf_and_and2_still_name_their_limit(self):
+        design = json.loads((LAYOUT.parent / "design" / "example_config.json").read_text())
+        for name in ("demo_buf_2", "demo_and2_1"):
+            cfg = copy.deepcopy(CFG)
+            cfg["process"] = copy.deepcopy(CFG["process"])
+            cfg["layout"]["channel_tracks"] = 1
+            cfg["cells"] = [c for c in design["cells"] if c["name"] == name]
+            with self.subTest(cell=name):
+                with self.assertRaises(gl.PlaceError) as cm:
+                    gl.generate(cfg)
+                self.assertIn("nets ['X', 'X_i'] need 2 channel tracks, config allows 1", str(cm.exception))
+
+
 class FakeProcess(unittest.TestCase):
     """A second process (different names, layers, geometry) needs no code change."""
 

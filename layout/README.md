@@ -172,7 +172,8 @@ Outside that model the generator exits `3` naming the cell and the reason:
 * a gate net driving the columns of two different devices;
 * more nets to join than `channel_tracks` -- every extra finger boundary re-attaches
   its net, so a series stack that is folded (`nand2_2`: `Y` and `n1`) needs two
-  tracks where the config allows one;
+  tracks where the config allows one, and a second track does not rescue it
+  (the measured limits are in the issue #171 section below);
 * a strip whose height profile is tall-short-tall, or a device drawn too short
   for a contact (both above);
 * a channel narrower than the two implant enclosures (`2 * sd_enc_activ_nm`),
@@ -209,6 +210,62 @@ synthetic configs, the way `FakeProcess` exercises a second process -- `and2_1`
 places with a stepped NMOS strip once the synthetic row gives it two channel
 tracks and a wider pitch. The committed config's `channel_tracks` and `rules`
 are unchanged.
+
+#### What blocks buf, folded nand2 and folded nor2 on a 3360 nm row (issue #171)
+
+Measured on `bed801e` with one-cell configs. The seven consumer shapes are the
+committed fixture `layout/tests/fixtures/t1_row3360.json` (3360 nm row, 420 nm
+pitch, margins 350/330, 740/1120 nm unit widths, 1000/1200 nm finger maxima, 5
+nm grid, 440 nm rails); `test_gen_layouts.py::T1Fixture` pins each outcome.
+`demo_buf_2` and `demo_and2_1` from `design/example_config.json` fail the same
+way at `channel_tracks` 1. **None of the nine places, and nothing here changes
+what the generator draws**; `--check` is unchanged for the four committed GDS.
+
+| cell (fixture) | `channel_tracks` 1 | 2 and 3 | limiting constraint |
+|---|---|---|---|
+| `buf_1`, `buf_2`, `buf_4` | `X`, `X_i` need 2 tracks | `channel too short for track 2 of net X_i` | gate-pad clearance, below |
+| `nand2_1`, `nand2_2` | `Y`, `n1` need 2 tracks | `Metal1 of Y overlaps n1` | planarity of a folded series stack, below |
+| `nor2_1`, `nor2_2` | `Y`, `n1` need 2 tracks | `no Metal1-clean spot for the gate contact of A` | planarity of a folded series stack, below |
+
+Findings, in the order the issue asked for:
+
+* **Tracks per net over the full width is not the binding limit.** A prototype
+  that allocated each net's track over the span it occupies, packed nets with
+  disjoint spans into one row, replaced a net with one stub per strip on the
+  same node column by a single vertical bar (no track), and retried every
+  strip ordering placed none of the nine cells; it was not kept. The two
+  nets of a buffer (`X`, `X_i`) are both vertical bars, so the track count was
+  never what stopped it.
+* **Buffer: the input pad of the output stage cannot be drawn.** The output
+  stage has two fingers (drive 2 and 4, and drive 1 because the NMOS folds to
+  match), so its output node `X` sits *between* the two gate columns and is a
+  vertical bar across the channel; the chain forces this, since the two
+  fingers must end on the rail (`VSS X VSS`). The gate `X_i` has to land a pad
+  on one of those two columns. A pad on the column's outer side needs a
+  300 nm wide poly pad (`cont_nm + 2 * poly_enc_cont_nm`) inside the 290 nm
+  (`pitch - poly_width_nm`) gap to the neighbouring stripe, 55 nm from it
+  where the rule is `poly_space_nm` 180; a pad on the inner side or beside the
+  bar is 50 nm (`pitch / 2 - 2 * m1_width / 2`) from `X`'s bar where the rule
+  is `m1_space_nm` 180; and the pad on the far side would have to join the
+  stage-1 output across `X`'s bar, which blocks the channel from the NMOS to
+  the PMOS stub (the bands above and below the stubs are 130 nm, under
+  `m1_width_nm`). The same holds for `demo_and2_1`, whose `X` node is adjacent
+  to the `X_i` gate column.
+* **Folded nand2/nor2: `n1` encloses `Y`.** Two fingers per series device put
+  `n1` on three nodes of one strip with the output `Y` (or a rail) between
+  them: `n1 Y n1 VSS n1`. Joining the `n1` nodes in Metal1 takes a track over
+  `Y`'s node, and `Y` must still climb from that node to the other strip
+  through the same span, so `Y` crosses `n1`'s track on any row order. The
+  fingers of the two series devices cannot be interleaved in this model (a
+  device's fingers are adjacent columns), and an interleaved order leaves `n1` as
+  two diffusion islands that only Metal1 can join, so it meets the same
+  crossing (not measured with `klt lvs`).
+  The `n1`-skip the issue suggested needs adjacent fingers to share the
+  diffusion, which only a one-finger-per-device stack does.
+* **What would place them** (each is a change to the model, not a tuning):
+  interleaved fingers with a net-aware LVS reference, a diffusion break
+  (#169), gate contacts outside the channel, or a second routing layer.
+  Follow-up issues: #256 (buffer input pad), #257 (folded series stack).
 
 ### Pin placement on the routing grid (issue #225)
 
