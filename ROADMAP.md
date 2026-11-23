@@ -27,8 +27,15 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   `layout/example_config.json` are `metal1` and `metal1_label` (its other six
   are well, diffusion, poly, implant and contact layers), and no generator
   draws a second metal.
-  Row 4 (every pin on a grid point) is **not verified**: no check asserts that
-  the emitted pin labels land on grid points.
+  Row 4 (every pin on a grid point) is **not met** as the generator stands
+  (measured 2026-11-23 on `main` @ `6ce61ff`):
+  `layout/tests/test_gen_layouts.py:214` asserts every `metal1_label` of every
+  config cell — gate pads, outputs and the VSS/VDD rail labels — is a multiple
+  of the same 420 nm on both axes from the cell origin and lies on Metal1. It
+  is landed as an expected failure and `:221` pins what it finds: 15 of the 17
+  labels on the four cells off the grid — every gate pad and output on both
+  axes, and the rail labels on x for the three even-column cells — all of them
+  on Metal1. The generator fix is tracked in #225.
 - **Cells (row 5: target 40).** Four are generated from
   `layout/example_config.json`: `sg13g2_inv_1`, `_inv_2`, `_inv_4`,
   `sg13g2_nand2_1`. Sequential cells (row 6) are out of target scope.
