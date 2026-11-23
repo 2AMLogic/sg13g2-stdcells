@@ -9103,11 +9103,10 @@
   "tier": null,
   "t1_item_count": 22,
   "build_t1_item_count": 22,
-  "t1_met_count": 11,
+  "t1_met_count": 15,
   "t1_not_applicable_count": 1,
   "unmet_reason_counts": {
     "no_evidence": 5,
-    "stale_evidence": 4,
     "supply_spec_incomplete": 1
   },
   "source_doc": "docs/design-evidence-tiers.md",
@@ -9975,20 +9974,24 @@
       "partition_boundary": "transistor-level cells (sg13g2_inv_1, sg13g2_inv_2, sg13g2_inv_4, sg13g2_nand2_1): SPICE characterization, klt sim corner evidence and layout DRC/LVS",
       "text": "one aggregated, current artifact summarizing per-spec-row performance across conditions, with the evidence record each verdict rests on (#309 tracks the aggregation tool). For a digital or mixed-signal digital partition this includes Fmax, area, and power across the corner set, not just functional pass/fail. Unlike every other T1 item, this one names no specific `klt` verb for its evidence, which may be a hand-assembled record (e.g. a committed Markdown characterization report) rather than one `klt` verb's own JSON output. `klt signoff --attest 8 --inventory FILE` (issue #4311) produces the generic envelope mechanically \u2014 report present, each spec row cited, each cited envelope present and passing its own `--check`, and for a digital partition Fmax/area/power bound per corner \u2014 and a met citation discloses whether the tool produced it; a bare hand-written envelope still grades. `klt signoff --manifest` grades it via an opt-in **generic evidence envelope** (`\"kind\": \"generic\"`, issue #1152) \u2014 a minimal, hand-rolled JSON wrapper asserting `status: \"pass\"|\"fail\"` for whatever record backs it. Item 8 is the only T1 item that accepts a *bare* generic envelope. Items 1, 2, 9 and 10 accept only the artifact-anchored form (issue #2718), and items 3\u20137 and 11 reject the generic kind entirely: see `docs/cli/signoff.md`'s \"Generic evidence (opt-in, non-`klt`-native)\" section for the envelope shape. The full opt-in kind -> item mapping (including kinds whose scope is currently empty) is published by `klt signoff --describe-grader` and the `klt signoff --help` epilog.",
       "notes": [],
-      "status": "unmet",
-      "reason": "stale_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null,
-      "detail": {
-        "content_hash_pin": "stale",
-        "hash_check": {
-          "field": "provenance.input.content_hash",
-          "expected": "sha256:88655544f0f324a92103f77eaa86f1c443f9a2fb42e684975791a7253f1cd2fb",
-          "actual": "sha256:191c3c82a8bb01e2491602b530ac0b2b9f62a13f7ccef7027ff3a1cd47b0aecb",
-          "match": false
-        },
-        "pin_is_envelope_file_hash": true,
-        "hint": "the pinned content_hash is the sha256 of the evidence envelope file manifests/envelopes/item8.analog.attest.json itself; content_hash must be the envelope's provenance.input.content_hash (the recorded input hash), not the hash of the evidence envelope file"
+      "citation": {
+        "file": "manifests/envelopes/item8.analog.attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:191c3c82a8bb01e2491602b530ac0b2b9f62a13f7ccef7027ff3a1cd47b0aecb",
+        "input_verified": true,
+        "exit_status": 0,
+        "attestation": {
+          "tool_produced": true,
+          "producer": "klt signoff --attest",
+          "check_count": 5,
+          "passed_count": 5,
+          "description": "Analog partition characterization report: the append-only klt characterize record behind the committed TT/1.20 V/25 C Liberty view, cited for spec row 9 (Liberty corners). The spec-row citation names the item 9 analog bench envelope (manifests/envelopes/item9.analog.attest.json, a generic evidence envelope klt recognizes) rather than the raw view and sidecar files: klayout-tools #7040 -- klt's citation recognition (#5688) accepts recognized envelopes only, and a Liberty view, a provenance sidecar and a markdown record are none, while the freshness command is where the artifacts' content is actually verified. The chain is still fully pinned: the cited envelope byte-pins the bench that measured the view (request builder, runner, freshness checker, harness modules, netlist generator, config) and carries the PDK revision pin, the report below pins the record's own bytes, and the envelope_checks command (python3 -m sim.characterize.check_library) re-derives what the view's provenance sidecar claims -- the library name and cell set the view declares, the corner it declares (the operating_conditions group name plus voltage and temperature, via the nom_* attributes and the group; the sidecar's process-corner entry is a name like mos_tt, not comparable with the view's numeric process factor, so process is not pinned), the SHA-256 of the config it was characterized from, the record it names, and the IHP-Open-PDK revision both the sidecar and the record pin -- so a config edit or a tampered view that changes any of those fails the attestation instead of being reported as current. The view's delay tables themselves are not pinned by the sidecar: it records no hash of the .lib (a klt characterize gap, filed upstream on the klayout-tools tracker). The check is deliberately not weakened to pass."
+        }
       }
     },
     {
@@ -10012,20 +10015,35 @@
       "partition_boundary": "transistor-level cells (sg13g2_inv_1, sg13g2_inv_2, sg13g2_inv_4, sg13g2_nand2_1): SPICE characterization, klt sim corner evidence and layout DRC/LVS",
       "text": "every claimed measurement's testbench committed, with a documented cold-start invocation a third party can run; pinned PDK revision.",
       "notes": [],
-      "status": "unmet",
-      "reason": "stale_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null,
-      "detail": {
-        "content_hash_pin": "stale",
-        "hash_check": {
-          "field": "provenance.input.content_hash",
-          "expected": "sha256:ef7c507a17e316f8489fc55507a4fae2b42c54d7d82fa9047977ed801879257b",
-          "actual": "sha256:1a89872f56b9596661105b45ad834a37d8ae235a1cc68966e4a3b9389d32f81d",
-          "match": false
-        },
-        "pin_is_envelope_file_hash": true,
-        "hint": "the pinned content_hash is the sha256 of the evidence envelope file manifests/envelopes/item9.analog.attest.json itself; content_hash must be the envelope's provenance.input.content_hash (the recorded input hash), not the hash of the evidence envelope file"
+      "citation": {
+        "file": "manifests/envelopes/item9.analog.attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:1a89872f56b9596661105b45ad834a37d8ae235a1cc68966e4a3b9389d32f81d",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 9,
+          "path": {
+            "path": "manifests/inventories/item9.analog.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:1a89872f56b9596661105b45ad834a37d8ae235a1cc68966e4a3b9389d32f81d",
+          "input_verified": true,
+          "summary": "T1 item 9 (Testbenches shipped): 34/34 attestation checks passed (klt signoff --attest)",
+          "source": "manifests/inventories/item9.analog.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 34,
+            "passed_count": 34,
+            "description": "Analog partition testbenches: (1) the characterization bench behind the committed TT/1.20V/25C Liberty view -- the pure klt characterize request builder, the runner that drives klt and appends the append-only evidence record (capturing the IHP-Open-PDK revision of the --pdk-dir checkout before anything is written), the freshness checker that re-derives the committed view's provenance claims, the harness modules they import, the netlist generator and the config every measurement is made from; and (2) the T1 item 5 klt sim corner testbenches (sim/item5/, #180 -- pure function/timing request and netlist builders, runner, and builder tests) covering spec row 9 at TT/1.20V/25C for the four committed cells. The attested cold start (sh sim/characterize/cold_start.sh) is honestly lighter than the full benches: it runs the characterization request-construction tests (python3 -m unittest sim.characterize.tests.test_request) and the freshness checker (python3 -m sim.characterize.check_library) -- both tool-free, stdlib Python only, and the checker fails on any stale or tampered committed artifact (config bytes, record, PDK pin, provenance stamps); the item 5 builder tests run in CI (python3 -m pytest sim/item5/tests). It does NOT re-run the SPICE characterization or item 5 klt sim sweeps themselves: those need klt, ngspice and an IHP-Open-PDK git checkout at the pinned commit (characterization recorded in documented_argv below and in README.md 'Reproducing the characterization'; item 5 in sim/item5/README.md). Later benches (klt pex -- issue #181) extend this inventory instead of adding a second one."
+          }
+        }
       }
     },
     {
@@ -10074,20 +10092,35 @@
       "partition_boundary": "transistor-level cells (sg13g2_inv_1, sg13g2_inv_2, sg13g2_inv_4, sg13g2_nand2_1): SPICE characterization, klt sim corner evidence and layout DRC/LVS",
       "text": "a README stating what the block is, its spec table, and how to reproduce every result; a license; CI that at minimum keeps the harness and evidence formats valid.",
       "notes": [],
-      "status": "unmet",
-      "reason": "stale_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null,
-      "detail": {
-        "content_hash_pin": "stale",
-        "hash_check": {
-          "field": "provenance.input.content_hash",
-          "expected": "sha256:b333931acfd23120512cc351309651d53180c40a348778f0b906f2256956949d",
-          "actual": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e",
-          "match": false
-        },
-        "pin_is_envelope_file_hash": true,
-        "hint": "the pinned content_hash is the sha256 of the evidence envelope file manifests/envelopes/item10.attest.json itself; content_hash must be the envelope's provenance.input.content_hash (the recorded input hash), not the hash of the evidence envelope file"
+      "citation": {
+        "file": "manifests/envelopes/item10.attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 10,
+          "path": {
+            "path": "manifests/inventories/item10.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e",
+          "input_verified": true,
+          "summary": "T1 item 10 (Repo hygiene): 7/7 attestation checks passed (klt signoff --attest)",
+          "source": "manifests/inventories/item10.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 7,
+            "passed_count": 7,
+            "description": "Repo hygiene: the four repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. check-ci.sh is pinned because it holds the bytes of those three gates, so a weakening edit to a stage function fails the attestations stage until item 10 is re-minted. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
+          }
+        }
       }
     },
     {
@@ -10098,20 +10131,35 @@
       "partition_boundary": "add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline",
       "text": "a README stating what the block is, its spec table, and how to reproduce every result; a license; CI that at minimum keeps the harness and evidence formats valid.",
       "notes": [],
-      "status": "unmet",
-      "reason": "stale_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null,
-      "detail": {
-        "content_hash_pin": "stale",
-        "hash_check": {
-          "field": "provenance.input.content_hash",
-          "expected": "sha256:b333931acfd23120512cc351309651d53180c40a348778f0b906f2256956949d",
-          "actual": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e",
-          "match": false
-        },
-        "pin_is_envelope_file_hash": true,
-        "hint": "the pinned content_hash is the sha256 of the evidence envelope file manifests/envelopes/item10.attest.json itself; content_hash must be the envelope's provenance.input.content_hash (the recorded input hash), not the hash of the evidence envelope file"
+      "citation": {
+        "file": "manifests/envelopes/item10.attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 10,
+          "path": {
+            "path": "manifests/inventories/item10.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e",
+          "input_verified": true,
+          "summary": "T1 item 10 (Repo hygiene): 7/7 attestation checks passed (klt signoff --attest)",
+          "source": "manifests/inventories/item10.json",
+          "attestation": {
+            "producer": "klt signoff --attest",
+            "inventory_schema_version": 1,
+            "check_count": 7,
+            "passed_count": 7,
+            "description": "Repo hygiene: the four repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. check-ci.sh is pinned because it holds the bytes of those three gates, so a weakening edit to a stage function fails the attestations stage until item 10 is re-minted. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
+          }
+        }
       }
     },
     {
