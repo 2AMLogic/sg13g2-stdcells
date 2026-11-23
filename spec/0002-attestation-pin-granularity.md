@@ -149,12 +149,15 @@ predicate-bearing set is the 2 item 1 inputs and the 3 item 10 hygiene files.
 
 **Recommended: (b) — pin content-bearing paths; record predicate-bearing
 inputs without a hash** (name plus the check that verifies them). This is the
-only option that stops the churn instead of scheduling it: a predicate-bearing
-edit stops touching the envelope at all, and a re-mint is needed exactly when
-the evidence's bytes — the generated artifacts — actually moved, which is also
-when the checks themselves flag it. It needs a schema change in
-`klt signoff --attest` (the envelope is the tool's output, never hand-edited),
-tracked as 2AMLogic/klayout-tools#5615. **Upstream status (2026-11-23):** the
+only option that stops the churn instead of scheduling it: an edit to one of
+the three item 10 hygiene files stops touching the envelope at all. A re-mint
+is still needed whenever any byte-pinned path changes: the 4 netlists and 4 GDS
+(the generated artifacts), the 3 item 9 bench files (`verification/test_add8.py`,
+`verification/Makefile`, `verification/cold_start.sh`; an edit stales the pin
+even if the bench still passes), and the 2 item 1 sources (a generator edit
+that leaves its netlists byte-identical still stales the pin). It needs a
+schema change in `klt signoff --attest` (the envelope is the tool's output,
+never hand-edited), tracked as 2AMLogic/klayout-tools#5615. **Upstream status (2026-11-23):** the
 presence-only `hygiene` implementation merged on 2026-11-17
 ([klayout-tools#6216](https://github.com/2AMLogic/klayout-tools/pull/6216)). The
 remaining step is local: this repo's `manifests/inventories/item10.json` still
@@ -206,8 +209,9 @@ adopts rather than rebuts:
 
 **Stated precisely, then: (b) means the 11 content-bearing paths (4 netlists,
 4 GDS, 3 item 9 bench files) keep byte pins, the 3 item 10 hygiene pins become
-presence-only once #5615 lands, and the 2 item 1 predicate pins stay
-byte-pinned** — for them, (a) below
+presence-only (upstream #5615 closed as completed on 2026-11-17; local
+adoption of the inventory form is the remaining step), and the 2 item 1
+predicate pins stay byte-pinned** — for them, (a) below
 is not an interim but the standing practice until #5615 is extended upstream
 (an item-1 extension belongs as a follow-up on top of #5615, since it needs
 the `input_binding()` change). Their churn is bounded in practice: item 1's
@@ -222,8 +226,11 @@ Rejected alternatives, one line each:
   quo) — rejected as the target policy for the hygiene pins: every re-mint
   re-runs predicates that measurably still pass and changes nothing verified;
   `README.md` alone drifted three times during this issue's lifetime. For the
-  item 1 / item 9 pins it remains the operative practice for want of an
-  upstream mechanism, per the scope above.
+  item 1 and item 9 pins it remains the practice, for two different reasons.
+  Item 1: a schema limitation, since upstream's input binding hashes the
+  sources regardless, so presence-only cannot work there yet. Item 9: a
+  deliberate guarantee, since the byte pin records which bench bytes were
+  reviewed, which the cold-start rerun cannot give.
 - **(c) automate the re-mint on merge** — rejected: `.github/workflows/ci.yml`
   is tool-free by constraint (`ci.yml:1`), so the automaton must live off-CI and
   would mint evidence on a trigger with no one reviewing the re-run; it also
@@ -233,7 +240,8 @@ Rejected alternatives, one line each:
   README/workflow hygiene at all), which is worse than re-minting for them.
 - **hand-edit the committed envelopes to drop the hashes** — rejected: the
   envelope is `klt signoff --attest` output, generated never hand-edited, so the
-  change can only come from the inventory schema upstream (#5615).
+  change comes from re-authoring the inventory in the presence-only form (the
+  schema shipped upstream via #5615) and re-minting with `klt signoff --attest`.
 - **declare presence-only entries in the item 1 / item 9 inventories anyway** —
   not a choice this record can make: #5615's schema accepts the key on
   `hygiene` only and errors elsewhere, and no inventory form expresses it
@@ -241,15 +249,15 @@ Rejected alternatives, one line each:
 
 ### Interim, until item 10's inventory adopts the presence-only form
 
-(a) remains the operative practice everywhere — a hold pending local
-adoption (and, for item 1, an upstream extension), not an endorsement; this
+(a) remains the operative practice everywhere until the local adoption step
+lands; for item 10 it is a hold, not an endorsement. This
 record changes no manifest and relaxes nothing. What #112
 changed is that the churn is no longer *silent*: the gate names the stale
 envelope on every PR that touches a pinned path. Adopting the merged #5615
 form in item 10's inventory ends this interim for the 3 item 10 hygiene pins
-only; for the 2 item 1 pins, (a) is the
-standing practice until #5615 is extended upstream; the 3 item 9 pins stay
-pinned by classification (see the policy's scope).
+only. The 2 item 1 pins stay byte-pinned because of a schema limitation, until
+#5615 is extended upstream. The 3 item 9 pins stay byte-pinned by design, for
+the reviewed-bytes guarantee (see the policy's scope).
 
 ## CI consequence of the recommendation
 
@@ -268,8 +276,11 @@ compares recorded hashes to the tree. Under the interim (a):
   reproduces, 3 otherwise, "never rewriting it".) Then update any manifest
   evidence pin that names the envelope (`./check-ci.sh manifest-pins` checks
   those bindings separately and reports nine matching pins at this head), then
-  regenerate `manifests/signoff-report.{json,txt}` and verify them with
-  `klt signoff --manifest … --check`. The report regeneration must follow the
+  regenerate both formats, `manifests/signoff-report.json` and
+  `manifests/signoff-report.txt`, then verify with `klt signoff --manifest
+  manifests/sg13g2-stdcells.json --check manifests/signoff-report.json`.
+  `--check` accepts only the JSON report; passing the `.txt` exits 1 with
+  `committed report is not valid JSON`. The report regeneration must follow the
   re-mint, or the committed report keeps stale citation hashes (item 1 today,
   measured above).
 - **What turns `main` red meanwhile**: after a merge that moved a pinned path,
@@ -279,24 +290,31 @@ compares recorded hashes to the tree. Under the interim (a):
 
 Under (b), now that #5615 has merged upstream and once item 10's inventory is
 re-authored in the presence-only form: the 3 hygiene pins disappear from the
-gate's and grader's input, so their triggers vanish; only edits to the
-generated artifacts require a re-mint, and those are edits the checks
-themselves would flag anyway. The 2 item 1 pins and the 3 item 9
-pins stay byte-pinned (policy scope above), so their triggers remain.
+gate's and grader's input, so their triggers vanish. A re-mint is still
+required for an edit to any of the 13 remaining byte-pinned paths: the 4
+netlists and 4 GDS, the 3 item 9 bench files (including a
+`verification/test_add8.py` edit that leaves the bench passing), and the 2 item
+1 sources (including a generator edit that leaves its netlists identical).
+Their triggers remain (policy scope above).
 
-**What the adoption gives up and gains.** Accepted loss: byte coverage of the
-three files. A gutted `ci.yml` (or edited `README.md` / `LICENSE`) no longer
-stales a pin, and no check in the inventory reads them. What adoption gains is
-an attestation *rerun* that can detect a deletion: the Judge exercised the
-current `verify_records` on an item 10 fixture in the merged presence-only
-format with all three hygiene files absent, and it checked the inventory hash
-and returned zero mismatches (reported in review on 2026-11-23, not re-run
-here). The tool-free hash stage (`check_attestations.py`) catches neither a
-deletion nor a byte edit of a presence-only file, so a rerun on a klt-capable
-host is the only place the presence predicate is checked. That predicate is
-checked when someone reruns `klt signoff --attest 10 … --check` or re-mints,
-not on every PR. The inventory does not define "recognized" licence or "passes
-the hygiene gate", so presence is all the predicate asserts.
+**What the adoption gives up and gains.** The gain is avoided re-mints: a byte
+edit to `README.md`, `LICENSE` or `ci.yml` no longer stales a pin. The cost is
+twofold. First, byte coverage of the three files: a gutted `ci.yml` (or edited
+`README.md` / `LICENSE`) no longer stales a pin, and no check in the inventory
+reads them. Second, the hash gate loses a second opportunity to catch a
+deletion between attestation runs. Deletion detection is existing coverage, not
+a gain: an attestation rerun already checks existence. The Judge ran
+`verify_records` with all three hygiene files missing and the inventory present:
+the committed (hash-bearing) envelope reported 3 missing files across 4 checked
+hashes, while an otherwise equivalent presence-only fixture reported zero
+mismatches and checked only the inventory hash (reported in review on
+2026-11-23, not re-run here). The tool-free hash stage
+(`check_attestations.py`) therefore stops reporting a deleted hygiene file once
+the hashes are gone, and a presence-only deletion is no longer caught by the
+hash gate between attestation runs. It is caught only when someone reruns
+`klt signoff --attest 10 … --check` or re-mints, not on every PR. The
+inventory does not define "recognized" licence or "passes the hygiene gate", so
+presence is all the predicate asserts.
 
 A third consumer of the stamped hash, worth naming because the interim pays it
 today and (b) must disarm it too: at `--manifest` grading time,
