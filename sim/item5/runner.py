@@ -21,6 +21,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from ..harness.klt import BATCH_CAPACITY_WAIT_S, klt_version
 from ..harness.report import allocate_record_id, commit_stamp, git_provenance
 from .request import (SPEC_ROW, Arc, CellSpec, LibertyView, arcs_for,
                       build_function_netlist, build_function_request,
@@ -37,22 +38,9 @@ NETLISTS_DIR = REPO_ROOT / "layout" / "lvs" / "netlists"
 #: Both testbench kinds per cell, in the order the record lists them.
 KINDS = ("function", "timing")
 
-#: Host rule: a batch ``klt sim`` submit must wait out fleet capacity instead
-#: of failing on ``batch_no_capacity``; ``klt`` rejects the flag on
-#: ``--backend local``, so it is added for batch submits only.
-BATCH_CAPACITY_WAIT_S = 600
-
 
 class Item5Failed(RuntimeError):
     pass
-
-
-def klt_version() -> str:
-    try:
-        out = subprocess.run(["klt", "--version"], capture_output=True, text=True, check=False)
-    except FileNotFoundError:  # tool-free environments (CI) have no klt
-        return "unavailable"
-    return (out.stdout or out.stderr).strip() or "unknown"
 
 
 def run_klt_sim(request_path: Path, backend: str, outdir: Path) -> str:
