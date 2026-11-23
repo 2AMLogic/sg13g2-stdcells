@@ -58,13 +58,13 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   place-and-route with all three power gates, gate-level LVS `match`, routed
   GDS and a clean `klt drc` (#9, #41).
 - **Evidence grade.** `manifests/signoff-report.txt` (`klt signoff --manifest`):
-  tier none, **T1 13/22 items met** (updated 2026-11-21 for item 5 analog,
-  #180; the previous edition of this list said 11/22 and predated the item 9
-  analog and item 8 analog citations). Met: items 1-4 on both partitions,
-  item 5 analog, item 8 analog, item 9 digital and item 10 on both
-  partitions. Unmet: item 5 digital, items 6 analog, 7 and 11 on both
-  partitions, items 8 digital and 9 analog — `no_evidence` except item 11
-  digital (`supply_spec_incomplete`). Tracker: #3.
+  tier none, **T1 14/22 items met, 1 not_applicable** (updated for item 5
+  analog, #180, on top of item 6 digital N/A, item 8 analog and item 9 analog
+  on `main`). Met: items 1-4 on both partitions, item 5 analog, item 8 analog,
+  items 9 and 10 on both partitions. Not applicable: item 6 digital. Unmet:
+  item 5 digital, item 6 analog, item 7 on both partitions, item 8 digital and
+  item 11 on both partitions — `no_evidence` except item 11 digital
+  (`supply_spec_incomplete`). Tracker: #3.
 
 ### What the layout generator can place today
 

@@ -3,12 +3,12 @@ partition boundary:
   analog: transistor-level cells (sg13g2_inv_1, sg13g2_inv_2, sg13g2_inv_4, sg13g2_nand2_1): SPICE characterization, klt sim corner evidence and layout DRC/LVS
   digital: add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline
 tier: none
-T1: 13/22 items met, 1 not_applicable
+T1: 14/22 items met, 1 not_applicable
 
 [MET  ] T1 #1 [analog] Design sources
-        cite: manifests/envelopes/item1.analog.attest.json (kind=generic, status=pass, content_hash=sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f, exit_status=0)
+        cite: manifests/envelopes/item1.analog.attest.json (kind=generic, status=pass, content_hash=sha256:c4b2668f1e64b0b9218cfe5e84492f6826e34a5fb6b50c016567e401142d1744, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
-        bound: T1 item #1 -> 7 members (content_hash=sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f)
+        bound: T1 item #1 -> 7 members (content_hash=sha256:c4b2668f1e64b0b9218cfe5e84492f6826e34a5fb6b50c016567e401142d1744)
         member design/gen_netlists.py: verified
         member layout/example_config.json: verified
         member layout/lvs/netlists/sg13g2_inv_1.spice: verified
@@ -76,12 +76,14 @@ T1: 13/22 items met, 1 not_applicable
 [UNMET] T1 #7 [digital] Post-layout verification
         reason: no_evidence
 [MET  ] T1 #8 [analog] Characterization report
-        cite: manifests/envelopes/item8.analog.attest.json (kind=generic, status=pass, content_hash=sha256:1910e308982aec47919dc6ba9d323533e1486ab4f1bfdc24e8a51d400ce61dea, exit_status=0)
+        cite: manifests/envelopes/item8.analog.attest.json (kind=generic, status=pass, content_hash=sha256:191c3c82a8bb01e2491602b530ac0b2b9f62a13f7ccef7027ff3a1cd47b0aecb, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
 [UNMET] T1 #8 [digital] Characterization report
         reason: no_evidence
-[UNMET] T1 #9 [analog] Testbenches shipped
-        reason: no_evidence
+[MET  ] T1 #9 [analog] Testbenches shipped
+        cite: manifests/envelopes/item9.analog.attest.json (kind=generic, status=pass, content_hash=sha256:6fe2ceb19b29708e05ee25dc046d2894765cb7752e7f24cc47cf0599e14cf8c2, exit_status=0)
+        input: re-hashed the artifact this envelope names -- matches
+        bound: T1 item #9 -> manifests/inventories/item9.analog.json (content_hash=sha256:6fe2ceb19b29708e05ee25dc046d2894765cb7752e7f24cc47cf0599e14cf8c2)
 [MET  ] T1 #9 [digital] Testbenches shipped
         cite: manifests/envelopes/item9.digital.attest.json (kind=generic, status=pass, content_hash=sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
@@ -868,5 +870,5 @@ spec rows (1):
         from: sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.timing.report.json (B_s0p4_l0p1_in_slew_rise)
         from: sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.timing.report.json (B_s0p4_l0p1_in_slew_fall)
 
-source: docs/design-evidence-tiers.md (content_hash=sha256:124f9763fc8f06f19efbea7a2762cd6b0da15822c692f4c38c6a867453984130)
-build: klt 0.9.3.dev2575+g6bd18bbc8637
+source: docs/design-evidence-tiers.md (content_hash=sha256:5ec474adf78172a90bbee59b7cab515942f21c13532798f8d0e2e103a08dada5)
+build: klt 0.9.3.dev3782+gb79f1ff9d9ec
