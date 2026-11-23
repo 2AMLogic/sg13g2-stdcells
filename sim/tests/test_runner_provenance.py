@@ -174,8 +174,8 @@ def test_characterize_library_snapshots_once_before_writing(tmp_path, monkeypatc
     monkeypatch.setattr(runner, "git_provenance", snapshot)
     monkeypatch.setattr(runner, "pdk_provenance", pdk_snapshot)
     monkeypatch.setattr(runner, "generate_netlists", lambda config, out: None)
-    monkeypatch.setattr(runner, "run_klt", lambda request, backend="local",
-                        workdir=None, lib_path=None: library_response())
+    monkeypatch.setattr(runner, "run_klt", lambda request, *, workdir,
+                        backend="local", lib_path=None: library_response())
     status_before = repo_status()
 
     path = runner.characterize_library(config, "tt", tmp_path / "pdk",
@@ -284,7 +284,7 @@ def test_characterize_library_refuses_unpinnable_pdk_before_any_write(tmp_path, 
     monkeypatch.setattr(runner, "generate_netlists",
                         lambda config, out: ran.append("gen_netlists"))
     monkeypatch.setattr(runner, "run_klt",
-                        lambda request, backend="local", workdir=None,
+                        lambda request, *, workdir, backend="local",
                         lib_path=None: ran.append("klt") or {})
 
     config = tmp_path / "layout" / "example_config.json"

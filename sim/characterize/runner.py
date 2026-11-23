@@ -121,17 +121,16 @@ def pdk_provenance(pdk_dir) -> dict:
     return {"name": PDK_NAME, "revision": revision}
 
 
-def run_klt(request: dict, backend: str = "local", workdir: Path | None = None,
+def run_klt(request: dict, *, workdir: Path, backend: str = "local",
             lib_path: Path | None = None) -> dict:
-    """Write ``request`` to a scratch dir, run klt, return the parsed JSON response.
+    """Write ``request`` to ``workdir``, run klt, return the parsed JSON response.
 
     Raises :class:`CharacterizeFailed` loudly on a non-zero exit or unparsable output
     (e.g. a missing cell/arc) -- nothing is recorded in that case.
 
-    When ``workdir`` is given, the caller owns scratch cleanup; the ``None``
-    fallback creates a temp dir nothing reaps, so callers should pass ``workdir``.
+    The caller owns ``workdir`` and its cleanup.
     """
-    scratch = Path(workdir or tempfile.mkdtemp(prefix="klt-characterize-"))
+    scratch = Path(workdir)
     scratch.mkdir(parents=True, exist_ok=True)
     req_path = scratch / "request.json"
     req_path.write_text(json.dumps(request, indent=2) + "\n")
