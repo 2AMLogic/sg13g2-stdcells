@@ -593,6 +593,46 @@ the gate. The envelope hash check is deliberately *not* delegated to
 constraint; the `klt` check stays the deeper local verification (it also
 re-runs each inventory's commands).
 
+**What `pins.tools.klt` means, and the item 9 analog re-mint sequence
+(issue #243).** `manifests/inventories/item9.analog.json` is the only
+inventory that pins a `klt` build (`pins.tools.klt`). Per `klt signoff`'s own
+documentation that pin is *the exact build you intend to run*, compared
+literally against the **running** `klt --version` on both `--attest 9` and
+`--attest 9 --check`. It is **not** measurement provenance: which `klt` built
+a measurement is recorded append-only in
+`views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`,
+`sim/characterize/records/` and `sim/item5/records/`, and those are untouched
+by a pin bump. Fleet workers' `klt` rolls forward to a new local dev build
+(`+g…` label, not installable from PyPI) several times a day, so bumping the
+pin to the running build is routine bookkeeping in any item 9 analog re-mint,
+not a request for a host carrying the old build. A `pin klt <committed>
+(running <current>)` failure exits `3` and leaves `-o` unwritten.
+
+When a PR edits any item 9 analog testbench file (`sim/characterize/*`,
+`sim/item5/*`, `sim/harness/*`, `design/gen_netlists.py`,
+`layout/example_config.json`), on its final tree:
+
+1. Set `pins.tools.klt` in `manifests/inventories/item9.analog.json` to the
+   running `klt --version`, without the leading `klt ` prefix (so it equals
+   `provenance.klt_version`).
+2. `klt signoff --attest 9 --inventory manifests/inventories/item9.analog.json
+   -o manifests/envelopes/item9.analog.attest.json`.
+3. `klt signoff --attest 8 --inventory manifests/inventories/item8.analog.json
+   -o manifests/envelopes/item8.analog.attest.json` — item 8's envelope
+   byte-pins `item9.analog.attest.json` as its spec-row-9 citation, so
+   re-minting item 9 stales item 8 until it is re-minted too.
+4. Update `evidence["9.analog"].content_hash` in
+   `manifests/sg13g2-stdcells.json` to the new `provenance.input.content_hash`
+   of `item9.analog.attest.json` (and `evidence["8.analog"].content_hash`
+   likewise from the item 8 envelope).
+5. Regenerate `manifests/signoff-report.{json,txt}` with `klt signoff
+   --manifest manifests/sg13g2-stdcells.json` (shell redirect; `-o` applies
+   only to `--attest`).
+6. Run `./check-ci.sh` (`attestations`, `manifest-pins`, unit tests).
+
+This file itself is not hash-pinned by any envelope, so editing this
+paragraph needs no re-mint.
+
 ### Characterization records and their supersession chain (issues #82, #134)
 
 `T1 #8 [analog] Characterization report` is **not** cited, and stays
