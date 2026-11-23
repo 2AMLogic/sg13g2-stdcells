@@ -9112,13 +9112,13 @@
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:5ec474adf78172a90bbee59b7cab515942f21c13532798f8d0e2e103a08dada5",
   "build": {
-    "version": "0.9.3.dev3782+gb79f1ff9d9ec",
-    "package_version": "0.9.3.dev3782+gb79f1ff9d9ec",
-    "git_commit": "b79f1ff9d9ec609f3bd6a16bdcc01ea0eea7ef39",
+    "version": "0.9.3.dev4174+g85b21713e8c0",
+    "package_version": "0.9.3.dev4174+g85b21713e8c0",
+    "git_commit": "85b21713e8c091699e4eb337463da4e259cd3b4c",
     "git_tag": null,
     "dirty": false,
     "is_release": false,
-    "grading_ruleset_id": "sha256:1b2239d3c432b66a0cee5cc9a7f7c2d3ff0730f81dca501fbe5022c2e9ba0057"
+    "grading_ruleset_id": "sha256:c46b648794ba47e3b2ccb03384ec70e95a327e47c2004b57b914a5396c386378"
   },
   "items": [
     {
@@ -9252,13 +9252,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:aac8f95bb3bcc0b54f1d3b64a27466e61826bc050ceb48074840389e7a3e04c0",
+        "content_hash": "sha256:404f3d2b5d60a6ba18e788cceeb2dc1642e1ac51a6ea1b226b789c7807416fa2",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 2,
           "path": null,
-          "content_hash": "sha256:aac8f95bb3bcc0b54f1d3b64a27466e61826bc050ceb48074840389e7a3e04c0",
+          "content_hash": "sha256:404f3d2b5d60a6ba18e788cceeb2dc1642e1ac51a6ea1b226b789c7807416fa2",
           "input_verified": true,
           "members": [
             {
@@ -9266,7 +9266,7 @@
                 "path": "layout/gds/sg13g2_inv_1.gds",
                 "scope": "repo"
               },
-              "content_hash": "sha256:91c226f6336a7fb8ef2245c00f25f297c098d8368a445de84fe7df8c1bd95dc0",
+              "content_hash": "sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217",
               "status": "verified"
             },
             {
@@ -9274,7 +9274,7 @@
                 "path": "layout/gds/sg13g2_inv_2.gds",
                 "scope": "repo"
               },
-              "content_hash": "sha256:b7f96fccc399bc987d497d4815f7aa535d089b1266e987e7f419d159f7d2d185",
+              "content_hash": "sha256:73f8d732af84184311bd628d3c4645ba01a2c670f8c617dbbd35bcd6d3510b85",
               "status": "verified"
             },
             {
@@ -9282,7 +9282,7 @@
                 "path": "layout/gds/sg13g2_inv_4.gds",
                 "scope": "repo"
               },
-              "content_hash": "sha256:e6d2fc1fb4b6a0a0f8010b1b32308fba9dbeb68ca4453deb41626049be72903b",
+              "content_hash": "sha256:9ef5817bbba510eab7091681449a5b6bf1e4df852a4d65a85f2265bdd03bd448",
               "status": "verified"
             },
             {
@@ -9290,7 +9290,7 @@
                 "path": "layout/gds/sg13g2_nand2_1.gds",
                 "scope": "repo"
               },
-              "content_hash": "sha256:9bef3c012a6e531bb37e80305b9e740dbf4cee06c2febf71d81b419461c0f303",
+              "content_hash": "sha256:12f02067276b8d3c9d583ceaf18c7b76e1e459371aa28256cd85dd01796d5868",
               "status": "verified"
             }
           ],
@@ -9364,7 +9364,7 @@
         "command": null,
         "kind": "drc",
         "check_status": "clean",
-        "content_hash": "sha256:91c226f6336a7fb8ef2245c00f25f297c098d8368a445de84fe7df8c1bd95dc0",
+        "content_hash": "sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217",
         "input_verified": true,
         "exit_status": 0,
         "coverage": {
@@ -9373,17 +9373,21 @@
           ],
           "rules_skipped": [
             "metal1.enclosing.via1.1",
+            "metal2.enclosing.via1.1",
             "metal2.enclosing.via2.1",
             "metal2.space.1",
             "metal2.width.1",
+            "metal3.enclosing.via2.1",
             "metal3.enclosing.via3.1",
             "metal3.space.1",
             "metal3.width.1",
+            "metal4.enclosing.via3.1",
             "metal4.enclosing.via4.1",
             "metal4.space.1",
             "metal4.width.1",
             "metal5.enclosing.mim.1",
             "metal5.enclosing.topvia1.1",
+            "metal5.enclosing.via4.1",
             "metal5.space.1",
             "metal5.width.1",
             "mim.enclosing.topvia1.1",
@@ -9410,6 +9414,7 @@
           "deck_scope": [
             "Act",
             "Cnt",
+            "Cont upper-landing containment (curated)",
             "Gat",
             "M1",
             "M2",
@@ -9418,6 +9423,7 @@
             "M5",
             "MIM",
             "NW",
+            "Offgrid",
             "TM1",
             "TM2",
             "TV1",
@@ -9426,8 +9432,11 @@
             "V2",
             "V3",
             "V4",
-            "pSD",
-            "x"
+            "Via1 upper-landing containment (curated)",
+            "Via2 upper-landing containment (curated)",
+            "Via3 upper-landing containment (curated)",
+            "Via4 upper-landing containment (curated)",
+            "pSD"
           ]
         }
       }
@@ -9513,7 +9522,7 @@
         "command": null,
         "kind": "lvs",
         "check_status": "match",
-        "content_hash": "sha256:91c226f6336a7fb8ef2245c00f25f297c098d8368a445de84fe7df8c1bd95dc0",
+        "content_hash": "sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217",
         "input_verified": true,
         "exit_status": 0
       },
@@ -9545,7 +9554,7 @@
           "command": null,
           "kind": "lvs",
           "check_status": "match",
-          "content_hash": "sha256:91c226f6336a7fb8ef2245c00f25f297c098d8368a445de84fe7df8c1bd95dc0",
+          "content_hash": "sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217",
           "input_verified": true,
           "exit_status": 0
         },
@@ -9554,7 +9563,7 @@
           "command": null,
           "kind": "lvs",
           "check_status": "match",
-          "content_hash": "sha256:b7f96fccc399bc987d497d4815f7aa535d089b1266e987e7f419d159f7d2d185",
+          "content_hash": "sha256:73f8d732af84184311bd628d3c4645ba01a2c670f8c617dbbd35bcd6d3510b85",
           "input_verified": true,
           "exit_status": 0
         },
@@ -9563,7 +9572,7 @@
           "command": null,
           "kind": "lvs",
           "check_status": "match",
-          "content_hash": "sha256:e6d2fc1fb4b6a0a0f8010b1b32308fba9dbeb68ca4453deb41626049be72903b",
+          "content_hash": "sha256:9ef5817bbba510eab7091681449a5b6bf1e4df852a4d65a85f2265bdd03bd448",
           "input_verified": true,
           "exit_status": 0
         },
@@ -9572,7 +9581,7 @@
           "command": null,
           "kind": "lvs",
           "check_status": "match",
-          "content_hash": "sha256:9bef3c012a6e531bb37e80305b9e740dbf4cee06c2febf71d81b419461c0f303",
+          "content_hash": "sha256:12f02067276b8d3c9d583ceaf18c7b76e1e459371aa28256cd85dd01796d5868",
           "input_verified": true,
           "exit_status": 0
         }

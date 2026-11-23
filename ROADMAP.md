@@ -19,23 +19,24 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   so per row, for the cells it places: row 1 (3.36 um row height) is **met** —
   `layout/example_config.json` sets `row_height_nm: 3360` and
   `layout/tests/test_gen_layouts.py:113,127` assert the emitted cell height.
-  Row 2's horizontal pitch (0.42 um) is **met** — widths and gate columns are
-  multiples of `gate_pitch_nm: 420`
+  Row 2's horizontal pitch (0.42 um) is **met** — widths are multiples of
+  `gate_pitch_nm: 420` and neighbouring gate columns are 420 nm apart
   (`layout/tests/test_gen_layouts.py:129,133`); the vertical grid is not
   separately checked. Row 3 (Metal1 only) is **met by construction** — the
   only metal entries in the `layout.layers` map in
   `layout/example_config.json` are `metal1` and `metal1_label` (its other six
   are well, diffusion, poly, implant and contact layers), and no generator
   draws a second metal.
-  Row 4 (every pin on a grid point) is **not met** as the generator stands
-  (measured 2026-11-23 on `main` @ `6ce61ff`):
-  `layout/tests/test_gen_layouts.py:214` asserts every `metal1_label` of every
-  config cell — gate pads, outputs and the VSS/VDD rail labels — is a multiple
-  of the same 420 nm on both axes from the cell origin and lies on Metal1. It
-  is landed as an expected failure and `:221` pins what it finds: 15 of the 17
-  labels on the four cells off the grid — every gate pad and output on both
-  axes, and the rail labels on x for the three even-column cells — all of them
-  on Metal1. The generator fix is tracked in #225.
+  Row 4 (every pin on a grid point) is **met** (#225, measured on the
+  regenerated cells): `layout/tests/test_gen_layouts.py:202`
+  asserts every `metal1_label` of every config cell — gate pads, outputs and
+  the VSS/VDD rail labels — is a multiple of the same 420 nm on both axes from
+  the cell origin and lies on Metal1, and `:207` pins that no label is off the
+  grid on the four cells (17 of 17 on grid, up from 2 of 17 before #225). The
+  generator moved the diffusion nodes onto the grid columns and the gates a
+  half pitch between them, so a cell is `(columns + 2)` pitches wide (inv_1
+  840 -> 1260 nm). Row 2's 420 nm gate-to-gate spacing is unchanged. DRC and
+  LVS were re-recorded on the new streams (below).
 - **Cells (row 5: target 40).** Four are generated from
   `layout/example_config.json`: `sg13g2_inv_1`, `_inv_2`, `_inv_4`,
   `sg13g2_nand2_1`. Sequential cells (row 6) are out of target scope.
