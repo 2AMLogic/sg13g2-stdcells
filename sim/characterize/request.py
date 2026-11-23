@@ -132,8 +132,27 @@ def build_request(
     }
 
 
-#: Name of the committed library view's Liberty library.
-LIBRARY_NAME = "sg13g2_stdcells_tt_1p20v_25c"
+def library_view_name(corner: str) -> str:
+    """The Liberty view name for characterization corner ``corner``.
+
+    Derived from ``CHAR_CORNER_PVT`` -- supply and temperature are read from the
+    table, never retyped: ``sg13g2_stdcells_tt_1p20v_25c`` at the default
+    corner, ``sg13g2_stdcells_ff_1p32v_m40c`` at FF (negative temperatures
+    spell ``m`` for minus).
+    """
+    if corner not in CHAR_CORNER_PVT:
+        raise RequestError(
+            f"{corner!r} is not a characterization corner ({', '.join(CHAR_CORNER_PVT)})"
+        )
+    _, supply_v, temperature_c = CHAR_CORNER_PVT[corner]
+    supply = f"{supply_v:.2f}".replace(".", "p")
+    sign = "m" if temperature_c < 0 else ""
+    return f"sg13g2_stdcells_{corner}_{supply}v_{sign}{abs(temperature_c):.0f}c"
+
+
+#: Name of the committed library view's Liberty library (the default corner's
+#: view, via :func:`library_view_name`).
+LIBRARY_NAME = library_view_name(DEFAULT_CORNER)
 
 
 def cells_from_config(config_path: str | Path, netlist_dir: str | Path) -> list[CellSpec]:
@@ -166,19 +185,22 @@ def build_library_request(
     cells: list[CellSpec],
     corner: str,
     pdk_dir: str | Path,
-    library_name: str = LIBRARY_NAME,
+    library_name: str | None = None,
     slews_ns=DEFAULT_SLEWS_NS,
     loads_pf=DEFAULT_LOADS_PF,
 ) -> dict:
     """Return a multi-cell, single-corner ``klt characterize`` request (``cells`` form).
 
     Same corner/grid/models/options as :func:`build_request`; one ``.lib`` results.
+    The library name defaults to :func:`library_view_name` of this corner, so a
+    request never claims another corner's name.
     """
     if not cells:
         raise RequestError("a library request needs at least one cell")
     names = [c.name for c in cells]
     if len(set(names)) != len(names):
         raise RequestError("duplicate cell names in library request")
+    library_name = library_name or library_view_name(corner)
     pdk = Path(pdk_dir)
     return {
         **_run_blocks(corner, pdk, slews_ns, loads_pf),

@@ -351,16 +351,28 @@ def generate(config, config_name="config"):
 
 def describe_text_diff(name, path, text):
     """Stale-file message for text outputs: a unified diff, committed vs regenerated."""
-    diff = difflib.unified_diff(
-        path.read_text().splitlines(), text.splitlines(), f"{name} (committed)", f"{name} (regenerated)", lineterm="", n=0
-    )
+    diff = list(difflib.unified_diff(
+        path.read_bytes().decode(errors="replace").splitlines(), text.splitlines(),
+        f"{name} (committed)", f"{name} (regenerated)", lineterm="", n=0
+    ))
+    if not diff:
+        # same lines, different bytes: the compare is byte-exact, so a
+        # line-ending rewrite (e.g. LF -> CRLF) is stale without a line diff
+        diff.append("(same lines, different bytes: line endings or trailing bytes differ)")
     return f"stale: {path}\n" + "\n".join(diff)
+
+
+def raw_bytes(data):
+    """The exact bytes a generated file lands on disk as (text is UTF-8)."""
+    return data if isinstance(data, bytes) else data.encode()
 
 
 def sync_outputs(files, outdir, glob, *, check, tool, script, plural, out_of_date, describe_stale=None):
     """Shared tail of every generator CLI: write ``files`` ({name: str | bytes})
     into ``outdir`` and prune strays matching ``glob``, or with ``check`` report
-    missing / stale / stray files without touching disk. Returns the exit code
+    missing / stale / stray files without touching disk. Files are compared
+    byte-for-byte against the exact bytes write mode produces, so a text file
+    whose line endings were rewritten is stale, not fresh. Returns the exit code
     (0 ok, 1 out of date). ``describe_stale(name, path, data)`` customizes the
     stale message; default is a size comparison."""
     if not check:
@@ -369,8 +381,7 @@ def sync_outputs(files, outdir, glob, *, check, tool, script, plural, out_of_dat
             if stale.name not in files:
                 stale.unlink()
         for name, data in files.items():
-            path = outdir / name
-            path.write_text(data) if isinstance(data, str) else path.write_bytes(data)
+            (outdir / name).write_bytes(raw_bytes(data))
         print(f"{tool}: wrote {len(files)} {plural} to {outdir}")
         return 0
     errs = []
@@ -380,12 +391,11 @@ def sync_outputs(files, outdir, glob, *, check, tool, script, plural, out_of_dat
         if name not in on_disk:
             errs.append(f"missing: {path}")
             continue
-        committed = path.read_text() if isinstance(data, str) else path.read_bytes()
-        if committed != data:
+        if path.read_bytes() != raw_bytes(data):
             if describe_stale:
                 errs.append(describe_stale(name, path, data))
             else:
-                errs.append(f"stale: {path} (committed {path.stat().st_size} B differs from regenerated {len(data)} B)")
+                errs.append(f"stale: {path} (committed {path.stat().st_size} B differs from regenerated {len(raw_bytes(data))} B)")
     for name in sorted(on_disk - set(files)):
         errs.append(f"stray: {outdir / name} is not in the config")
     for e in errs:

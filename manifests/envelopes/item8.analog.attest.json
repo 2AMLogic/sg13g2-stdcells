@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 8,
+  "summary": "T1 item 8 (Characterization report): 6/6 attestation checks passed (klt signoff --attest)",
+  "source": "manifests/inventories/item8.analog.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 6,
+    "passed_count": 6,
+    "checks": [
+      {
+        "check": "present",
+        "role": "report",
+        "path": "sim/characterize/records/20261115-220740-13dc481.md",
+        "passed": true,
+        "content_hash": "sha256:fae2b85aaac248fbdfdbd8e8e362344cc29a815517e9c4264334f43d8f52c427"
+      },
+      {
+        "check": "present",
+        "role": "evidence",
+        "path": "views/sg13g2_stdcells_tt_1p20v_25c.lib",
+        "passed": true,
+        "content_hash": "sha256:caf01af759959b17e567a61b388ab2c100eab75ef1627e1b67904ef15df1d0cf"
+      },
+      {
+        "check": "present",
+        "role": "evidence",
+        "path": "views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance",
+        "passed": true,
+        "content_hash": "sha256:160a9b30f2c7ef31ac810258074d14ede12fd775f9ab486efe80f068d4ed20a8"
+      },
+      {
+        "check": "citation",
+        "role": "spec_row",
+        "row": "spec-row-9-liberty-corners-tt",
+        "envelopes": [
+          "views/sg13g2_stdcells_tt_1p20v_25c.lib",
+          "views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance"
+        ],
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "views/sg13g2_stdcells_tt_1p20v_25c.lib",
+        "argv": [
+          "python3",
+          "-m",
+          "sim.characterize.check_library"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance",
+        "argv": [
+          "python3",
+          "-m",
+          "sim.characterize.check_library"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.9.3.dev16+gdcf18e2e0c03",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "manifests/inventories/item8.analog.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:1910e308982aec47919dc6ba9d323533e1486ab4f1bfdc24e8a51d400ce61dea"
+    }
+  }
+}

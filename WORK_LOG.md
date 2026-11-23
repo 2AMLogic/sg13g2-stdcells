@@ -2,6 +2,83 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-18
+
+- **Issue #159** (closed, not planned): Trim merge-lap narrative from layout/README.md: history already in git, WORK_LOG and the signoff report
+
+### 2026-11-17
+
+- **PR #165**: check_library: report an empty provenance stamp instead of passing fresh
+- **Issue #154** (closed): check_library: an empty provenance stamp reports fresh on both sides
+- **PR #146**: fix(sim): pass --wait-for-capacity on batch klt characterize submits
+- **Issue #142** (closed): sim/characterize: run_klt never passes --wait-for-capacity on a batch klt characterize submit
+- **Issue #115** (closed): Report upstream: generate-agents-md.sh is shipped into installed .loom/scripts/, where it cannot run
+
+### 2026-11-16
+
+- **PR #151**: fix: reap characterize_and_record's klt scratch dir via caller-owned workdir
+- **Issue #149** (closed): sim: run_klt leaves an unreaped /tmp scratch dir when called without workdir
+- **PR #155**: docs: point ROADMAP Liberty row at the current characterize record
+- **PR #153**: check_library: flag a sidecar repo_commit that disagrees with the record's stamp
+- **PR #148**: fix: derive the Liberty view name from the characterization corner
+- **Issue #147** (closed): check_library never relates the sidecar's repo_commit to the record stamp, so a sidecar repointed at another tree's record passes
+- **Issue #144** (closed): ROADMAP.md still cites superseded (dirty) record 20261115-171205-3462cc8 in the present tense
+- **Issue #143** (closed): Liberty library name and default view path are hard-coded to tt, so --corner ff|ss cannot produce a correctly-named library view
+- **PR #150**: test: pin characterize_library's capture-before-write provenance ordering
+- **PR #145**: fix: fail check_library on dirty provenance stamps
+- **PR #141**: feat: add --corner selection to the sim.characterize CLI
+- **PR #139**: fix: guard non-object JSON top level in check_attestations --manifest mode
+- **PR #135**: fix: make manifest-pins fail on zero pins and unreadable manifests
+- **PR #98**: fix: regenerate the TT Liberty view's provenance against the current config (T1 #8 [analog] MET)
+- **Issue #140** (closed): Add --corner to the sim.characterize CLI the docs say selects FF/SS
+- **Issue #138** (closed): test_runner_provenance pins the shared-snapshot contract but not the capture-before-write ordering it exists to protect
+- **Issue #137** (closed): check_attestations --manifest tracebacks on a valid-JSON manifest that is not an object
+- **Issue #134** (closed): Committed Liberty evidence on main stamps a dirty tree, and no check can fail on it
+- **Issue #129** (closed): manifest-pins stage passes vacuously when a manifest carries zero object pins
+- **Issue #124** (closed): test_committed_tree_config_pin_is_fresh docstring names a superseded record id
+- **Issue #82** (closed): Liberty view provenance pins a config SHA-256 that no longer matches the tree, blocking T1 item 8
+
+### 2026-11-15
+
+- **PR #131**: sim/characterize: record the simulator version in evidence records and the Liberty sidecar
+- **Issue #125** (closed): Characterization records never record the simulator version (ngspice); only klt's is captured
+- **PR #128**: ci: gate manifest evidence pins against the envelopes they name
+- **PR #127**: docs: record items 1 and 10 fix-round re-attestations in the #103 note
+- **PR #122**: check_library: pin the view's declared corner and narrow the freshness claim to what is checked
+- **PR #126**: fix: regenerate the recorded notch controls from a committed, CI-checked table
+- **PR #118**: layout: record the notch predicate's merged admit (opening <= 0) as a fourth DRC control
+- **PR #113**: refactor: fold process section into CHAR_CORNER_PVT, drop unused Corner/FAMILIES/CORNERS layer
+- **PR #112**: ci: gate attestation envelopes against the committed files and re-attest items 1, 9 and 10
+- **PR #108**: verification: implement the documented RTL_DIR override
+- **PR #107**: fix: require cell and corner inside one record block in check_library step 4
+- **PR #106**: docs: correct design/ and views/ sub-README summaries to tracked content
+- **PR #105**: fix: enforce schema_version == 1 in gen_netlists.validate
+- **PR #104**: layout: make the strip-notch refusal pitch-, layer- and strip-aware
+- **PR #101**: docs: re-derive ROADMAP snapshot against main @ 176f794
+- **PR #100**: fix: require the nsd layer and classify its absence as an exit-2 config error
+- **PR #97**: refactor: remove never-read locals, dead CellSpec field and keep_artifacts knob
+- **PR #94**: sim/characterize: derive check_library default paths from LIBRARY_NAME and __file__
+- **PR #90**: build: hold the CI check list once in check-ci.sh and call it from all three places
+- **Issue #130** (closed): Mint the T1 item 8 attestation envelope for the refreshed Liberty view (view is now fresh)
+- **Issue #117** (closed): layout/README.md re-attestation note omits item 1 (added in PR #112's fix round)
+- **Issue #116** (closed): main's committed signoff report overstates T1 by six partitions (11/22 committed vs 5/22 re-graded)
+- **Issue #119** (closed): check_library: the freshness check claims to catch a hand-edited Liberty view but never reads the view's contents
+- **Issue #120** (closed): layout: recorded DRC controls have no committed regeneration recipe (the stream's cell-name override is undocumented)
+- **Issue #114** (closed): layout: the notch predicate's `opening <= 0` (merged-shapes) admit row has no DRC control behind it
+- **Issue #111** (closed): Remove unused generality in sim/harness: corner-matrix kind, extra/notes slot, fs/sf corners
+- **Issue #109** (closed): Remove unused Corner/FAMILIES/CORNERS generality in sim/harness/corners.py
+- **Issue #103** (closed): T1 item 10 attestation hashes drift silently from the files they attest
+- **Issue #102** (closed): check_library: the evidence-record step matches cell and corner as loose substrings, so a record with no tt measurements passes as fresh
+- **Issue #96** (closed): ROADMAP: the Now list's item 4 and the blocked entry describe work main has already delivered
+- **Issue #95** (closed): Enforce or drop schema_version: both generators advertise a config contract version they never check
+- **Issue #89** (closed): verification: the documented RTL_DIR override is read by nothing, so a gate-level run silently tests the behavioral RTL
+- **Issue #88** (closed): sim/characterize: derive the Liberty view and records paths in check_library.py instead of retyping them
+- **Issue #87** (closed): Sub-READMEs still claim xschem schematics and LEF views the repo does not track
+- **Issue #86** (closed): layout: the notch refusal is pitch-independent, but a notch only violates when the opening is narrower than activ_space_nm
+- **Issue #81** (closed): Hold the CI check list in one place: ci.yml, package.json and README.md each carry their own copy
+- **Issue #80** (closed): gen_layouts: nsd is in OPTIONAL_LAYERS but the tap code requires it, so a missing nsd exits 3 instead of 2
+- **Issue #77** (closed): Remove never-read locals, a dead CellSpec field and the keep_artifacts knob in layout/gen_layouts.py and sim/characterize/request.py
+
 ### 2026-11-14
 
 - **PR #93**: chore: remove stale ngspice-harness gitignore rules and duplicate flow/build entry

@@ -13,6 +13,7 @@
 #
 #   tests            unit tests
 #   attestations     envelope content_hash values match the committed files
+#   manifest-pins    block manifest evidence pins match the envelopes they name
 #   netlists         generated LVS netlists are fresh
 #   layouts          generated layouts are fresh
 #   evidence-accept  the evidence check accepts the committed flow record
@@ -27,7 +28,7 @@ cd "$(dirname "$0")"
 # The flow record CI gates on. Repointing CI at a newer record is this one line.
 FLOW_RECORD=flow/records/20261104-df96543
 
-ALL_STAGES="tests attestations netlists layouts evidence-accept evidence-reject"
+ALL_STAGES="tests attestations manifest-pins netlists layouts evidence-accept evidence-reject"
 
 stage_tests() {
   python3 -m pytest design/tests layout/tests sim manifests/tests
@@ -42,6 +43,20 @@ stage_tests() {
 # has no klt, so re-attestation is always a local step.
 stage_attestations() {
   python3 manifests/check_attestations.py
+}
+
+# The block manifest (manifests/sg13g2-stdcells.json) pins, per evidence key,
+# the provenance.input.content_hash of the envelope it names (issue #116). The
+# attestations stage deliberately skips that aggregate field, so nothing
+# compared pins to envelopes: a re-mint that forgot to re-point the manifest,
+# or a manifest edit that forgot to re-mint, left main publishing a signoff
+# count its own grader contradicted (11 committed vs 10 fresh at the time).
+# --manifest mode checks exactly that pin. On failure, the message names the
+# repair: re-mint the envelope with `klt signoff --attest` or re-point the
+# manifest pin -- both are local steps, CI has no klt. A manifest carrying
+# no pins at all is also an error (#129): the stage cannot pass vacuously.
+stage_manifest_pins() {
+  python3 manifests/check_attestations.py --manifest manifests/sg13g2-stdcells.json
 }
 
 stage_netlists() {
@@ -79,6 +94,7 @@ run_stage() {
   case "$1" in
     tests) stage_tests ;;
     attestations) stage_attestations ;;
+    manifest-pins) stage_manifest_pins ;;
     netlists) stage_netlists ;;
     layouts) stage_layouts ;;
     evidence-accept) stage_evidence_accept ;;

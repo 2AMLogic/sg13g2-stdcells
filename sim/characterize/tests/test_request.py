@@ -7,7 +7,7 @@ from sim.characterize import runner
 from sim.harness.corners import CHAR_CORNER_PVT
 from sim.harness.evidence import CharacterizationExtensions
 from sim.characterize.request import (DEFAULT_CORNER, SG13G2_INV_1, RequestError, build_library_request,
-                                      build_request, cells_from_config)
+                                      build_request, cells_from_config, library_view_name)
 
 
 class RequestTests(unittest.TestCase):
@@ -125,6 +125,20 @@ class LibraryRequestTests(unittest.TestCase):
         self.assertEqual(self.req["library"]["name"], "sg13g2_stdcells_tt_1p20v_25c")
         self.assertEqual(self.req["cells"][0]["power_pins"], {"vdd": "VDD", "gnd": "VSS"})
         json.dumps(self.req)
+
+    def test_library_name_is_derived_from_the_corner(self):
+        # The view name encodes PVT (a library is a generator, not a block), so
+        # the default is derived from CHAR_CORNER_PVT -- the request's library
+        # name follows the corner it was built for, at every corner.
+        for name in CHAR_CORNER_PVT:
+            req = build_library_request(self.cells, name, "/pdk")
+            self.assertEqual(req["library"]["name"], library_view_name(name), name)
+        # The tt derivation reproduces the committed view's name byte for byte.
+        self.assertEqual(library_view_name("tt"), "sg13g2_stdcells_tt_1p20v_25c")
+        self.assertEqual(library_view_name("ff"), "sg13g2_stdcells_ff_1p32v_m40c")
+        self.assertEqual(library_view_name("ss"), "sg13g2_stdcells_ss_1p08v_125c")
+        with self.assertRaises(RequestError):
+            library_view_name("fs")
 
     def test_rejects_empty_and_duplicate(self):
         with self.assertRaises(RequestError):

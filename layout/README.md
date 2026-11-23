@@ -351,6 +351,88 @@ Run from the repo root (klt gets cwd-relative paths). The runner first checks
 codes: `0` all `match`; `1` tooling error or `--check` drift; `2` invalid
 config; `4` reports written but a cell is not `match`.
 
+#### Re-verifying the committed reports (issue #198)
+
+`--check` re-hashes, through whatever `klt` is first on `PATH`, the layout,
+the reference netlist and the bundled `sg13g2` deck each report pins -- so
+whether the committed evidence re-verifies is a property of the install, not
+only of the tree: a klt build bundling a different deck than the recorded
+`provenance.deck.content_hash` drifts on all four reports on a clean tree.
+Each report names the toolchain it was minted with --
+`provenance.klt_reinstall_spec` (a PEP 508 install requirement for klt) and
+`provenance.klayout_version` (the engine wheel). Read them out of any report
+(all four carry the same pair), install that exact toolchain into a
+throwaway venv -- never into a host-wide install -- and put its `bin` first
+on `PATH`, since the runner and `layout/toolchain_pin.py` both shell out to
+`klt` by name:
+
+```
+python3 -c "import json; p = json.load(open('layout/lvs/sg13g2_inv_1.json'))['provenance']; print(p['klt_reinstall_spec'], p['klayout_version'])"
+
+uv venv /tmp/lvs-verify
+uv pip install --python /tmp/lvs-verify/bin/python \
+  'klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@2a9c52b27ce7986b4372ae5d73129dac4773e02c' \
+  'klayout==0.30.13'
+/tmp/lvs-verify/bin/klt --version    # the recorded klt: 0.9.2.dev1022+g2a9c52b27ce7
+
+PATH=/tmp/lvs-verify/bin:$PATH \
+  python3 layout/run_lvs.py --config layout/example_config.json --check    # exit 0
+git diff --exit-code -- layout/gds layout/lvs    # the check wrote nothing
+```
+
+Installing `klayout==<provenance.klayout_version>` alongside the spec pins
+the engine wheel too. A newer klt is not disqualified: on
+`0.9.3.dev3+gd5d57daf9a14` (klayout `0.30.13`) the same runner check also
+exits 0 with every hash `[OK]`, plus one informational
+`[DRIFT] provenance.klt_version` line per report, and
+`layout/toolchain_pin.py` checks subcommands rather than versions, so the
+capability pin does not force the recorded build. Both installs verified at
+`aeb7c25`.
+
+**Reading a failure.** The runner's per-cell lines truncate `klt`'s stdout to
+200 characters (`do_check` in `layout/run_lvs.py`; the absolute report path
+eats about half the budget on its own), which on a drifting install cuts the
+output mid-field and hides *which* field drifted. Run the check on one report
+directly for the full diagnostic:
+
+```
+klt lvs --check layout/lvs/sg13g2_inv_1.json
+```
+
+On a host-wide install (`klt 0.9.3.dev2586+g9bac82596e2f`, klayout
+`0.30.12`, clean tree at `aeb7c25`) that prints:
+
+```
+status: drifted
+  [OK] environment.layout_sha256
+  [OK] environment.reference_sha256
+  [DRIFTED] provenance.deck.content_hash
+      expected: sha256:cf6dfead…
+      actual:   sha256:eaaf2989…
+  [DRIFT] provenance.klt_version: 0.9.2.dev1022+g2a9c52b27ce7 (report) vs 0.9.3.dev2586+g9bac82596e2f (current)
+  [DRIFT] provenance.klayout_version: 0.30.13 (report) vs 0.30.12 (current)
+```
+
+and exits `3` (the runner folds that into its exit `1`). The prefix is the
+signal:
+
+* `[DRIFT]` (singular) is an informational **tool-version** difference
+  (`provenance.klt_version`, `provenance.klayout_version`): the checking
+  install is not the minting one. It appears in passing runs too -- the
+  `0.9.3.dev3` build above graded `status: match`, exit `0` -- so it never
+  fails a check on its own.
+* `[DRIFTED]` is a failing field, with expected vs actual on the two lines
+  under it. In the example the failing field is
+  `provenance.deck.content_hash`: that install bundles a different `sg13g2`
+  deck than the report recorded, while both input hashes are still `[OK]`,
+  so the committed GDS and reference netlist are intact and the *deck* is
+  what moved -- re-verify under the recorded build (the recipe above)
+  before suspecting the evidence. A `[DRIFTED]` on
+  `environment.layout_sha256` or `environment.reference_sha256` instead is a
+  real input drift: the committed bytes are not what the report graded, and
+  the answer is a re-mint -- a new record, never an edit, the same
+  append-only discipline as the supersession chains below.
+
 The request sends `options.combine_devices: true`, recorded in each report's
 `options` block. It is there because this generator *folds*: a device of F
 fingers is F parallel transistors on one gate net in the layout, where the
@@ -452,6 +534,16 @@ without re-attesting item 10, and a re-attestation of item 9 (its
 `verification/Makefile` changed in PR #108) went missing the same way. All
 three are re-attested here through `klt signoff --attest <n>` (item 10: 6/6
 checks pass; item 9: the cocotb cold start passes, 2.0.0/iverilog 13.0, 6/6).
+The merge of `main` during PR #112's own fix round brought #105's edit to
+`design/gen_netlists.py` — an attested path in item 1's envelope
+(`manifests/envelopes/item1.analog.attest.json`) — plus PR #104's edits to
+`layout/example_config.json` and the root `README.md` (`9a82f9b`, finalised
+in `3df01b7`), turning item 1's and item 10's envelopes red on the post-merge
+tree. Both were re-attested at `5e419cc` before the PR could land — item 1,
+whose envelope reads `status: pass` with 10/10 checks, and item 10 a second
+time (6/6, for the PR #104 `README.md` change) — so unlike the three skipped
+steps above, nothing went missing here: the step and its record happened
+together.
 To close the class, `manifests/check_attestations.py` — new, stdlib Python
 only — re-hashes every committed file named by every envelope under
 `manifests/envelopes/` (both provenance shapes klt emits) and fails on any
@@ -471,22 +563,114 @@ re-runs each inventory's commands).
 `T1 #8 [analog] Characterization report` is **not** cited, and stays
 `no_evidence` — deliberately, with the attestation committed as it graded. Its
 inventory (`manifests/inventories/item8.analog.json`) is committed and names
-the report `sim/characterize/records/20261107-222836-6ee1577.md` and, for spec
+the report `sim/characterize/records/20261115-171205-3462cc8.md` and, for spec
 row 9, the Liberty view and its provenance sidecar; its freshness command
-(`python3 -m sim.characterize.check_library`, new) re-derives every claim the
-sidecar makes, and it **fails**: the sidecar pins
-`layout/example_config.json` at `sha256:1a02f3cc…`, and the committed config
-hashes `sha256:8e360822…`. Issue #73 added two `layout.rules` keys
-(`activ_space_nm`, `nwell_enc_nactiv_nm`) for the well and substrate taps
-*after* the view was characterized. Nothing the characterization consumes
-changed — the config's `process` and `cells` blocks are byte-identical at both
-hashes, and `design/gen_netlists.py` never reads the `layout` block — but the
-sidecar pins the whole file, so the recorded provenance no longer matches the
-tree. The view has to be regenerated (or the pin narrowed to what
-characterization actually consumes) before item 8 can be cited; that needs a
-`klt characterize` run against the PDK, which issue #75 put out of scope. The
-check was deliberately not weakened to pass: a freshness command that cannot
-fail is not evidence. Tracked in issue #82.
+(`python3 -m sim.characterize.check_library`, new) re-derives what the sidecar
+claims -- library name, cell set, declared corner, config hash and record, but
+not the view's delay tables, which the sidecar does not hash. The staleness
+that used to block citation is resolved: issue #73 had added two `layout.rules`
+keys (`activ_space_nm`, `nwell_enc_nactiv_nm`) for the well and substrate taps
+*after* the view was characterized, leaving the sidecar pinning
+`layout/example_config.json` at `sha256:1a02f3cc…` — a hash the committed
+config no longer had (nothing the characterization consumes changed, but the
+sidecar pins the whole file). The view was regenerated against the committed
+config, and the freshness command now **passes**: the sidecar pins the
+committed config's current hash. What still keeps item 8 at `no_evidence` is
+the envelope itself, which is unminted — minting needs a local
+`klt signoff --attest` run, and CI deliberately has no klt. The check was
+deliberately not weakened to pass: a freshness command that cannot fail is not
+evidence. Tracked in issue #82.
+
+**Resolution (2026-11-14, issue #82): the view was regenerated.** Of the two
+ways out recorded above, regenerating was taken and narrowing the pin was
+rejected — narrowing makes a claim about what provenance must cover (that a
+digest over `process` + `cells` is adequate), which belongs in a `spec/`
+decision record of its own, deferred until the coarse pin goes stale again;
+this regeneration is the first data point on what that recurrence costs. The
+regeneration (`python3 -m sim.characterize --library --pdk-dir
+/home/ubuntu/share/pdk/ihp-sg13g2`) ran on a clean worktree and appended
+record `sim/characterize/records/20261114-222806-f1cf294.md`; the superseded
+record `20261107-222836-6ee1577.md` is kept, append-only. It re-measured under
+a newer toolchain — klt 0.9.2.dev247 → 0.9.2.dev1029, ngspice-46 → ngspice-47 —
+so any numeric difference between the two records is attributable to that; in
+the event the committed `.lib` is byte-identical. Two side findings are
+recorded with it: the first regeneration attempt surfaced that the runner
+stamped the sidecar's `repo_commit` `(dirty)` from its own outputs (the
+`.lib` and record are written before the sidecar is stamped), fixed by
+snapshotting git provenance once before the run so the record and its sidecar
+always name the same tree state; and regenerating the signoff report exposed a
+pre-existing item-10 staleness on `main` — `README.md` was edited (commit
+`df690f0`, the Status-block correction) after that envelope was minted —
+re-attested here, unchanged checks, so the report reads T1 12/22 with item 8
+[analog] `[MET]`. The envelope was re-minted a second time before merge: the update from `main`
+moved both pinned files again (`README.md` and `.github/workflows/ci.yml`), so
+the committed envelope pins those files' post-merge bytes; the six checks pass
+unchanged and the report is byte-identical, still reading T1 12/22. The same
+merge also moved `verification/Makefile` (PR #108), which item 9 [digital]'s
+envelope pins — main had moved that file without re-minting there, a
+staleness this branch inherited — so that envelope was re-minted identically
+(cold start re-run, 6/6 checks unchanged); the report stays byte-identical.
+
+**Resolution recurrence (2026-11-15, the data point that paragraph predicted):**
+main's PR #104 added three more `layout.rules` keys (`psd_space_nm`,
+`nwell_space_nm`, `sd_enc_activ_nm`), staleing the whole-file config pin again
+on any merge of this branch — the second recurrence lap in eight days, and the
+reason the narrowing option (a `spec/` decision record) is deferred no longer
+lightly: it is filed structurally as #110/#116. Regenerated again exactly as
+above — `python3 -m sim.characterize --library --pdk-dir
+/home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged tree (`921b1a8`) before
+any bookkeeping edit, single corner TT/1.20 V/25 C, local backend — appending
+record `sim/characterize/records/20261115-105337-921b1a8.md`, keeping both
+superseded records, `.lib` byte-identical yet again. Toolchain moved again
+(klt 0.9.2.dev1029 → 0.9.3.dev3+gd5d57daf9a14; ngspice unchanged at 47) and is
+named in the record so any numeric difference stays attributable. Items 8 and
+10 were re-minted against the merged bytes (item 8's inventory report field
+names the new record, so its input digest moved to `6876f546…`, manifest
+updated). The report is regenerated with the honest grade, **T1 11/22**, one
+below the previous claim: `1.analog` grades `stale_evidence` because main's
+#112 re-minted that envelope but left the manifest's `content_hash` entry at
+the pre-#112 input digest (`e1e8354a…` vs the envelope's own `d5a5ee9c…`) — a
+main-side omission tracked in #116, deliberately not repaired inside this PR
+(design sources are not #82's scope); `--manifest --check` reads
+`status: match` because the committed report **is** the fresh grade, which is
+the criterion issue #82 actually sets.
+
+**Resolution recurrence, third lap (2026-11-15, this branch's `main` update
+`577d620`):** the merge brought #128's `1.analog` manifest-pin fix, so that
+item is `[MET]` again and the regenerated report reads **T1 12/22** with
+`T1 #8 [analog]` `[MET]` — the committed `manifests/signoff-report.json` is
+the authority for the count. Item 8's input digest is `53f4ba2c…` after the
+inventory `description` took main's narrowed #122 wording; items 8 and 10 were
+re-minted against the merged bytes. The 11/22 sentence above is left as
+written — it was true of `206dac1` — exactly as the earlier laps were left in
+place.
+
+**Resolution recurrence, fourth lap (2026-11-15, this branch's `main` update
+`a100765`):** the merge brought #125's simulator-version recording (`af3b7b3`:
+a `simulator` field in the sidecar, `simulator ngspice-47` in the record's
+Notes line) and main's own refresh of the view, run on a dirty tree there —
+its record stamps `3462cc84… (dirty)`, the exact defect class this branch's
+pre-capture fix exists to close. Seven files conflicted; the only code hunk
+was `runner.py`'s `render()` Notes line, where both halves are load-bearing and
+both are kept: main's simulator key and this branch's doubled-`klt `-prefix
+strip. Regenerated exactly as every lap above — `python3 -m sim.characterize
+--library --pdk-dir /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged
+tree (`13dc481`) before any bookkeeping edit, single corner TT/1.20 V/25 C,
+local backend — appending record
+`sim/characterize/records/20261115-220740-13dc481.md`, keeping all four
+superseded records (`6ee1577`, `f1cf294`, `921b1a8`, `3462cc8`). This lap the
+`.lib` is **not** byte-identical: exactly one `leakage_power` value moved a
+last digit (`78.4631` → `78.4632`; main's run
+was on klt 0.9.3.dev3, this run on 0.9.3.dev16+gdcf18e2e0c03, ngspice
+unchanged at 47) — the toolchain is named in the record so the difference
+stays attributable. Items 8 and 10 were re-minted against the merged bytes
+(item 8's inventory `report` field names the new record, so its input digest
+moved to `1910e308…`, manifest updated; item 10's README pin refreshed). The
+report is regenerated and reads **T1 12/22** with `T1 #8 [analog]` `[MET]` —
+the committed `manifests/signoff-report.json` is the authority for the count;
+`klt signoff --manifest manifests/sg13g2-stdcells.json --check
+manifests/signoff-report.json` reads `status: match`. The 11/22 sentence above
+is left as written, exactly as the earlier laps were left in place.
 
 The friction this surfaced is filed as 2AMLogic/klayout-tools#5688: `klt
 signoff --attest 8` documents its `citations` as evidence-envelope paths but
@@ -494,3 +678,38 @@ checks only that each file exists, delegating all content verification to the
 caller's `envelope_checks` command — which it accepts unconstrained, `true`
 included. That is precisely why the command behind this repo's item 8 citation
 was written to be falsifiable rather than merely present.
+
+Resolution lap (prose corrections per review): the merge prose had dropped one
+record from each README's chain — `921b1a8` from `sim/README.md`'s list,
+`3462cc8` from `README.md`'s supersession chain — and `sim/README.md`'s Status
+line still counted the pre-recurrence tree. Both records are restored,
+`sim/README.md`'s Status now counts the committed tree (six records; the
+library view characterized five times — four refreshes), and `README.md`
+defers the full chain to `sim/characterize/records/` instead of restating it.
+Editing `README.md` moved its byte pin in item 10's hygiene envelope, so that
+envelope was re-minted (its three audit commands re-run, 6/6; the inventory
+digest is unchanged at `50d2ba3a…`, so the manifest is untouched) and
+`manifests/signoff-report.*` regenerated byte-identical: still **T1 12/22**,
+`--check` reads `status: match`, no `stale_evidence` anywhere. No
+characterization was re-run and no record was added — the record chain of the
+fourth lap above is unchanged, and the count sentences earlier laps left are
+left as written.
+
+**Gate hardening (2026-11-16, issue #134): the freshness command now fails on
+a dirty provenance stamp.** The command re-derived library name, cell set,
+corner, config hash and record, but never read the `repo_commit` the sidecar
+and its record carry — so the two committed records stamped `(dirty)`
+(`20261107-222836-6ee1577`, `20261115-171205-3462cc8`) passed every gate in
+the repo while citing measurements reproducible from no commit.
+`check_library.check()` now reports a finding when the sidecar's
+`repo_commit` or the cited record's `**Repo commit**` line carries the dirty
+suffix, and the stamp format is one shared definition
+(`sim/harness/report.py`'s `commit_stamp`/`is_dirty_stamp`) that the writer
+(`runner.py`), the checker and their tests all read, so the suffix cannot
+drift apart. The two historical dirty records are kept, append-only — the
+check gates what the sidecar cites, not the archive — and the committed
+sidecar and its record stamp clean (`13dc481`), so the command still passes
+on main's bytes unchanged. The command's own claim (module docstring,
+`--help` description, success line) names the stamp check now, per the #122
+narrowing discipline. No characterization was re-run and no envelope was
+re-minted: none of the edited files is envelope-pinned.

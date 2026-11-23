@@ -9,13 +9,14 @@
   "tier": null,
   "t1_item_count": 22,
   "build_t1_item_count": 22,
-  "t1_met_count": 11,
+  "t1_met_count": 12,
+  "t1_not_applicable_count": 1,
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:d9287ec9dc6107e560e00b1a8b7a670f757722713b5c651dee3d2cbde058490a",
   "build": {
-    "version": "0.9.2.dev1024+g8da9718f0cb6",
-    "package_version": "0.9.2.dev1024+g8da9718f0cb6",
-    "git_commit": "8da9718f0cb6140607431017e6573c531a2b1d92",
+    "version": "0.9.3.dev16+gdcf18e2e0c03",
+    "package_version": "0.9.3.dev16+gdcf18e2e0c03",
+    "git_commit": "dcf18e2e0c0330742eb46cd7b54059612f627cca",
     "git_tag": null,
     "dirty": false,
     "is_release": false,
@@ -38,13 +39,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:e1e8354a3f01d1eededc121290786e5229ecaf89e97f87d13d2e90f03aa44253",
+        "content_hash": "sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 1,
           "path": null,
-          "content_hash": "sha256:e1e8354a3f01d1eededc121290786e5229ecaf89e97f87d13d2e90f03aa44253",
+          "content_hash": "sha256:d5a5ee9c51e1f8d8cfe1f4e93f383db2864cdf5b24ce3d09f9ffaf625d070a4f",
           "input_verified": true,
           "members": [
             {
@@ -52,7 +53,7 @@
                 "path": "design/gen_netlists.py",
                 "scope": "repo"
               },
-              "content_hash": "sha256:9d8398922c378ef602748ce24b24d4dd83f38b1fcd1cfe3bc2807b7cfe7d1e95",
+              "content_hash": "sha256:758eab5f13e4853cdaa40525ac0474d755f3ede11c7e5cb9adeb44cad84612d4",
               "status": "verified"
             },
             {
@@ -60,7 +61,7 @@
                 "path": "layout/example_config.json",
                 "scope": "repo"
               },
-              "content_hash": "sha256:8e3608229a8291cf4109292d8c5d455b6680a69756111ecbc4e704f56d1749b6",
+              "content_hash": "sha256:a9431e088eebbca9bc5f6729b4341ea9f73331629d29e919ff232aee34db906b",
               "status": "verified"
             },
             {
@@ -558,10 +559,86 @@
         "**Add the missing statistical row(s)** to the block's spec through a decision record the operator ratifies, then supply Monte Carlo evidence (`klt yield`) for them. Where the PDK has no mismatch models, assumed mismatch is acceptable, labelled as such in the evidence.",
         "**Declare item 6 a gap** for the analog partition. The digital partition of the same block may still use `not_applicable`. **Several statistical rows, only some evidenced** (issue #2908): item 6 is a claim about *every* statistical row, so a manifest may declare the row set under `spec_rows.\"6\"` and cite one `klt yield` report per row set (`rows` on each citation). Item 6 grades `met` only when every declared row is covered by a passing citation against a ratified target. A row with no citation (`uncovered_rows`), a row declared a `gap` because no evidence can exist yet (`declared_gaps`), or a row declared `ratified: false` (`unratified_rows`, evidence against a proposed limit is provisional) grades `unmet` / `partial_coverage`, never `met`. Without a declaration the item grades as before; a `not_applicable` entry contradicts a declared row set and is `invalid_evidence`."
       ],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "not_applicable",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": null,
+      "not_applicable": {
+        "spec": {
+          "file": "spec/0001-target-specification.md",
+          "content_hash": "sha256:ba6ab55b1ad6c96ae911c49c33101b32fd57e04031874b1e620036b5c0813ea3",
+          "status": "ratified",
+          "row_count": 12,
+          "format": "markdown-table",
+          "id_column": "#"
+        },
+        "statement": {
+          "file": "manifests/item6-na-statement.json",
+          "content_hash": "sha256:5fe58d59cd80677e5788eb2cc9d132ebfcdc465a449f515f5ad4a05d9848c280",
+          "rows": [
+            {
+              "id": "1",
+              "class": "geometry",
+              "reason": "The row height is a fixed layout dimension of 3.36 um (8 tracks)."
+            },
+            {
+              "id": "2",
+              "class": "geometry",
+              "reason": "The routing grid specifies a fixed pitch of 0.42 um on each axis."
+            },
+            {
+              "id": "3",
+              "class": "geometry",
+              "reason": "Layer inspection determines whether all intra-cell routing uses Metal1."
+            },
+            {
+              "id": "4",
+              "class": "geometry",
+              "reason": "Each pin location is checked against the specified routing grid."
+            },
+            {
+              "id": "5",
+              "class": "cell count",
+              "reason": "Counting the combinational cells in the library determines whether it reaches the target or stretch count."
+            },
+            {
+              "id": "6",
+              "class": "cell count",
+              "reason": "The target excludes sequential cells and the stretch specifies a count of eight."
+            },
+            {
+              "id": "7",
+              "class": "physical verification",
+              "reason": "The DRC verdict depends on whether the SG13G2 deck reports a violation on the given layout."
+            },
+            {
+              "id": "8",
+              "class": "physical verification",
+              "reason": "LVS compares the extracted layout netlist with the schematic and returns a match verdict."
+            },
+            {
+              "id": "9",
+              "class": "corner coverage",
+              "reason": "The Liberty views are required at named process, voltage and temperature points, with TT at target and FF and SS added at stretch."
+            },
+            {
+              "id": "10",
+              "class": "benchmark ratio",
+              "reason": "The area bound compares post-synthesis cell area for add8 mapped with each library under the same flow and constraints."
+            },
+            {
+              "id": "11",
+              "class": "benchmark ratio",
+              "reason": "The energy bound compares total post-synthesis energy over one fixed seeded vector set at TT, using the same clock period and power tool for both libraries."
+            },
+            {
+              "id": "12",
+              "class": "benchmark ratio",
+              "reason": "The period bound compares worst input-to-output path delays at each specified corner using the same virtual clock and I/O constraints for both post-synthesis netlists."
+            }
+          ]
+        }
+      }
     },
     {
       "tier": "T1",
@@ -601,10 +678,24 @@
       "partition_boundary": "transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS",
       "text": "one aggregated, current artifact summarizing per-spec-row performance across conditions, with the evidence record each verdict rests on (#309 tracks the aggregation tool). For a digital or mixed-signal digital partition this includes Fmax, area, and power across the corner set, not just functional pass/fail. Unlike every other T1 item, this one names no specific `klt` verb for its evidence, which may be a hand-assembled record (e.g. a committed Markdown characterization report) rather than one `klt` verb's own JSON output. `klt signoff --attest 8 --inventory FILE` (issue #4311) produces the generic envelope mechanically \u2014 report present, each spec row cited, each cited envelope present and passing its own `--check`, and for a digital partition Fmax/area/power bound per corner \u2014 and a met citation discloses whether the tool produced it; a bare hand-written envelope still grades. `klt signoff --manifest` grades it via an opt-in **generic evidence envelope** (`\"kind\": \"generic\"`, issue #1152) \u2014 a minimal, hand-rolled JSON wrapper asserting `status: \"pass\"|\"fail\"` for whatever record backs it. Item 8 is the only T1 item that accepts a *bare* generic envelope. Items 1, 2, 9 and 10 accept only the artifact-anchored form (issue #2718), and items 3\u20137 and 11 reject the generic kind entirely: see `docs/cli/signoff.md`'s \"Generic evidence (opt-in, non-`klt`-native)\" section for the envelope shape. The full opt-in kind -> item mapping (including kinds whose scope is currently empty) is published by `klt signoff --describe-grader` and the `klt signoff --help` epilog.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/envelopes/item8.analog.attest.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:1910e308982aec47919dc6ba9d323533e1486ab4f1bfdc24e8a51d400ce61dea",
+        "input_verified": true,
+        "exit_status": 0,
+        "attestation": {
+          "tool_produced": true,
+          "producer": "klt signoff --attest",
+          "check_count": 6,
+          "passed_count": 6
+        }
+      }
     },
     {
       "tier": "T1",
