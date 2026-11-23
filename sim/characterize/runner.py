@@ -187,28 +187,39 @@ def simulator_of(response: dict, cell: CellSpec) -> dict:
 
 
 def simulator_str(data: dict) -> str:
-    """``engine-version`` as klt reports it (e.g. ``ngspice-47``); ``unknown`` if absent."""
-    sim = data.get("simulator") or {}
+    """``engine-version`` as klt reports it (e.g. ``ngspice-47``); ``unknown`` if absent.
+
+    Reads the first ``cells[]`` entry's ``simulator`` block: one run uses one
+    engine, so the first cell's per-cell report stands for the whole run.
+    """
+    first = (data.get("cells") or [{}])[0]
+    sim = first.get("simulator") or {}
     if not sim.get("engine") or not sim.get("version"):
         return "unknown"
     return f"{sim['engine']}-{sim['version']}"
 
 
-def build_record_data(response: dict, cell: CellSpec, backend: str) -> dict:
+def build_run_data(response: dict, backend: str) -> dict:
+    """The run-level blocks of a record payload, shared by every cell of the run."""
     prov = response.get("provenance") or {}
     return {
-        "cell": cell.name,
-        "netlist_provenance": f"netlist supplied to klt characterize: {cell.netlist}",
         "corner": response["corner"],
         "backend": backend,
         "klt": {"version": klt_version(), "provenance_version": prov.get("klt_version"),
                 "provenance": prov},
-        "simulator": simulator_of(response, cell),
         "axes": {
             "input_transition_ns": response["grid"]["input_transition_ns"],
             "output_load_pf": response["grid"]["output_load_pf"],
         },
         "units": response.get("units", {}),
+    }
+
+
+def build_cell_data(response: dict, cell: CellSpec) -> dict:
+    """One ``cells[]`` entry of a record payload: this cell's own measurements."""
+    return {
+        "cell": cell.name,
+        "simulator": simulator_of(response, cell),
         "arcs": extract_arcs(response, cell),
         "leakage": next((e.get("leakage") for e in response.get("cells") or []
                          if e["cell"]["name"] == cell.name), None),
@@ -219,19 +230,21 @@ def _when(side_inputs: dict) -> str:
     return " & ".join(f"{k}={v}" for k, v in sorted(side_inputs.items()))
 
 
-def evidence_for(data: dict) -> list[CharacterizationExtensions]:
-    """One validated extension per arc and per (slew, load) grid point.
+def evidence_for(data: dict, cell: dict) -> list[CharacterizationExtensions]:
+    """One validated extension per arc and per (slew, load) grid point of ``cell``.
 
-    The scalar fields summarise the rise/fall tables: delay and transition are
-    the worse (larger) of the two edges, energy is the Liberty internal energy
-    of one full cycle (rise_power + fall_power). The full tables stay in the
-    record's Data block.
+    ``data`` is the record payload supplying the run-level blocks (``corner``,
+    ``axes``, ``netlist_provenance``); ``cell`` is one entry of its ``cells``
+    list. The scalar fields summarise the rise/fall tables: delay and
+    transition are the worse (larger) of the two edges, energy is the Liberty
+    internal energy of one full cycle (rise_power + fall_power). The full
+    tables stay in the record's Data block.
     """
     corner = data["corner"]["name"]
     slews = data["axes"]["input_transition_ns"]
     loads = data["axes"]["output_load_pf"]
     exts = []
-    for arc in data["arcs"]:
+    for arc in cell["arcs"]:
         missing = [t for t in ("rise_power", "fall_power") if t not in arc]
         if missing:
             raise CharacterizeFailed(
@@ -242,7 +255,7 @@ def evidence_for(data: dict) -> list[CharacterizationExtensions]:
                 ext = CharacterizationExtensions(
                     record_kind="characterization",
                     data_provenance="simulated",
-                    cell=data["cell"],
+                    cell=cell["cell"],
                     arc_related_pin=arc["related_pin"],
                     arc_when=_when(arc["side_inputs"]),
                     arc_sense=arc["timing_sense"],
@@ -260,9 +273,7 @@ def evidence_for(data: dict) -> list[CharacterizationExtensions]:
 
 
 def render(record_id: str, git: dict, data: dict, exts: list[CharacterizationExtensions]) -> str:
-    """``data`` is one cell's data, or ``{"cells": [per-cell data...], ...}`` for a library."""
-    if "cells" in data:
-        data = {**data, **{k: v for k, v in data["cells"][0].items() if k not in data}}
+    """``data`` is the one-shape record payload: run-level blocks plus a ``cells`` list."""
     lines = [f"# {record_id}", "", "**Kind**: characterization (raw klt characterize measurements)",
              f"**Repo commit**: {commit_stamp(git)}", ""]
     pdk = data.get("pdk")
@@ -283,14 +294,15 @@ def record(data: dict, records_dir: Path = RECORDS_DIR, repo_root: Path = REPO_R
            git: dict | None = None) -> Path:
     """Append one record. Never overwrites: exclusive-create, new id on collision.
 
-    ``data`` is one cell's data, or a library ``{"cells": [...]}`` (one record per run).
+    ``data`` is the one-shape payload -- run-level blocks plus a ``cells``
+    list; a single-cell run records a list of one (one record per run).
     ``git`` is a pre-captured :func:`git_provenance` snapshot; callers that write
     other tracked artifacts around the record pass the snapshot taken before any
     write so the record's stamp describes the tree the measurement ran on.
     """
     records_dir.mkdir(parents=True, exist_ok=True)
     git = git or git_provenance(repo_root)
-    exts = [e for d in data.get("cells", [data]) for e in evidence_for(d)]
+    exts = [e for cell in data["cells"] for e in evidence_for(data, cell)]
     while True:
         record_id = allocate_record_id(repo_root, records_dir, git=git)
         path = records_dir / f"{record_id}.md"
@@ -308,8 +320,10 @@ def characterize_and_record(cell: CellSpec, corner: str, pdk_dir, backend: str =
     with tempfile.TemporaryDirectory(prefix="sg13g2-char-") as tmp:
         response = run_klt(build_request(cell, corner, pdk_dir, **axes), backend=backend,
                            workdir=Path(tmp) / "work")
-        return record({**build_record_data(response, cell, backend), "pdk": pdk},
-                      records_dir=records_dir)
+        data = {**build_run_data(response, backend), "pdk": pdk,
+                "netlist_provenance": f"netlist supplied to klt characterize: {cell.netlist}",
+                "cells": [build_cell_data(response, cell)]}
+        return record(data, records_dir=records_dir)
 
 
 DEFAULT_CONFIG = REPO_ROOT / "layout" / "example_config.json"
@@ -373,9 +387,9 @@ def characterize_library(config: Path, corner: str, pdk_dir, lib_path: Path | No
         request = build_library_request(cells, corner, pdk_dir,
                                         library_name=library_view_name(corner))
         response = run_klt(request, backend=backend, workdir=tmp / "work", lib_path=lib_path)
-    per_cell = [build_record_data(response, c, backend) for c in cells]
-    data = {**per_cell[0], "cells": per_cell, "pdk": pdk,
-            "netlist_provenance": f"design/gen_netlists.py --config {os.path.relpath(config, REPO_ROOT)}"}
+    data = {**build_run_data(response, backend), "pdk": pdk,
+            "netlist_provenance": f"design/gen_netlists.py --config {os.path.relpath(config, REPO_ROOT)}",
+            "cells": [build_cell_data(response, c) for c in cells]}
     path = record(data, records_dir=records_dir, git=git)
     data["record_id"] = path.stem
     prov = provenance_for(config, response["corner"], data, git=git)
