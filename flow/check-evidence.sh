@@ -51,11 +51,15 @@ if [ "$nargs" -eq 6 ]; then
     # a real measurement -- an unconstrained run reports OpenSTA's 1e+39
     # sentinel, a *positive* number, so timing_status is checked before any
     # slack is read -- with non-negative setup slack and null (no hold path)
-    # or non-negative hold slack. An empty corner list proves nothing.
+    # or non-negative hold slack. An empty corner list proves nothing, and a
+    # present `corners` must itself be an array (null or an object fails; the
+    # flat form is read only when the key is absent). The envelope must also
+    # report status ok on routed geometry (issue #190).
     jq -e '
-      (.geometry_source|type=="string") and (has("corners") or has("timing_status"))
-      and ((.corners // [.]) as $c
-        | ($c|length)>=1
+      .status=="ok" and .geometry_source=="routed"
+      and (has("corners") or has("timing_status"))
+      and ((if has("corners") then .corners else [.] end) as $c
+        | ($c|type)=="array" and ($c|length)>=1
         and all($c[];
             .timing_status=="constrained"
             and (.worst_slack_ns|type=="number") and .worst_slack_ns>=0
@@ -63,7 +67,7 @@ if [ "$nargs" -eq 6 ]; then
             and (.worst_hold_slack_ns==null
                  or ((.worst_hold_slack_ns|type=="number") and .worst_hold_slack_ns>=0))))
     ' "$sta" >/dev/null \
-      || bad "gate 4: STA is not constrained with non-negative slack at every corner ($sta)"
+      || bad "gate 4: STA is not an ok, routed, constrained run with non-negative slack at every corner ($sta)"
   else
     bad "STA report missing or unreadable: ${sta:-<empty>}"
   fi
