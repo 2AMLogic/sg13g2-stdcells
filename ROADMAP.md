@@ -18,10 +18,14 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   The generator existing is not the same claim as the geometry rows being met,
   so per row, for the cells it places: row 1 (3.36 um row height) is **met** —
   `layout/example_config.json` sets `row_height_nm: 3360` and
-  `layout/tests/test_gen_layouts.py:113,127` assert the emitted cell height.
+  `Geometry.test_cell_width_follows_pitch` in
+  `layout/tests/test_gen_layouts.py` asserts the emitted cell height
+  (`H == 3360`).
   Row 2's horizontal pitch (0.42 um) is **met** — widths and gate columns are
   multiples of `gate_pitch_nm: 420`
-  (`layout/tests/test_gen_layouts.py:129,133`); the vertical grid is not
+  (`Geometry.test_cell_width_follows_pitch` asserts `W == 3 * 420`, and
+  `MultiFinger.test_width_grows_with_finger_count` asserts widths of
+  `2/3/5 * 420`, both in `layout/tests/test_gen_layouts.py`); the vertical grid is not
   separately checked. Row 3 (Metal1 only) is **met by construction** — the
   only metal entries in the `layout.layers` map in
   `layout/example_config.json` are `metal1` and `metal1_label` (its other six
@@ -64,14 +68,12 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   holds the `add8` baseline on the stock `sg13g2_stdcell` only: synthesis,
   place-and-route with all three power gates, gate-level LVS `match`, routed
   GDS and a clean `klt drc` (#9, #41).
-- **Evidence grade.** `manifests/signoff-report.txt` (`klt signoff --manifest`):
-  tier none, **T1 14/22 items met, 1 not_applicable** (updated for item 5
-  analog, #180, on top of item 6 digital N/A, item 8 analog and item 9 analog
-  on `main`). Met: items 1-4 on both partitions, item 5 analog, item 8 analog,
-  items 9 and 10 on both partitions. Not applicable: item 6 digital. Unmet:
-  item 5 digital, item 6 analog, item 7 on both partitions, item 8 digital and
-  item 11 on both partitions — `no_evidence` except item 11 digital
-  (`supply_spec_incomplete`). Tracker: #3.
+- **Evidence grade.** See the committed
+  [`manifests/signoff-report.txt`](manifests/signoff-report.txt)
+  (`klt signoff --manifest`) — it contains the evidence tier, the T1 item
+  total and the per-item results for each partition. Tracker:
+  [#3](https://github.com/2AMLogic/sg13g2-stdcells/issues/3) collects
+  the remaining follow-up work.
 
 ### What the layout generator can place today
 
