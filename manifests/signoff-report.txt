@@ -3,7 +3,7 @@ partition boundary:
   analog: transistor-level cells (sg13g2_inv_1, sg13g2_inv_2, sg13g2_inv_4, sg13g2_nand2_1): SPICE characterization, klt sim corner evidence and layout DRC/LVS
   digital: add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline
 tier: none
-T1: 14/22 items met, 1 not_applicable
+T1: 15/22 items met, 1 not_applicable
 
 [MET  ] T1 #1 [analog] Design sources
         cite: manifests/envelopes/item1.analog.attest.json (kind=generic, status=pass, content_hash=sha256:c4b2668f1e64b0b9218cfe5e84492f6826e34a5fb6b50c016567e401142d1744, exit_status=0)
@@ -52,8 +52,9 @@ T1: 14/22 items met, 1 not_applicable
 [MET  ] T1 #5 [analog] Full corner verification vs a ratified spec
         cite: sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.function.report.json (kind=sim, status=pass, content_hash=sha256:e5dabd89579fec5d7051270dff59fca60b91f016c1be3241a69aba4e16f5c25f, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
-[UNMET] T1 #5 [digital] Full corner verification vs a ratified spec
-        reason: no_evidence
+[MET  ] T1 #5 [digital] Full corner verification vs a ratified spec
+        cite: flow/records/20261121-be3a384/sta.json (kind=sta, status=ok, content_hash=sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68, exit_status=0)
+        input: not re-hashed (content_hash compared against this envelope's own claim only -- the artifact itself was not read)
 [UNMET] T1 #6 [analog] Statistical claims carry Monte Carlo evidence
         reason: no_evidence
 [N/A  ] T1 #6 [digital] Statistical claims carry Monte Carlo evidence

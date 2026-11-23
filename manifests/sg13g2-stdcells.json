@@ -28,6 +28,10 @@
       "layout/lvs/sg13g2_nand2_1.json"
     ],
     "4.digital": "flow/records/20261104-df96543/lvs.json",
+    "5.digital": [
+      "flow/records/20261121-be3a384/sta.json",
+      "flow/records/20261121-be3a384/functional-verification.json"
+    ],
     "6.digital": {
       "not_applicable": {
         "spec": {

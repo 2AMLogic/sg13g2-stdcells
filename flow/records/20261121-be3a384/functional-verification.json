@@ -1,0 +1,68 @@
+{
+  "schema_version": 2,
+  "engine": "icarus",
+  "hdl_toplevel": "add8",
+  "testbench": "test_add8",
+  "status": "pass",
+  "test_count": 1,
+  "passed_count": 1,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "exhaustive",
+      "status": "passed",
+      "sim_time_ns": 131072.0,
+      "real_time_s": 1.7541162967681885
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "verification/.klt/functional-verification/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:57b865478c13ed2b54a2b02d74d42d6ab2d9e3b19ef3d47193e94cacaf65389c"
+    },
+    "test_log": {
+      "path": "verification/.klt/functional-verification/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:173df287f84ceedaab04220d9ed4504c907e01449758201370538cbc6b82b323"
+    },
+    "build_log": {
+      "path": "verification/.klt/functional-verification/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 1795226436,
+    "source_defines": {},
+    "env": {},
+    "parameters": {},
+    "initial_state": null,
+    "sdf": null,
+    "sources": [
+      {
+        "path": "rtl/add8.v",
+        "scope": "repo",
+        "sha256": "634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139"
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.9.3.dev2575+g6bd18bbc8637",
+    "klt_git_commit": "6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
+    "klayout_version": "0.30.12",
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "role": "source",
+      "content_hash": "sha256:634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139"
+    },
+    "request_sha256": "6e0a4aab423e8e2a548fc857f842f4754434c760734387c08bce7d4d0d77799d"
+  }
+}

@@ -9103,10 +9103,10 @@
   "tier": null,
   "t1_item_count": 22,
   "build_t1_item_count": 22,
-  "t1_met_count": 14,
+  "t1_met_count": 15,
   "t1_not_applicable_count": 1,
   "unmet_reason_counts": {
-    "no_evidence": 6,
+    "no_evidence": 5,
     "supply_spec_incomplete": 1
   },
   "source_doc": "docs/design-evidence-tiers.md",
@@ -9783,10 +9783,50 @@
       "notes": [
         "Both require the spec table itself to be ratified \u2014 verdicts against a draft spec are provisional by construction."
       ],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "flow/records/20261121-be3a384/sta.json",
+        "command": null,
+        "kind": "sta",
+        "check_status": "ok",
+        "content_hash": "sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68",
+        "input_verified": null,
+        "exit_status": 0
+      },
+      "citations_graded": [
+        {
+          "citation": "flow/records/20261121-be3a384/sta.json",
+          "status": "met",
+          "reason": null
+        },
+        {
+          "citation": "flow/records/20261121-be3a384/functional-verification.json",
+          "status": "met",
+          "reason": null
+        }
+      ],
+      "citations": [
+        {
+          "file": "flow/records/20261121-be3a384/sta.json",
+          "command": null,
+          "kind": "sta",
+          "check_status": "ok",
+          "content_hash": "sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68",
+          "input_verified": null,
+          "exit_status": 0
+        },
+        {
+          "file": "flow/records/20261121-be3a384/functional-verification.json",
+          "command": null,
+          "kind": "functional-verification",
+          "check_status": "pass",
+          "content_hash": "sha256:634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139",
+          "input_verified": null,
+          "exit_status": 0
+        }
+      ]
     },
     {
       "tier": "T1",
