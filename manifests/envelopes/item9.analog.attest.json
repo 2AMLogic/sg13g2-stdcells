@@ -101,7 +101,7 @@
         "role": "testbench",
         "path": "sim/item5/request.py",
         "passed": true,
-        "content_hash": "sha256:6fef5fb9d4edafa3cf4e27651f353e4884997c52da4fbdcd634353ad7035350d"
+        "content_hash": "sha256:206a234ceacc324e0b77314aabccdc0d907e532097b7ad417c88979ec0be59b4"
       },
       {
         "check": "present",
