@@ -71,6 +71,21 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   holds the `add8` baseline on the stock `sg13g2_stdcell` only: synthesis,
   place-and-route with all three power gates, gate-level LVS `match`, routed
   GDS and a clean `klt drc` (#9, #41).
+  Row 10 stays unmeasured; what is known is the geometry it starts from. As
+  built under the `(columns + 2) * 420 nm` pin-on-grid phasing (#225), at the
+  3360 nm row height (`layout/gen_layouts.py` over `layout/example_config.json`,
+  `main` @ `829d86f`, 2026-11-23): `sg13g2_inv_1` 1260 nm / 4.2336 um^2,
+  `sg13g2_inv_2` 1680 nm / 5.6448 um^2, `sg13g2_inv_4` 2520 nm / 8.4672 um^2,
+  `sg13g2_nand2_1` 1680 nm / 5.6448 um^2; sum 7140 nm / 23.9904 um^2. The
+  stock `sg13g2_stdcell` (IHP-Open-PDK v0.3.0 LEF, `CoreSite` 0.48 x 3.78 um)
+  draws the same four cells at 1.44 / 1.92 / 2.88 / 1.92 um wide, 30.8448 um^2
+  summed, so the same site count (17) on a smaller site gives 7/9 (about
+  0.778x) per cell and summed. That is geometric headroom of about 22 % below
+  row 10's `<= 1.00x` target, not a result: #225 spent the 1-pitch margin the
+  off-grid `(columns + 1)` widths had (5460 nm, +30.8 % to 7140 nm), and
+  diffusion-break and multi-track column overheads and post-synthesis drive
+  sizing are still to draw from it. The `<= 0.80x` stretch is not covered by
+  the site-count geometry alone.
 - **Evidence grade.** See the committed
   [`manifests/signoff-report.txt`](manifests/signoff-report.txt)
   (`klt signoff --manifest`) — it contains the evidence tier, the T1 item

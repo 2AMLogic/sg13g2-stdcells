@@ -18,6 +18,9 @@
 #   layouts          generated layouts are fresh
 #   evidence-accept  the evidence check accepts the committed flow record
 #   evidence-reject  the evidence check rejects the negative control
+#   evidence-sta-fv-accept  the six-argument evidence check (gates 4 STA and 5
+#                    functional verification) accepts the committed record
+#   evidence-sta-fv-reject  the six-argument check rejects jq-minted mutants
 #
 # With no argument every stage runs, in the order above. The workflow passes a
 # stage name per step so GitHub still reports pass/fail per check.
@@ -28,7 +31,7 @@ cd "$(dirname "$0")"
 # The flow record CI gates on. Repointing CI at a newer record is this one line.
 FLOW_RECORD=flow/records/20261104-df96543
 
-ALL_STAGES="tests attestations manifest-pins netlists layouts evidence-accept evidence-reject"
+ALL_STAGES="tests attestations manifest-pins netlists layouts evidence-accept evidence-reject evidence-sta-fv-accept evidence-sta-fv-reject"
 
 stage_tests() {
   python3 -m pytest design/tests layout/tests sim manifests/tests
@@ -97,6 +100,63 @@ stage_evidence_reject() {
   fi
 }
 
+# Gates 4 (STA) and 5 (functional verification) of check-evidence.sh, replayed
+# on the committed STA/FV record (issue #189). jq and bash only: the mutants are
+# minted from the committed sta.json / functional-verification.json, never from
+# a live flow run. FLOW_RECORD stays on the legacy record for the stages above.
+STA_FV_RECORD=flow/records/20261121-be3a384
+
+stage_evidence_sta_fv_accept() {
+  flow/check-evidence.sh flow/request-par.json \
+    "$STA_FV_RECORD/place-and-route.json" \
+    "$STA_FV_RECORD/lvs.json" \
+    "$STA_FV_RECORD/erc.json" \
+    "$STA_FV_RECORD/sta.json" \
+    "$STA_FV_RECORD/functional-verification.json"
+}
+
+# sta_fv_reject <label> <sta> <fv>: the six-argument check must exit non-zero
+# AND say INVALID EVIDENCE, so a usage error (exit 2) or a missing file cannot
+# pass as a rejection.
+sta_fv_reject() {
+  local label="$1" sta="$2" fv="$3" err rc=0
+  err=$(flow/check-evidence.sh flow/request-par.json \
+    "$STA_FV_RECORD/place-and-route.json" \
+    "$STA_FV_RECORD/lvs.json" \
+    "$STA_FV_RECORD/erc.json" \
+    "$sta" "$fv" 2>&1 >/dev/null) || rc=$?
+  if [ "$rc" -eq 0 ]; then
+    echo "evidence-sta-fv-reject: accepted $label; expected non-zero exit" >&2
+    return 1
+  fi
+  if ! printf '%s\n' "$err" | grep -q 'INVALID EVIDENCE'; then
+    echo "evidence-sta-fv-reject: $label failed (exit $rc) without INVALID EVIDENCE:" >&2
+    printf '%s\n' "$err" >&2
+    return 1
+  fi
+}
+
+stage_evidence_sta_fv_reject() {
+  local sta="$STA_FV_RECORD/sta.json" fv="$STA_FV_RECORD/functional-verification.json" t
+  t=$(mktemp -d)
+  # shellcheck disable=SC2064
+  trap "rm -rf '$t'" RETURN
+  jq '(.corners[0]).timing_status="unconstrained"' "$sta" >"$t/a.json"
+  sta_fv_reject "an unconstrained corner" "$t/a.json" "$fv" || return 1
+  jq '(.corners[0]).worst_slack_ns="-1"' "$sta" >"$t/b.json"
+  sta_fv_reject "string-valued setup slack" "$t/b.json" "$fv" || return 1
+  jq 'del(.corners[0].worst_hold_slack_ns)' "$sta" >"$t/c.json"
+  sta_fv_reject "a missing hold-slack field" "$t/c.json" "$fv" || return 1
+  jq '.corners=[]' "$sta" >"$t/d.json"
+  sta_fv_reject "an empty corner list" "$t/d.json" "$fv" || return 1
+  jq '.tests[0].status="failed"' "$fv" >"$t/e.json"
+  sta_fv_reject "a failed test under a passing summary" "$sta" "$t/e.json" || return 1
+  : >"$t/f.json"
+  sta_fv_reject "a zero-byte STA file" "$t/f.json" "$fv" || return 1
+  sta_fv_reject "a partial pair (no STA report)" "" "$fv" || return 1
+  sta_fv_reject "a partial pair (no FV report)" "$sta" "" || return 1
+}
+
 run_stage() {
   case "$1" in
     tests) stage_tests ;;
@@ -106,6 +166,8 @@ run_stage() {
     layouts) stage_layouts ;;
     evidence-accept) stage_evidence_accept ;;
     evidence-reject) stage_evidence_reject ;;
+    evidence-sta-fv-accept) stage_evidence_sta_fv_accept ;;
+    evidence-sta-fv-reject) stage_evidence_sta_fv_reject ;;
     *)
       echo "check-ci.sh: unknown stage '$1' (stages: $ALL_STAGES)" >&2
       return 2
