@@ -445,6 +445,117 @@ class MixedFingerWidths(unittest.TestCase):
         self.assertIn("sd_enc_activ", str(cm.exception))
 
 
+def m1_components(S):
+    """Metal1 boxes grouped into connected components: two boxes whose edges
+    touch or that overlap are one conductor, the way extraction merges
+    abutting metal."""
+    boxes = [b[1:] for b in S.boxes if b[0] == "metal1"]
+    parent = list(range(len(boxes)))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for i, a in enumerate(boxes):
+        for j in range(i):
+            b = boxes[j]
+            if a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3]:
+                parent[find(i)] = find(j)
+    return boxes, [find(i) for i in range(len(boxes))]
+
+
+class DrivenGateRoute(unittest.TestCase):
+    """A gate whose net is also driven from diffusion -- buf's internal Y_i,
+    the first stage's output feeding the second stage's gate -- is a terminal
+    of that net's Metal1 route, not a standalone labelled pad (issue #201).
+    Before the fix this exact fixture generated cleanly and LVS split Y_i:
+    6 layout nets for the reference's 5, one net.split, two device.unmatched,
+    with the pad's left edge 515 nm from its track's right edge."""
+
+    def buf_cfg(self, **layout_over):
+        cfg = copy.deepcopy(CFG)
+        cfg["process"].update(grid_nm=5, unit_n_nm=900, unit_p_nm=2430)
+        cfg["layout"].update(row_height_nm=4200, gate_pitch_nm=550, channel_tracks=2)
+        cfg["layout"].update(layout_over)
+        cfg["cells"] = [{"name": "buf", "family": "buf", "drive": 2,
+                         "inputs": ["A"], "outputs": {"Y": "A"}}]
+        return cfg
+
+    def route(self, S, text):
+        """(Metal1 boxes, contacts under them) of the component carrying a
+        net label: reading the drawn geometry, not the generator's bookkeeping
+        -- the bug was that the bookkeeping said fine while the metal was
+        two pieces."""
+        boxes, roots = m1_components(S)
+        lx, ly = next((x, y) for lay, x, y, t in S.labels if lay == "metal1_label" and t == text)
+        root = next(roots[i] for i, b in enumerate(boxes) if b[0] <= lx <= b[2] and b[1] <= ly <= b[3])
+        comp = [b for i, b in enumerate(boxes) if roots[i] == root]
+        conts = [c for c in S.boxes if c[0] == "cont"
+                 and any(c[1] < b[2] and b[0] < c[3] and c[2] < b[3] and b[1] < c[4] for b in comp)]
+        return comp, conts
+
+    def on_poly(self, S, cont):
+        return any(cont[1] < p[3] and p[1] < cont[3] and cont[2] < p[4] and p[2] < cont[4]
+                   for p in S.boxes if p[0] == "gatpoly")
+
+    def test_driven_gate_is_a_terminal_of_its_nets_route(self):
+        cfg = self.buf_cfg()
+        S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        comp, conts = self.route(S, "Y_i")
+        # the second-stage gate contact: a contact of this component on poly
+        self.assertTrue(any(self.on_poly(S, c) for c in conts), "no gate contact on the Y_i route")
+        # the first-stage drains: contacts of the SAME component in each strip
+        mid = cfg["layout"]["row_height_nm"] // 2
+        diffs = [c for c in conts if not self.on_poly(S, c)]
+        self.assertTrue(any((c[2] + c[4]) // 2 < mid for c in diffs), "Y_i does not reach the NMOS strip")
+        self.assertTrue(any((c[2] + c[4]) // 2 > mid for c in diffs), "Y_i does not reach the PMOS strip")
+
+    def test_input_gate_keeps_its_standalone_pad(self):
+        cfg = self.buf_cfg()
+        S, _, _ = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        comp, conts = self.route(S, "A")
+        self.assertEqual(len(conts), 1, "an input pad should carry exactly its gate contact")
+        self.assertTrue(self.on_poly(S, conts[0]))
+
+    def test_nets_stay_separate_conductors(self):
+        cfg = self.buf_cfg()
+        S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        boxes, roots = m1_components(S)
+        seen = set()
+        for text in ("A", "Y_i", "Y", "VSS", "VDD"):
+            lx, ly = next((x, y) for lay, x, y, t in S.labels if lay == "metal1_label" and t == text)
+            root = next(roots[i] for i, b in enumerate(boxes) if b[0] <= lx <= b[2] and b[1] <= ly <= b[3])
+            self.assertNotIn(root, seen, f"{text} shares Metal1 with another labelled net")
+            seen.add(root)
+
+    def test_placed_buffer_is_byte_deterministic(self):
+        cfg = self.buf_cfg()
+        self.assertEqual(gl.generate(cfg), gl.generate(self.buf_cfg()))
+
+    def test_unroutable_driven_gate_refuses_naming_cell_net_and_constraint(self):
+        """At the shipped 420 pitch the same drive-2 buffer cannot land Y_i's
+        riser clear of the neighbouring stubs: exit 3 naming the cell, the
+        internal net and the routing constraint, with no partial GDS written
+        (a standalone labelled pad instead of the riser is exactly the split
+        this issue is about, so the refusal is the only other outcome)."""
+        cfg = self.buf_cfg(gate_pitch_nm=420)
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(cfg)
+        msg = str(cm.exception)
+        self.assertIn("buf", msg)
+        self.assertIn("Y_i", msg)
+        self.assertIn("riser", msg)
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d) / "c.json"
+            p.write_text(json.dumps(cfg))
+            r = run("--config", str(p))
+            self.assertEqual(r.returncode, 3)
+            self.assertIn("Y_i", r.stderr)
+            self.assertFalse((pathlib.Path(d) / "gds").exists())
+
+
 def notch_layers(cfg=CFG):
     """The per-strip layer tables the notch predicate checks, from the config:
     activ on both strips, psd and the n-well on the PMOS strip only (the deck
