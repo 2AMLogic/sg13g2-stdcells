@@ -28,6 +28,10 @@
       "layout/lvs/sg13g2_nand2_1.json"
     ],
     "4.digital": "flow/records/20261104-df96543/lvs.json",
+    "5.digital": [
+      "flow/records/20261121-be3a384/sta.json",
+      "flow/records/20261121-be3a384/functional-verification.json"
+    ],
     "6.digital": {
       "not_applicable": {
         "spec": {
@@ -56,11 +60,11 @@
     },
     "10.analog": {
       "file": "manifests/envelopes/item10.attest.json",
-      "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16"
+      "content_hash": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e"
     },
     "10.digital": {
       "file": "manifests/envelopes/item10.attest.json",
-      "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16"
+      "content_hash": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e"
     },
     "11.digital": [
       "flow/records/20261104-df96543/erc.json",

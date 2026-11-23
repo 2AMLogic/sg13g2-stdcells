@@ -9103,22 +9103,22 @@
   "tier": null,
   "t1_item_count": 22,
   "build_t1_item_count": 22,
-  "t1_met_count": 14,
+  "t1_met_count": 15,
   "t1_not_applicable_count": 1,
   "unmet_reason_counts": {
-    "no_evidence": 6,
+    "no_evidence": 5,
     "supply_spec_incomplete": 1
   },
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:5ec474adf78172a90bbee59b7cab515942f21c13532798f8d0e2e103a08dada5",
   "build": {
-    "version": "0.9.3.dev3782+gb79f1ff9d9ec",
-    "package_version": "0.9.3.dev3782+gb79f1ff9d9ec",
-    "git_commit": "b79f1ff9d9ec609f3bd6a16bdcc01ea0eea7ef39",
+    "version": "0.9.3.dev4118+gd740468abb98",
+    "package_version": "0.9.3.dev4118+gd740468abb98",
+    "git_commit": "d740468abb980078ea8469aec6ed968b69f239c1",
     "git_tag": null,
     "dirty": false,
     "is_release": false,
-    "grading_ruleset_id": "sha256:1b2239d3c432b66a0cee5cc9a7f7c2d3ff0730f81dca501fbe5022c2e9ba0057"
+    "grading_ruleset_id": "sha256:a833fd1a57eccac31b045d43c558e505a4f21e7ae92d6c9ddab705ca5af95a6a"
   },
   "items": [
     {
@@ -9783,10 +9783,50 @@
       "notes": [
         "Both require the spec table itself to be ratified \u2014 verdicts against a draft spec are provisional by construction."
       ],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "flow/records/20261121-be3a384/sta.json",
+        "command": null,
+        "kind": "sta",
+        "check_status": "ok",
+        "content_hash": "sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68",
+        "input_verified": null,
+        "exit_status": 0
+      },
+      "citations_graded": [
+        {
+          "citation": "flow/records/20261121-be3a384/sta.json",
+          "status": "met",
+          "reason": null
+        },
+        {
+          "citation": "flow/records/20261121-be3a384/functional-verification.json",
+          "status": "met",
+          "reason": null
+        }
+      ],
+      "citations": [
+        {
+          "file": "flow/records/20261121-be3a384/sta.json",
+          "command": null,
+          "kind": "sta",
+          "check_status": "ok",
+          "content_hash": "sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68",
+          "input_verified": null,
+          "exit_status": 0
+        },
+        {
+          "file": "flow/records/20261121-be3a384/functional-verification.json",
+          "command": null,
+          "kind": "functional-verification",
+          "check_status": "pass",
+          "content_hash": "sha256:634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139",
+          "input_verified": null,
+          "exit_status": 0
+        }
+      ]
     },
     {
       "tier": "T1",
@@ -10060,7 +10100,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16",
+        "content_hash": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
@@ -10069,16 +10109,16 @@
             "path": "manifests/inventories/item10.json",
             "scope": "repo"
           },
-          "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16",
+          "content_hash": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e",
           "input_verified": true,
-          "summary": "T1 item 10 (Repo hygiene): 6/6 attestation checks passed (klt signoff --attest)",
+          "summary": "T1 item 10 (Repo hygiene): 7/7 attestation checks passed (klt signoff --attest)",
           "source": "manifests/inventories/item10.json",
           "attestation": {
             "producer": "klt signoff --attest",
             "inventory_schema_version": 1,
-            "check_count": 6,
-            "passed_count": 6,
-            "description": "Repo hygiene: the three repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
+            "check_count": 7,
+            "passed_count": 7,
+            "description": "Repo hygiene: the four repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. check-ci.sh is pinned because it holds the bytes of those three gates, so a weakening edit to a stage function fails the attestations stage until item 10 is re-minted. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
           }
         }
       }
@@ -10099,7 +10139,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16",
+        "content_hash": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
@@ -10108,16 +10148,16 @@
             "path": "manifests/inventories/item10.json",
             "scope": "repo"
           },
-          "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16",
+          "content_hash": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e",
           "input_verified": true,
-          "summary": "T1 item 10 (Repo hygiene): 6/6 attestation checks passed (klt signoff --attest)",
+          "summary": "T1 item 10 (Repo hygiene): 7/7 attestation checks passed (klt signoff --attest)",
           "source": "manifests/inventories/item10.json",
           "attestation": {
             "producer": "klt signoff --attest",
             "inventory_schema_version": 1,
-            "check_count": 6,
-            "passed_count": 6,
-            "description": "Repo hygiene: the three repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
+            "check_count": 7,
+            "passed_count": 7,
+            "description": "Repo hygiene: the four repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. check-ci.sh is pinned because it holds the bytes of those three gates, so a weakening edit to a stage function fails the attestations stage until item 10 is re-minted. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
           }
         }
       }
