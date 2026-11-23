@@ -78,17 +78,18 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
 ### What the layout generator can place today
 
 Probed on `176f794` by running `layout/gen_layouts.py` on one-cell configs
-derived from `layout/example_config.json` (same process and rules):
+derived from `layout/example_config.json` (same process and rules).
+`nor4_1`'s row moved after issue #170's unequal-count fallback: the fold
+refusal is gone, and what remains is the same PMOS diffusion break.
 
 | Result | Cells | Reason reported (exit 3) |
 |---|---|---|
 | places | `inv_1/2/4/8/16`, `nand2_1` | |
 | fails | `nor2_1`, `nor2_2` | diffusion 250 nm tall is too short for a contact |
 | fails | `nand2_2`, `buf_1`, `and2_1` | needs 2 channel tracks, config allows 1 |
-| fails | `or2_1`, `nor3_1` | PMOS devices do not form a single diffusion chain (needs a diffusion break) |
+| fails | `or2_1`, `nor3_1`, `nor4_1` | PMOS devices do not form a single diffusion chain (needs a diffusion break) |
 | fails | `nand3_1`, `nand4_1`, `a21oi_1`, `a22oi_1`, `xor2_1` | NMOS devices do not form a single diffusion chain (needs a diffusion break) |
 | fails | `o21ai_1` | no NMOS/PMOS strip orderings share one gate-net sequence |
-| fails | `nor4_1` | 500 nm device cannot be drawn as 4 fingers on the 10 nm grid |
 
 The placement model is what holds the generator to 6 of the 20 cells probed
 above (row 5 targets 40); `layout/example_config.json`, which lists four of

@@ -86,12 +86,27 @@ One NMOS and one PMOS diffusion strip, Metal1 only. A device of F fingers (the
 `ng` from `design/gen_netlists.py`) is F adjacent poly columns on the strip,
 alternating source and drain; the columns of one device are joined by a poly bridge
 below the NMOS diffusion (`poly_width_nm` tall, `poly_to_activ_nm` clear of it) and
-share one gate contact. A poly column crosses both strips, so the NMOS and PMOS
-device on one gate net get the same finger count, the larger of the two; the other
-is folded into that many fingers (same total width, which must divide evenly on
-`process.grid_nm`, default 10, else exit `3`). Cell width is `(columns + 1) *
-gate_pitch_nm`, counting fingers. Each strip must be a single chain of devices
-sharing source/drain nets, and both chains must have the same gate-net sequence.
+share one gate contact. The NMOS and PMOS device on one gate net default to the
+same drawn finger count, the larger of the two netlist counts; the other is folded
+into that many fingers (same total width, which must divide evenly on
+`process.grid_nm`, default 10). When the larger count would divide the narrower
+device's width off the grid, that gate net falls back to **each device's own
+netlist count** (issue #170): the gate net's columns become a block of
+`max(n, p)` columns with the shorter device on the first `min(n, p)` of them.
+Its remaining block columns carry no channel for it -- the diffusion node that
+spans the block, introducing no source/drain transition -- and the poly stripe
+there stops `poly_to_activ_nm` beyond the tallest diffusion run within that
+horizontal clearance of the stripe, including a step on either side. A PMOS device
+whose fingers include such NMOS-free columns cannot reach the bridge below the
+NMOS diffusion with them, so its fingers are joined by a second poly bridge
+*above* the PMOS strip (`poly_to_activ_nm` clear of it); that bridge is the only
+shape that raises the well tap band, by `max(0, poly_to_activ_nm +
+poly_width_nm - poly_endcap_nm)`. A width is never rounded to make a fold fit --
+the netlist `ng` divides its own width by construction -- so the drawn total
+width of every device equals its netlist width and LVS keeps matching. Cell
+width is `(columns + 1) * gate_pitch_nm`, counting block columns. Each strip
+must be a single chain of devices sharing source/drain nets, and both chains
+must have the same gate-net sequence.
 
 A gate whose net is also driven from diffusion (a multi-stage cell's internal
 net, e.g. `buf`'s `Y_i`) is routed as a terminal of that net (issue #201):
@@ -209,6 +224,69 @@ synthetic configs, the way `FakeProcess` exercises a second process -- `and2_1`
 places with a stepped NMOS strip once the synthetic row gives it two channel
 tracks and a wider pitch. The committed config's `channel_tracks` and `rules`
 are unchanged.
+
+#### The unequal-count fallback, measured (issue #170)
+
+The fallback (above) exists for cells whose shorter device width does not
+divide at the larger netlist count. Every cell that hit the old
+`cannot be drawn as N fingers on the G nm grid` refusal was re-measured after
+it, one one-cell config per cell: the demo catalog at this repo's `main` @
+`39fa6d1` (with the `process` and `layout` blocks of
+`layout/example_config.json`), the consumer catalog
+`2AMLogic/sg13cmos5l-stdcells` @ `d91a3a3` (its `layout.rules` completed with
+this repo's `psd_space_nm` 310 / `nwell_space_nm` 620, as in the issue). None
+reports the grid diagnostic any more; each names the next physical limit:
+
+| cell | fallback (drawn) | next limit |
+|---|---|---|
+| `demo_nor4_1` | NMOS 1 x 500 vs PMOS 4 x 800 | PMOS even-finger series stack needs a diffusion break |
+| `s5l_nor3_1` | NMOS 1 x 740 vs PMOS 3 x 1120 | 3 channel tracks needed, 1 allowed |
+| `s5l_or3_1` / `s5l_or3_2` | NMOS 1 x 740 vs PMOS 3 x 1120 | 4 channel tracks needed (`X`, `X_i`, `n1`, `n2`), 1 allowed |
+| `s5l_nor3_2` | NMOS 2 x 740 vs PMOS 6 x 1120 | PMOS even-finger series stack needs a diffusion break |
+| `s5l_nand3_1` | PMOS 1 x 1120 vs NMOS 3 x 740 | 3 channel tracks needed, 1 allowed |
+| `s5l_and3_1` / `and3_2` / `nand3b_1` | PMOS 1 x 1120 vs NMOS 3 x 740 | 4 channel tracks needed, 1 allowed |
+| `s5l_a221oi_1` | NMOS 2 x 740 vs PMOS 3 x 1120 | no shared gate-net sequence |
+
+The track-count wall is not the only one behind those cells: raising the
+synthetic `channel_tracks` to 3 moves `nor3_1`/`nand3_1` to *channel too short
+for track 2* on the 3360 nm row (the margin budget the consumer's issue #24
+tracks), and a 4200 nm row moves them to the routing model's
+`Metal1 of Y overlaps n1` -- a folded series stack puts its end net's stubs
+inside the span of the interior nets' horizontal track bars, which one Metal1
+layer cannot separate. That limit is pre-existing (the equal fold has the same
+interleaving) and is not lifted here.
+
+No *committed* cell changes: the four `layout/gds/*.gds` stay byte-identical
+under `--check` (the fallback only fires where the old code exited `3`), which
+`test_gen_layouts.py::Determinism::test_committed_gds_fresh` asserts.
+
+**The new geometry itself is exercised and verified on two placeable
+fixtures** (`test_gen_layouts.py::UnequalFingerCounts`): inverters sized
+740/2430 nm (PMOS 3 x 810 vs NMOS 1 x 740 -- top bridge, NMOS tail columns,
+stripes stopping above the NMOS diffusion) and 2100/1120 nm (NMOS 3 x 700 vs
+PMOS 1 x 1120 -- low bridge, PMOS tail columns, stripes stopping below the
+PMOS diffusion), on the 3360 nm row with the margins 350/330. Both, generated
+with this repo's `layout/example_config.json` rules on the 5 nm grid:
+
+* `klt drc --deck sg13g2`: `clean` on both -- run twice, once on the pinned
+  klt `0.6.0+g068b0c1da0e8` (`layout/toolchain.json`'s `klt_install`) and once
+  on this host's `0.9.3.dev2575+g6bd18bbc8637` / klayout `0.30.12`;
+* `python3 layout/run_lvs.py`: `match` on both -- the tail columns extract as
+  no transistor, so the drawn device set equals the netlist's (klt
+  `0.9.3.dev2575`, klayout `0.30.12`; the pinned 0.6.0 `lvs` predates that
+  runner's `-o` contract -- the committed `layout/lvs/` reports likewise
+  record a newer-than-pin klt in their provenance).
+
+In a fallback, the generator fits each diffusion contact stack between its
+enclosures in whole grid steps. When the ideal centre lies halfway between
+steps, the lower position wins. Two-finger inverter fixtures at 745/1760 nm
+and 1700/1125 nm place on the 5 nm grid. Both match their netlists in LVS
+and pass SG13G2 DRC (klt source `068b0c1da0e8`, KLayout 0.30.13). The deck
+at `6bd18bbc8637`, which checks `cont.ongrid.1`, also reports zero violations.
+
+The drive-2 buffer clearance regression (500/2430 nm, 550 nm pitch, 4200 nm
+row, two tracks) passes both DRC decks. Its internal gate still fails LVS with
+a split net, also reproduced on a common-fold buffer on `main`. [Issue #201](https://github.com/2AMLogic/sg13g2-stdcells/issues/201)
 
 ### Well and substrate taps
 
