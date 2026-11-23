@@ -559,8 +559,9 @@ reference netlists under `layout/lvs/netlists/` are byte-unchanged --
 freshness commands still pass on the same bytes.
 
 `manifests/signoff-report.*` were then regenerated with `klt signoff
---manifest` (write them with a shell redirect; `-o` applies only to
-`--attest`). **T1 is now 8/22 met, up from 7/22, with `T1 #4 [analog] LVS
+--manifest` (written with a shell redirect at the time; `-o` with `--manifest` shipped
+later, klayout-tools #5867, and is the current form, see the re-mint sequence
+below). **T1 is now 8/22 met, up from 7/22, with `T1 #4 [analog] LVS
 clean` MET** on the strength of the reports above; item 3 `[analog]` still
 cites only `layout/drc/sg13g2_inv_1.json`, so widening that citation to all
 four DRC reports remains open. `klt signoff --manifest --check
@@ -618,6 +619,56 @@ the gate. The envelope hash check is deliberately *not* delegated to
 constraint; the `klt` check stays the deeper local verification (it also
 re-runs each inventory's commands).
 
+**What `pins.tools.klt` means, and the item 9 analog re-mint sequence
+(issue #243).** `manifests/inventories/item9.analog.json` is the only
+inventory that pins a `klt` build (`pins.tools.klt`). Per `klt signoff`'s own
+documentation that pin is *the exact build you intend to run*, compared
+literally against the **running** `klt --version` on both `--attest 9` and
+`--attest 9 --check`. It is **not** measurement provenance: which `klt` built
+a measurement is recorded append-only in
+`views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`,
+`sim/characterize/records/` and `sim/item5/records/`, and those are untouched
+by a pin bump. Fleet workers' `klt` rolls forward to a new local dev build
+(`+g…` label, not installable from PyPI) several times a day, so bumping the
+pin to the running build is routine bookkeeping in any item 9 analog re-mint,
+not a request for a host carrying the old build. A `pin klt <committed>
+(running <current>)` failure exits `3` and leaves `-o` unwritten. If the
+running version contains `+unknown`, the pin check passes with
+`"unverifiable": true` instead, so a mismatch is survivable only then.
+
+When a PR edits any of the `testbenches` entries listed in
+`manifests/inventories/item9.analog.json` (explicit paths, mostly under
+`sim/characterize/`, `sim/item5/` and `sim/harness/`, plus
+`design/gen_netlists.py` and `layout/example_config.json`; other files in
+those directories, such as `README.md`, `__init__.py` and `records/`, are not
+attested), on its final tree:
+
+1. Set `pins.tools.klt` in `manifests/inventories/item9.analog.json` to the
+   running `klt --version`, without the leading `klt ` prefix (so it equals
+   `provenance.klt_version`).
+2. `klt signoff --attest 9 --inventory manifests/inventories/item9.analog.json
+   -o manifests/envelopes/item9.analog.attest.json`.
+3. `klt signoff --attest 8 --inventory manifests/inventories/item8.analog.json
+   -o manifests/envelopes/item8.analog.attest.json` — item 8's envelope
+   byte-pins `item9.analog.attest.json` as its spec-row-9 citation, so
+   re-minting item 9 stales item 8 until it is re-minted too.
+4. Update `evidence["9.analog"].content_hash` in
+   `manifests/sg13g2-stdcells.json` to the new `provenance.input.content_hash`
+   of `item9.analog.attest.json` (and `evidence["8.analog"].content_hash`
+   likewise from the item 8 envelope).
+5. Regenerate `manifests/signoff-report.{json,txt}` with `klt signoff
+   --manifest manifests/sg13g2-stdcells.json`. Write the JSON with `-o
+   manifests/signoff-report.json` (with `--manifest`, `-o` writes the
+   rendered report's JSON envelope after a successful render, exit `0` or
+   `3`, and only if the bytes changed; a stdout redirect truncates first and
+   would zero the committed record on a failed run). The `.txt` half still
+   needs a stdout redirect, because `-o` always receives JSON whatever
+   `--format` says.
+6. Run `./check-ci.sh` (`attestations`, `manifest-pins`, unit tests).
+
+This file itself is not hash-pinned by any envelope, so editing this
+paragraph needs no re-mint.
+
 ### Characterization records and their supersession chain (issues #82, #134)
 
 `T1 #8 [analog] Characterization report` is **not** cited, and stays
@@ -647,7 +698,7 @@ rejected — narrowing makes a claim about what provenance must cover (that a
 digest over `process` + `cells` is adequate), which belongs in a `spec/`
 decision record of its own, deferred until the coarse pin goes stale again;
 this regeneration is the first data point on what that recurrence costs. The
-regeneration (`python3 -m sim.characterize --library --pdk-dir
+regeneration (`python3 -m sim.characterize --pdk-dir
 /home/ubuntu/share/pdk/ihp-sg13g2`) ran on a clean worktree and appended
 record `sim/characterize/records/20261114-222806-f1cf294.md`; the superseded
 record `20261107-222836-6ee1577.md` is kept, append-only. It re-measured under
@@ -677,7 +728,7 @@ main's PR #104 added three more `layout.rules` keys (`psd_space_nm`,
 on any merge of this branch — the second recurrence lap in eight days, and the
 reason the narrowing option (a `spec/` decision record) is deferred no longer
 lightly: it is filed structurally as #110/#116. Regenerated again exactly as
-above — `python3 -m sim.characterize --library --pdk-dir
+above — `python3 -m sim.characterize --pdk-dir
 /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged tree (`921b1a8`) before
 any bookkeeping edit, single corner TT/1.20 V/25 C, local backend — appending
 record `sim/characterize/records/20261115-105337-921b1a8.md`, keeping both
@@ -714,7 +765,7 @@ pre-capture fix exists to close. Seven files conflicted; the only code hunk
 was `runner.py`'s `render()` Notes line, where both halves are load-bearing and
 both are kept: main's simulator key and this branch's doubled-`klt `-prefix
 strip. Regenerated exactly as every lap above — `python3 -m sim.characterize
---library --pdk-dir /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged
+--pdk-dir /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged
 tree (`13dc481`) before any bookkeeping edit, single corner TT/1.20 V/25 C,
 local backend — appending record
 `sim/characterize/records/20261115-220740-13dc481.md`, keeping all four

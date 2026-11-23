@@ -238,7 +238,7 @@ Then, from this repo's root (one corner per invocation; FF/SS go through
 `--backend batch`, never a local loop):
 
 ```
-python3 -m sim.characterize --library --pdk-dir <IHP-Open-PDK>/ihp-sg13g2
+python3 -m sim.characterize --pdk-dir <IHP-Open-PDK>/ihp-sg13g2
 ```
 
 This rewrites the view and its sidecar and appends a new record — records
