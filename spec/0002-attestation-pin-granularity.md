@@ -134,8 +134,8 @@ member pins, which are outside this table).
 | item9.digital | `verification/test_add8.py` | `095bf6541170ee425` | content-bearing | the file is the bench. The digest identifies the exact bench bytes that were reviewed; the item's `cold_start` command (`sh verification/cold_start.sh`, `timeout_s` 1800) separately verifies their behavior, and it **does run** under `--check` (the inventory does not declare `local_only`; measured below). Two different guarantees, both kept: an edit to the bench stales the pin even if the rerun still passes, which is the point of reviewing bench bytes |
 | item9.digital | `verification/Makefile` | `c9e504120822d2c10` | content-bearing | drives the same bench; same two guarantees |
 | item9.digital | `verification/cold_start.sh` | `7bf48dc164e2f6fc6` | content-bearing | provisions and runs the bench, and is itself the command the rerun executes; same two guarantees |
-| item10 | `.github/workflows/ci.yml` | `e362c2ca3e291e380` | predicate-bearing | none of the inventory's three checks (`netlists-fresh`, `layouts-fresh`, `flow-evidence-accepts-committed-record`) reads it; the envelope names it via a path-bearing hygiene check (the workflow exists and names the gates) plus the hash. Dropping the hash means gutting a gate in this file is no longer caught by the pin, and nothing the inventory runs reads it; accepted here, stated plainly |
-| item10 | `README.md` | `32469df8c38f84ccb` | predicate-bearing | hygiene predicate (exists, passes the hygiene gate; the inventory defines no such gate beyond the file's presence, so this predicate is weaker than its name); the highest-churn pin, stale at three observed hash pairs during this issue's lifetime, `fresh_status: pass` every time |
+| item10 | `.github/workflows/ci.yml` | `e362c2ca3e291e380` | predicate-bearing | none of the inventory's three checks (`netlists-fresh`, `layouts-fresh`, `flow-evidence-accepts-committed-record`) reads it; the envelope names it via a path-bearing hygiene check (the workflow exists and names the gates) plus the hash. A presence-only entry would drop the hash, so gutting a gate in this file would no longer be caught by the pin, and nothing the inventory runs reads it. Upstream's canonical-YAML binding (`"attest": "yaml"`, klayout-tools#5862) removes that cost for this file; see Policy, "The `ci.yml` pin" |
+| item10 | `README.md` | `32469df8c38f84ccb` | predicate-bearing | hygiene predicate (exists, passes the hygiene gate; the inventory defines no such gate beyond the file's presence, so this predicate is weaker than its name); the highest-churn pin, stale at three observed hash pairs during this issue's lifetime, `fresh_status: pass` every time. Upstream also documents moving the churning content into an uninventoried file (klayout-tools#5603; see the rejected alternatives) |
 | item10 | `LICENSE` | `cfc7749b96f63bd31` | predicate-bearing | recognized-licence predicate (the inventory does not define "recognized"; presence is what upstream's presence-only entry would assert); near-frozen in practice, so the churn cost is low — but the pin still over-asserts |
 
 Count: **5 predicate-bearing, 11 content-bearing**. The content-bearing set is
@@ -167,10 +167,46 @@ re-authoring that inventory in the presence-only form and re-minting
 `manifests/envelopes/item10.attest.json` on a klt-capable host. That is a
 manifest change outside this PR, which touches only `spec/`.
 
+**The item 10 `hygiene` schema is three-valued, not binary.** Beyond a bare
+path (byte-hashed), upstream's `signoff.md` for the `klt` on this host
+(`klt 0.9.3.dev3644+gbc2cf7bc6f90`) documents a
+`{"path", "attest": "presence"|"content"|"yaml", "select"?}` object, with
+`"yaml"` added by klayout-tools#5862 (closed as completed 2026-11-18, one day
+after #5615). The `yaml` binding hashes the canonical representation of the
+selected YAML content, so a comment-only, whitespace-only, key-reorder or
+anchor/alias refactor is not drift, but a change to the workflow's gates is.
+Upstream names `.github/workflows/ci.yml` as the motivating case: presence
+"could not catch a `continue-on-error: true` added to the signoff job, a
+removed step or a changed command".
+
+### The `ci.yml` pin
+
+For `.github/workflows/ci.yml` the recommendation is **`attest: "yaml"`, not
+presence-only**, adopted together with a follow-up to
+`manifests/check_attestations.py` (see the CI consequence). `yaml` is strictly
+better than presence on the merits this record argues: it keeps the gate-gutting
+coverage that presence gives up, and still does not stale on comment or
+formatting edits. Until that follow-up lands, adopting `yaml` would turn
+`main` red in tool-free CI. The Judge measured this by driving the committed
+`item10.attest.json` through the repo's own `verify_records()` with the `ci.yml`
+entry rewritten into the shape current `klt` emits (`attest: "yaml"`,
+`hash_algorithm: "sha256-canonical-yaml-v1"`, the raw digest moved to
+`raw_content_hash`): `unique=4 mismatches=1`, the `ci.yml` entry expected
+`784f0cd1b8b4e284`, actual `e362c2ca3e291e38` (reported in review on 2026-11-23,
+not re-run here). `collect_records()` takes every `attestation.checks[]` entry
+with both `path` and `content_hash` and compares it to `sha256(raw bytes)`
+without reading `attest` or `hash_algorithm`. Upstream's own grading-time
+consumer, `signoff.py` `_attested_check_members()`, already excludes
+`attest: "yaml"` checks and routes them to
+`signoff_attest_canonical_yaml.rehash_checks`, so the gap is local to this
+repo's tool-free checker. Presence-only for `ci.yml` is the fallback if the
+follow-up is declined, with the gate-gutting cost stated in "What the adoption
+gives up and gains". `README.md` and `LICENSE` take presence-only either way.
+
 ### Scope: what upstream will actually accept
 
-Upstream (2AMLogic/klayout-tools#5615) accepts a presence-only entry for the
-item 10 `hygiene` field only —
+Upstream (2AMLogic/klayout-tools#5615) accepts a presence-only entry (and, per
+#5862, a canonical-YAML entry) for the item 10 `hygiene` field only —
 "the motivating case and the only one where the property is meaningful" — and
 refuses item 1 `sources` and item 9 `testbenches` outright (an
 `AttestationError` naming the accepted set). This record's own filing of the
@@ -197,9 +233,16 @@ adopts rather than rebuts:
   `argv` (`sh verification/cold_start.sh`) and `timeout_s` (1800) and does **not**
   declare `local_only`, so `klt signoff --attest 9 --inventory
   manifests/inventories/item9.digital.json --check
-  manifests/envelopes/item9.digital.attest.json` runs it (the Judge's run of
-  that command, 2026-11-23, printed `cold_start ok in 11.0s` and exited 0 with
-  `status: match`). A check that a `local_only` declaration would make
+  manifests/envelopes/item9.digital.attest.json` runs it. Version-independent
+  fact: the fresh attestation records the `cold_start` command with
+  `exit_status: 0` and `passed: true`, so `--check` ran it. One earlier run, by
+  review `7088916259` under `klt 0.9.2.dev111+g978f7464fae1`, printed
+  `cold_start ok in 11.0s` and exited 0 with `status: match`; under
+  `klt 0.9.3.dev3644+gbc2cf7bc6f90` the same command exits 3 with
+  `status: drifted`, because that `klt` mints three extra `dependency_binding`
+  checks and an `attestation.description` that the committed envelope, minted by
+  an older `klt`, does not carry. That is tool-version drift, not tree drift;
+  `fresh_status` is `pass` either way. A check that a `local_only` declaration would make
   `--check` skip (`_skipped_check`, `--skip-local-only`) would leave the hashes
   as the only live binding; this inventory does not do that today, so that
   stronger argument is **not** the one this record relies on. If the inventory
@@ -208,9 +251,12 @@ adopts rather than rebuts:
   would lose the reviewed-bytes guarantee, which the rerun cannot give.
 
 **Stated precisely, then: (b) means the 11 content-bearing paths (4 netlists,
-4 GDS, 3 item 9 bench files) keep byte pins, the 3 item 10 hygiene pins become
-presence-only (upstream #5615 closed as completed on 2026-11-17; local
-adoption of the inventory form is the remaining step), and the 2 item 1
+4 GDS, 3 item 9 bench files) keep byte pins, the 3 item 10 hygiene pins leave
+byte-pinning: `README.md` and `LICENSE` become presence-only, and `ci.yml`
+becomes canonical-YAML-bound (`attest: "yaml"`) once the checker follow-up
+above lands, presence-only otherwise (upstream #5615 closed as completed on
+2026-11-17 and #5862 on 2026-11-18; local adoption of the inventory form is the
+remaining step), and the 2 item 1
 predicate pins stay byte-pinned** — for them, (a) below
 is not an interim but the standing practice until #5615 is extended upstream
 (an item-1 extension belongs as a follow-up on top of #5615, since it needs
@@ -238,6 +284,15 @@ Rejected alternatives, one line each:
 - **shrink the item 10 inventory to stop naming the churny files** — rejected:
   that trades away the predicate itself (the attestation would stop claiming
   README/workflow hygiene at all), which is worse than re-minting for them.
+- **keep the file listed but move the churning content out of it** (upstream's
+  "stable by construction" guidance, klayout-tools#5603: keep the content in an
+  uninventoried file such as `STATUS.md` and link to it) — not adopted for
+  `README.md`: it changes what the README is for rather than how it is pinned,
+  and is a content decision outside this record. It is a different alternative
+  from the one above, since it keeps the predicate. Available to a later record.
+- **presence-only for `ci.yml`** — the fallback, not the recommendation: it
+  gives up gate-gutting coverage that `attest: "yaml"` keeps. Chosen only if the
+  `check_attestations.py` follow-up is declined.
 - **hand-edit the committed envelopes to drop the hashes** — rejected: the
   envelope is `klt signoff --attest` output, generated never hand-edited, so the
   change comes from re-authoring the inventory in the presence-only form (the
@@ -274,13 +329,16 @@ compares recorded hashes to the tree. Under the interim (a):
   envelope. (`--check <envelope>` is **not** a repair command: `klt signoff
   --help` says it re-attests and exits 0 only if the envelope still
   reproduces, 3 otherwise, "never rewriting it".) Then update any manifest
-  evidence pin that names the envelope (`./check-ci.sh manifest-pins` checks
+  evidence pin that names the envelope: `klt signoff --repin` is the mechanical
+  half of that step (klayout-tools#5527), rewriting only pins whose live hash
+  the grader re-derived (`./check-ci.sh manifest-pins` checks
   those bindings separately and reports nine matching pins at this head), then
   regenerate both formats, `manifests/signoff-report.json` and
   `manifests/signoff-report.txt`, then verify with `klt signoff --manifest
   manifests/sg13g2-stdcells.json --check manifests/signoff-report.json`.
   `--check` accepts only the JSON report; passing the `.txt` exits 1 with
-  `committed report is not valid JSON`. The report regeneration must follow the
+  `klt signoff: request 'manifests/signoff-report.txt' is not valid JSON:
+  Expecting value: line 1 column 1 (char 0)`. The report regeneration must follow the
   re-mint, or the committed report keeps stale citation hashes (item 1 today,
   measured above).
 - **What turns `main` red meanwhile**: after a merge that moved a pinned path,
@@ -288,9 +346,19 @@ compares recorded hashes to the tree. Under the interim (a):
   README typo keeps `main` red until then. No CI job can clear it — the runner
   has no `klt`.
 
-Under (b), now that #5615 has merged upstream and once item 10's inventory is
-re-authored in the presence-only form: the 3 hygiene pins disappear from the
-gate's and grader's input, so their triggers vanish. A re-mint is still
+Under (b), now that #5615 and #5862 have merged upstream and once item 10's
+inventory is re-authored: the `README.md` and `LICENSE` pins disappear from the
+gate's and grader's input, so their triggers vanish. The `ci.yml` entry, if
+bound with `attest: "yaml"`, stays in the gate's input under a different
+algorithm: **`check_attestations.py` must first learn
+`sha256-canonical-yaml-v1`, or skip entries whose `hash_algorithm` it does not
+recognise**, otherwise it reports a false drift on `ci.yml` and `main` goes red
+(measured above). That checker change is a follow-up to this record and, like
+the inventory change, outside this PR. Recomputing canonical YAML would need a
+YAML parser, which the tool-free gate (`ci.yml:1`, stdlib only) does not have,
+so the cheaper variant is to skip unrecognised algorithms and leave the
+canonical-YAML check to `klt signoff --attest 10 … --check` and to `--manifest`
+grading. A re-mint is still
 required for an edit to any of the 13 remaining byte-pinned paths: the 4
 netlists and 4 GDS, the 3 item 9 bench files (including a
 `verification/test_add8.py` edit that leaves the bench passing), and the 2 item
@@ -299,9 +367,11 @@ Their triggers remain (policy scope above).
 
 **What the adoption gives up and gains.** The gain is avoided re-mints: a byte
 edit to `README.md`, `LICENSE` or `ci.yml` no longer stales a pin. The cost is
-twofold. First, byte coverage of the three files: a gutted `ci.yml` (or edited
-`README.md` / `LICENSE`) no longer stales a pin, and no check in the inventory
-reads them. Second, the hash gate loses a second opportunity to catch a
+twofold. First, byte coverage of the files: under presence-only, a gutted
+`ci.yml` (or edited `README.md` / `LICENSE`) no longer stales a pin, and no
+check in the inventory reads them. With `attest: "yaml"` on `ci.yml` the
+gate-gutting part of that cost does not arise for that file, but the tool-free
+gate does not check it until the checker follow-up lands. Second, the hash gate loses a second opportunity to catch a
 deletion between attestation runs. Deletion detection is existing coverage, not
 a gain: an attestation rerun already checks existence. The Judge ran
 `verify_records` with all three hygiene files missing and the inventory present:
@@ -341,6 +411,10 @@ the `--check` diff together, because both are key-driven.
   every entry was content-hashed and diffed. The schema change (b) needs;
   implemented for `hygiene` by klayout-tools#6216 (merged 2026-11-17), and the
   item 10 `hygiene`-only scoping (b) adopts is its curatorial verdict.
+- 2AMLogic/klayout-tools#5862 — the canonical-YAML inventory mode
+  (`"attest": "yaml"`, optional `select`), closed as completed 2026-11-18; the
+  third value of the item 10 `hygiene` schema and the recommended binding for
+  `ci.yml` (see "The `ci.yml` pin").
 - 2AMLogic/klayout-tools#5831 — this record's original generic filing of the
   same gap (an attestation inventory binds a content hash to a check whose
   predicate does not depend on the file's bytes), closed as a duplicate of
