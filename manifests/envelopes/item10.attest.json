@@ -73,7 +73,7 @@
     "description": "Repo hygiene: the three repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
   },
   "provenance": {
-    "klt_version": "0.9.3.dev3934+g049acce7a82b",
+    "klt_version": "0.9.3.dev4118+gd740468abb98",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": null,
