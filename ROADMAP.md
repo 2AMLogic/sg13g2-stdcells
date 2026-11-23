@@ -27,8 +27,15 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   `layout/example_config.json` are `metal1` and `metal1_label` (its other six
   are well, diffusion, poly, implant and contact layers), and no generator
   draws a second metal.
-  Row 4 (every pin on a grid point) is **not verified**: no check asserts that
-  the emitted pin labels land on grid points.
+  Row 4 (every pin on a grid point) is **not met** as the generator stands
+  (measured 2026-11-23 on `main` @ `6ce61ff`):
+  `layout/tests/test_gen_layouts.py:214` asserts every `metal1_label` of every
+  config cell — gate pads, outputs and the VSS/VDD rail labels — is a multiple
+  of the same 420 nm on both axes from the cell origin and lies on Metal1. It
+  is landed as an expected failure and `:221` pins what it finds: 15 of the 17
+  labels on the four cells off the grid — every gate pad and output on both
+  axes, and the rail labels on x for the three even-column cells — all of them
+  on Metal1. The generator fix is tracked in #225.
 - **Cells (row 5: target 40).** Four are generated from
   `layout/example_config.json`: `sg13g2_inv_1`, `_inv_2`, `_inv_4`,
   `sg13g2_nand2_1`. Sequential cells (row 6) are out of target scope.
@@ -42,16 +49,29 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   cells at TT / 1.20 V / 25 C, emitted by `klt characterize` (#40), with a
   provenance sidecar and the record `sim/characterize/records/20261115-220740-13dc481.md`.
   It carries no `area` attribute.
+- **Corner verification (T1 item 5 analog, row 9): met.** Eight `klt sim`
+  envelopes (`sim/item5/records/20261121-135717-f5cb68a/`, issue #180) cover
+  the row at its target corner: per cell, the logical function at the rails
+  (all input combinations, settled output within 10 mV of the rail the
+  Liberty function demands) and delay plus rise/fall transition at every
+  (input transition, output load) point of the committed view's 5x5 grid,
+  each agreeing with the tabulated value at the same slew and load to within
+  2 % (worst observed 0.058 %). Every measurement is limit-checked and
+  `spec_row`-tagged `9`, so the report's row coverage is derived, and the
+  item's declared row set is row 9 alone (the other eleven rows are graded
+  elsewhere or not electrical — disposition in PR #180's description).
 - **Benchmark (rows 10-12): not started on this library.** `flow/records/`
   holds the `add8` baseline on the stock `sg13g2_stdcell` only: synthesis,
   place-and-route with all three power gates, gate-level LVS `match`, routed
   GDS and a clean `klt drc` (#9, #41).
 - **Evidence grade.** `manifests/signoff-report.txt` (`klt signoff --manifest`):
-  tier none, **T1 11/22 items met**. Met: items 1-4 on both partitions, item 9
-  digital and item 10 on both partitions. Unmet: items 5-8 and 11 on both
-  partitions and item 9 analog — all `no_evidence` except item 11 digital
-  (`supply_spec_incomplete`). Tracker: #3, whose body still quotes the earlier
-  3/22.
+  tier none, **T1 14/22 items met, 1 not_applicable** (updated for item 5
+  analog, #180, on top of item 6 digital N/A, item 8 analog and item 9 analog
+  on `main`). Met: items 1-4 on both partitions, item 5 analog, item 8 analog,
+  items 9 and 10 on both partitions. Not applicable: item 6 digital. Unmet:
+  item 5 digital, item 6 analog, item 7 on both partitions, item 8 digital and
+  item 11 on both partitions — `no_evidence` except item 11 digital
+  (`supply_spec_incomplete`). Tracker: #3.
 
 ### What the layout generator can place today
 
@@ -133,9 +153,11 @@ each item's own done-criterion, not against whether its issue closed.
   these cells need a different topology?
 - **Rows 10-12 benchmark** against the re-characterized baseline. Which
   combinational designs beyond `add8`? The spec leaves that to the benchmark issue.
-- **T1 items 5-7** (corner verification, statistical evidence, post-layout
-  verification). What does each accept as evidence for a cell library
-  rather than a block?
+- **T1 items 6-7** (statistical evidence, post-layout verification). What
+  does each accept as evidence for a cell library rather than a block?
+  Item 5 analog left this list: its row set is row 9, covered by the
+  `sim/item5/` envelopes (#180); item 5 digital is separate and still
+  `no_evidence` (tracked by #175).
 - **Stretch corners** (FF, SS) and **sequential cells** (stretch row 6); the
   latter waits on setup/hold support in `klt characterize`, per the spec.
 

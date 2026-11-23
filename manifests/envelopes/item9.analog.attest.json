@@ -3,21 +3,21 @@
   "kind": "generic",
   "status": "pass",
   "t1_item": 9,
-  "summary": "T1 item 9 (Testbenches shipped): 26/26 attestation checks passed (klt signoff --attest)",
+  "summary": "T1 item 9 (Testbenches shipped): 34/34 attestation checks passed (klt signoff --attest)",
   "source": "manifests/inventories/item9.analog.json",
   "attestation": {
     "producer": "klt signoff --attest",
     "inventory_schema_version": 1,
     "hash_algorithm": "sha256-raw-bytes",
-    "check_count": 26,
-    "passed_count": 26,
+    "check_count": 34,
+    "passed_count": 34,
     "checks": [
       {
         "check": "present",
         "role": "testbench",
         "path": "design/gen_netlists.py",
         "passed": true,
-        "content_hash": "sha256:758eab5f13e4853cdaa40525ac0474d755f3ede11c7e5cb9adeb44cad84612d4"
+        "content_hash": "sha256:2fcf40fa59c33608b502da0f1ede3ffd8a4efe4cc22665b0074b54498216fa08"
       },
       {
         "check": "present",
@@ -88,6 +88,34 @@
         "path": "sim/harness/report.py",
         "passed": true,
         "content_hash": "sha256:a616f08ff790f42160de0b8e81cbffa4016b2ae078d64c23cac11a9234aeb772"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/item5/__main__.py",
+        "passed": true,
+        "content_hash": "sha256:a60b7526de2d6fca45bd3d53d7107a64530f5d3064ca3ca09ef404b1d642359b"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/item5/request.py",
+        "passed": true,
+        "content_hash": "sha256:206a234ceacc324e0b77314aabccdc0d907e532097b7ad417c88979ec0be59b4"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/item5/runner.py",
+        "passed": true,
+        "content_hash": "sha256:2903b3ac1356e239910cef1a8eeb598971831a093b29d9e10b3bef80a82ba31d"
+      },
+      {
+        "check": "present",
+        "role": "testbench",
+        "path": "sim/item5/tests/test_request.py",
+        "passed": true,
+        "content_hash": "sha256:cf90c2a2ce0d0969b06acd88d2169f257a95235b80fb8d06f511854acc00852c"
       },
       {
         "check": "command",
@@ -187,6 +215,34 @@
         "passed": true
       },
       {
+        "check": "dependency_binding",
+        "role": "testbench",
+        "testbench": "sim/item5/__main__.py",
+        "declared": 0,
+        "passed": true
+      },
+      {
+        "check": "dependency_binding",
+        "role": "testbench",
+        "testbench": "sim/item5/request.py",
+        "declared": 0,
+        "passed": true
+      },
+      {
+        "check": "dependency_binding",
+        "role": "testbench",
+        "testbench": "sim/item5/runner.py",
+        "declared": 0,
+        "passed": true
+      },
+      {
+        "check": "dependency_binding",
+        "role": "testbench",
+        "testbench": "sim/item5/tests/test_request.py",
+        "declared": 0,
+        "passed": true
+      },
+      {
         "check": "pin",
         "role": "pdk",
         "passed": true,
@@ -200,7 +256,7 @@
         "role": "tools",
         "passed": true,
         "value": {
-          "klt": "0.9.3.dev2575+g6bd18bbc8637",
+          "klt": "0.9.3.dev3782+gb79f1ff9d9ec",
           "ngspice": "47"
         }
       },
@@ -209,13 +265,13 @@
         "role": "tool_version",
         "tool": "klt",
         "passed": true,
-        "value": "0.9.3.dev2575+g6bd18bbc8637"
+        "value": "0.9.3.dev3782+gb79f1ff9d9ec"
       }
     ],
-    "description": "Analog partition testbenches: the characterization bench behind the committed TT/1.20V/25C Liberty view -- the pure klt characterize request builder, the runner that drives klt and appends the append-only evidence record (capturing the IHP-Open-PDK revision of the --pdk-dir checkout before anything is written), the freshness checker that re-derives the committed view's provenance claims, the harness modules they import, the netlist generator and the config every measurement is made from. The attested cold start (sh sim/characterize/cold_start.sh) is honestly lighter than the bench: it runs the request-construction tests (python3 -m unittest sim.characterize.tests.test_request) and the freshness checker (python3 -m sim.characterize.check_library) -- both tool-free, stdlib Python only, and the checker fails on any stale or tampered committed artifact (config bytes, record, PDK pin, provenance stamps). It does NOT re-run the characterization itself: that needs klt, ngspice and an IHP-Open-PDK git checkout at the pinned commit, and is recorded in documented_argv below and spelled out, PDK checkout included, in README.md 'Reproducing the characterization'. Later benches (klt sim, klt pex -- issues #180/#181) extend this inventory instead of adding a second one."
+    "description": "Analog partition testbenches: (1) the characterization bench behind the committed TT/1.20V/25C Liberty view -- the pure klt characterize request builder, the runner that drives klt and appends the append-only evidence record (capturing the IHP-Open-PDK revision of the --pdk-dir checkout before anything is written), the freshness checker that re-derives the committed view's provenance claims, the harness modules they import, the netlist generator and the config every measurement is made from; and (2) the T1 item 5 klt sim corner testbenches (sim/item5/, #180 -- pure function/timing request and netlist builders, runner, and builder tests) covering spec row 9 at TT/1.20V/25C for the four committed cells. The attested cold start (sh sim/characterize/cold_start.sh) is honestly lighter than the full benches: it runs the characterization request-construction tests (python3 -m unittest sim.characterize.tests.test_request) and the freshness checker (python3 -m sim.characterize.check_library) -- both tool-free, stdlib Python only, and the checker fails on any stale or tampered committed artifact (config bytes, record, PDK pin, provenance stamps); the item 5 builder tests run in CI (python3 -m pytest sim/item5/tests). It does NOT re-run the SPICE characterization or item 5 klt sim sweeps themselves: those need klt, ngspice and an IHP-Open-PDK git checkout at the pinned commit (characterization recorded in documented_argv below and in README.md 'Reproducing the characterization'; item 5 in sim/item5/README.md). Later benches (klt pex -- issue #181) extend this inventory instead of adding a second one."
   },
   "provenance": {
-    "klt_version": "0.9.3.dev2575+g6bd18bbc8637",
+    "klt_version": "0.9.3.dev3782+gb79f1ff9d9ec",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": null,
@@ -224,7 +280,7 @@
         "path": "manifests/inventories/item9.analog.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:6eeb0589342109571879d90bbc9863051c47993d5066160a3ffcf07615668333"
+      "content_hash": "sha256:6fe2ceb19b29708e05ee25dc046d2894765cb7752e7f24cc47cf0599e14cf8c2"
     }
   }
 }
