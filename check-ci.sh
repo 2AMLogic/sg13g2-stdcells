@@ -47,7 +47,8 @@ stage_tests() {
 # them against the real merge tree (base + PR head) just before merging. PR CI
 # alone cannot see a PR that is green against an older main and red against
 # the current one. Keep the two command lists in step: a change to either
-# stage's command must be mirrored in .loom/config.json.
+# stage's command must be mirrored in .loom/config.json;
+# manifests/tests/test_check_tree_checks_parity.py fails if they drift.
 stage_attestations() {
   python3 manifests/check_attestations.py
 }
