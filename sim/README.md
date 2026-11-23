@@ -1,6 +1,15 @@
 # sim
 
-Testbenches and PVT corner results (ngspice). harness/ carries the PVT corner definitions, evidence schema and record-id helpers (see harness/README.md). Simulation runs through `klt` (see characterize/), not a local ngspice runner.
+Testbenches and PVT corner results (ngspice). harness/ carries the PVT corner definitions, evidence schema and record-id helpers (see harness/README.md). Simulation runs through `klt` (see characterize/ and item5/), not a local ngspice runner.
+
+## item5/
+
+T1 item 5 analog corner evidence (spec row 9): per-cell `klt sim` envelopes
+for the four committed cells at TT / 1.20 V / 25 C — logical function at the
+rails and full-grid delay/transition agreement with the committed Liberty
+view, every measurement limit-checked and `spec_row`-tagged. See
+`item5/README.md`; records under `item5/records/`, cited in the block
+manifest as `evidence."5.analog"`.
 
 ## characterize/
 
