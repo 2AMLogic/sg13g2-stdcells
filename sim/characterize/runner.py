@@ -383,7 +383,7 @@ def main(argv=None) -> int:
     ap.add_argument("--corner", default=DEFAULT_CORNER, choices=list(CHAR_CORNER_PVT),
                     help="characterization corner (default: %(default)s)")
     ap.add_argument("--config", type=Path, default=DEFAULT_CONFIG,
-                    help="cell config (default: %(default)s)")
+                    help=f"cell config (default: {DEFAULT_CONFIG.relative_to(REPO_ROOT)})")
     ap.add_argument("--lib", type=Path, default=None,
                     help="Liberty output path (default: the corner-named view path "
                          "under views/)")
