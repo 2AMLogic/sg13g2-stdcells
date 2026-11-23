@@ -49,7 +49,8 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
 - **Evidence grade.** See the committed
   [`manifests/signoff-report.txt`](manifests/signoff-report.txt)
   (`klt signoff --manifest`) — it contains the evidence tier, the T1 item
-  total and the per-item results for each partition. Tracker: #3 collects
+  total and the per-item results for each partition. Tracker:
+  [#3](https://github.com/2AMLogic/sg13g2-stdcells/issues/3) collects
   the remaining follow-up work.
 
 ### What the layout generator can place today
