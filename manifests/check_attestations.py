@@ -20,6 +20,14 @@ Covers both provenance shapes klt emits:
 Every attestation.checks[] entry that carries a path is checked too; command
 checks record no hash and are skipped.
 
+The walk also carries a focused item-9 check (issue #178): an item-9
+envelope's PDK pin (the resolved pins.pdk of its inventory) must agree with
+the PDK pin of every committed measurement sidecar under views/*.lib.provenance
+-- the analog characterization inventory pins the PDK its measurement
+consumed, and the sidecar is where the run recorded it. A disagreement means
+the inventory pins a PDK the committed view was not measured against, and
+exits 1 like any other drift; an unreadable pin or sidecar is an error (2).
+
 With --manifest FILE the script instead checks a block manifest's evidence
 pins (issue #116): every evidence entry that is a {file, content_hash} object
 pins the provenance.input.content_hash of the envelope it names -- the
@@ -203,6 +211,103 @@ def envelope_input_hash(envelope, envelope_name):
     return _parse_content_hash(inp["content_hash"], envelope_name, "provenance.input")
 
 
+# --- Focused item-9 PDK-pin check (issue #178) --------------------------------
+#
+# An item-9 testbench inventory pins the PDK its partition's measurement
+# consumed (`pins.pdk`); `klt signoff --attest 9` records that pin, resolved,
+# as the envelope's `role: "pdk"` check. The measurement's own provenance is
+# the committed Liberty sidecar (`views/*.lib.provenance`), whose `pdk`
+# object the characterize runner captured from the --pdk-dir checkout before
+# anything was written. The two must agree: the envelope is minted from the
+# inventory, the sidecar from the run, so committed bytes naming different
+# revisions mean the inventory pins a PDK the committed view was not measured
+# against -- exactly the disagreement `check_library` catches between sidecar
+# and record, extended one link up the chain. This is tool-free, so CI (which
+# has no klt to re-attest) sees it too.
+
+SIDECAR_GLOB = "views/*.lib.provenance"
+
+
+def _item9_pdk_pin(envelope, envelope_name):
+    """The item-9 inventory's resolved PDK pin from its envelope.
+
+    None when the envelope is not an item-9 one, or the partition's cold
+    start consumes no PDK (the explicit ``{"none": true}`` form). Raises on
+    an item-9 envelope whose recorded pin check is missing or unreadable:
+    silence never means "no PDK".
+    """
+    if envelope.get("t1_item") != 9:
+        return None
+    checks = (envelope.get("attestation") or {}).get("checks")
+    if not isinstance(checks, list):
+        raise EnvelopeError(f"{envelope_name}: attestation.checks is not an array")
+    pins = [c for c in checks if isinstance(c, dict) and c.get("role") == "pdk"]
+    if len(pins) != 1:
+        raise EnvelopeError(
+            f"{envelope_name}: an item-9 envelope records {len(pins)} pdk pin "
+            f"checks (expected exactly one) -- the PDK pin is missing or ambiguous"
+        )
+    value = pins[0].get("value")
+    if not isinstance(value, dict):
+        raise EnvelopeError(
+            f"{envelope_name}: the pdk pin check records no value object"
+        )
+    if value.get("none"):
+        return None
+    name, revision = value.get("name"), value.get("revision")
+    if (not isinstance(name, str) or not name.strip()
+            or not isinstance(revision, str) or not revision.strip()):
+        raise EnvelopeError(
+            f"{envelope_name}: the pdk pin check names no PDK and no revision "
+            f"(value {value!r})"
+        )
+    return name.strip(), revision.strip()
+
+
+def pdk_pin_findings(envelope, envelope_name, repo_root):
+    """Return mismatch findings for the inventory PDK pin vs the committed
+    measurement sidecars; empty means they agree (or the item has no PDK)."""
+    pin = _item9_pdk_pin(envelope, envelope_name)
+    if pin is None:
+        return []
+    name, revision = pin
+    sidecars = sorted(repo_root.glob(SIDECAR_GLOB))
+    if not sidecars:
+        raise EnvelopeError(
+            f"{envelope_name}: pins PDK {name!r} @ {revision} but the repo "
+            f"carries no {SIDECAR_GLOB} provenance sidecar to compare against"
+        )
+    findings = []
+    for sidecar in sidecars:
+        try:
+            prov = json.loads(sidecar.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+            raise EnvelopeError(
+                f"{envelope_name}: cannot read the measurement sidecar "
+                f"{sidecar.name} ({exc})"
+            ) from exc
+        pdk = prov.get("pdk") if isinstance(prov, dict) else None
+        pdk = pdk if isinstance(pdk, dict) else {}
+        pinned_name = pdk.get("name")
+        pinned_revision = pdk.get("revision")
+        where = f"{envelope_name}: pdk pin vs {sidecar.name}"
+        if (not isinstance(pinned_name, str) or not pinned_name.strip()
+                or not isinstance(pinned_revision, str) or not pinned_revision.strip()):
+            findings.append(
+                f"{where}: the inventory pins {name!r} @ {revision} but the "
+                f"sidecar records no PDK pin -- the committed measurement was "
+                f"taken against an unpinned PDK; re-characterize and re-attest"
+            )
+        elif (pinned_name.strip(), pinned_revision.strip()) != (name, revision):
+            findings.append(
+                f"{where}: the inventory pins {name!r} @ {revision} but the "
+                f"sidecar records {pinned_name!r} @ {pinned_revision!r} -- the "
+                f"inventory pins a PDK the committed measurement was not "
+                f"taken against; re-characterize and re-attest"
+            )
+    return findings
+
+
 def _parse_file_pin(entry, manifest_name, where):
     if (
         not isinstance(entry, dict)
@@ -380,6 +485,11 @@ def main(argv=None):
             continue
         try:
             unique, mismatches = verify_records(envelope, path.name, repo_root)
+        except EnvelopeError as exc:
+            errors.append(str(exc))
+            continue
+        try:
+            failures.extend(pdk_pin_findings(envelope, path.name, repo_root))
         except EnvelopeError as exc:
             errors.append(str(exc))
             continue

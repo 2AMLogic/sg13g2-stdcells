@@ -2,13 +2,19 @@
 the shape of the LVS evidence committed under layout/lvs/."""
 import json
 import pathlib
+import subprocess
 import sys
+import tempfile
+import types
 import unittest
+from unittest import mock
 
 LAYOUT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(LAYOUT))
 import run_lvs  # noqa: E402
 import toolchain_pin  # noqa: E402
+
+CONFIG = LAYOUT / "example_config.json"
 
 HELP = """usage: klt
 positional arguments:
@@ -80,6 +86,81 @@ class RecordedEvidence(unittest.TestCase):
                 c = rep["counts"][what]
                 self.assertEqual(c["layout"], c["reference"], f"{cell} {what}")
                 self.assertEqual(c["matched"], c["reference"], f"{cell} {what}")
+
+
+class DoCheckTest(unittest.TestCase):
+    """--check against a scratch copy of the reference netlists.
+
+    The netlist leg runs the real generator --check (stdlib Python, no klt);
+    only the per-report `klt lvs --check` call (check_report) is patched, so
+    every matrix case below exercises the same freshness check CI runs.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.out = pathlib.Path(self._tmp.name) / "lvs"
+        self.netlists = self.out / "netlists"
+        self.cells = run_lvs.cell_names(CONFIG)
+        r = run_lvs.gen_netlists(CONFIG, self.netlists)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.out.mkdir(parents=True, exist_ok=True)
+        for cell in self.cells:
+            (self.out / f"{cell}.json").write_text("{}")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def snapshot(self):
+        return {p.name: p.read_bytes()
+                for d in (self.netlists, self.out) for p in sorted(d.iterdir()) if p.is_file()}
+
+    def do_check(self, report_exit=0):
+        fake = types.SimpleNamespace(returncode=report_exit, stdout="stale", stderr="")
+        with mock.patch.object(run_lvs, "check_report", return_value=fake) as rep:
+            rc = run_lvs.do_check(self.cells, self.out, self.netlists, str(CONFIG))
+        present = [c for c in self.cells if (self.out / f"{c}.json").exists()]
+        self.assertEqual(rep.call_count, len(present))  # every present report re-checked
+        return rc
+
+    def test_fresh_netlists_and_reports_pass(self):
+        self.assertEqual(self.do_check(report_exit=0), 0)
+
+    def test_crlf_netlist_rejected_and_left_intact(self):
+        spice = self.netlists / f"{self.cells[0]}.spice"
+        crlf = spice.read_bytes().replace(b"\n", b"\r\n")
+        spice.write_bytes(crlf)
+        before = self.snapshot()
+        self.assertEqual(self.do_check(), 1)
+        self.assertEqual(self.snapshot(), before)
+
+    def test_missing_netlist_rejected(self):
+        (self.netlists / f"{self.cells[0]}.spice").unlink()
+        self.assertEqual(self.do_check(), 1)
+
+    def test_edited_netlist_rejected(self):
+        (self.netlists / f"{self.cells[0]}.spice").write_text("x\n")
+        self.assertEqual(self.do_check(), 1)
+
+    def test_stray_netlist_rejected(self):
+        # a .spice from a retired cell must not outlive the freshness check
+        (self.netlists / "sg13g2_retired_1.spice").write_text("x\n")
+        self.assertEqual(self.do_check(), 1)
+
+    def test_stale_report_with_fresh_netlists_rejected(self):
+        self.assertEqual(self.do_check(report_exit=1), 1)
+
+    def test_missing_report_rejected(self):
+        (self.out / f"{self.cells[0]}.json").unlink()
+        self.assertEqual(self.do_check(), 1)
+
+    def test_stray_report_rejected(self):
+        (self.out / "sg13g2_retired_1.json").write_text("{}")
+        self.assertEqual(self.do_check(), 1)
+
+    def test_netlist_and_report_drift_reported_in_one_run(self):
+        (self.netlists / "sg13g2_retired_1.spice").write_text("x\n")
+        (self.out / f"{self.cells[0]}.json").unlink()
+        self.assertEqual(self.do_check(report_exit=1), 1)
 
 
 if __name__ == "__main__":
