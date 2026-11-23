@@ -18,10 +18,14 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   The generator existing is not the same claim as the geometry rows being met,
   so per row, for the cells it places: row 1 (3.36 um row height) is **met** —
   `layout/example_config.json` sets `row_height_nm: 3360` and
-  `layout/tests/test_gen_layouts.py:113,127` assert the emitted cell height.
+  `Geometry.test_cell_width_follows_pitch` in
+  `layout/tests/test_gen_layouts.py` asserts the emitted cell height
+  (`H == 3360`).
   Row 2's horizontal pitch (0.42 um) is **met** — widths and gate columns are
   multiples of `gate_pitch_nm: 420`
-  (`layout/tests/test_gen_layouts.py:129,133`); the vertical grid is not
+  (`Geometry.test_cell_width_follows_pitch` asserts `W == 3 * 420`, and
+  `MultiFinger.test_width_grows_with_finger_count` asserts widths of
+  `2/3/5 * 420`, both in `layout/tests/test_gen_layouts.py`); the vertical grid is not
   separately checked. Row 3 (Metal1 only) is **met by construction** — the
   only metal entries in the `layout.layers` map in
   `layout/example_config.json` are `metal1` and `metal1_label` (its other six
