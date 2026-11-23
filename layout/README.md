@@ -488,6 +488,8 @@ So the signal topology of the folded cells -- the poly bridge and the per-finger
 source/drain alternation that the earlier record left unverified -- is now
 verified against the generated netlist.
 
+### Signoff manifest and attestation envelopes (issues #75, #103)
+
 Manifest: `manifests/sg13g2-stdcells.json` cites analog items 1 (attested
 inventory `manifests/inventories/item1.analog.json`: generator, config and
 generated netlists, each netlist freshness-checked), 2 (attested over the four
@@ -561,6 +563,8 @@ the gate. The envelope hash check is deliberately *not* delegated to
 `klt signoff --attest --check` in CI: that would break CI's tool-free
 constraint; the `klt` check stays the deeper local verification (it also
 re-runs each inventory's commands).
+
+### Characterization records and their supersession chain (issues #82, #134)
 
 `T1 #8 [analog] Characterization report` is **not** cited, and stays
 `no_evidence` — deliberately, with the attestation committed as it graded. Its
