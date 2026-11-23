@@ -52,21 +52,21 @@
         "role": "testbench",
         "path": "sim/characterize/request.py",
         "passed": true,
-        "content_hash": "sha256:7122c51dfc6ec5431642bb62e5ad4ff8d8e452d38fc6d9d7fa66702e52793560"
+        "content_hash": "sha256:432aa501dbdf51cea267f9e265c8cae7863f55238aedd992ff46fee8cce2c55a"
       },
       {
         "check": "present",
         "role": "testbench",
         "path": "sim/characterize/runner.py",
         "passed": true,
-        "content_hash": "sha256:6d9da6f66e37e0a51b841822f0289e2759ae4d7fe6c7eb9c83e73664a90a028e"
+        "content_hash": "sha256:036d3826ff68fbcdf433c75e371e04f0892bb40e95eba1cd6a6b6a2af44fe9e7"
       },
       {
         "check": "present",
         "role": "testbench",
         "path": "sim/characterize/tests/test_request.py",
         "passed": true,
-        "content_hash": "sha256:a8ba3136ba8198ba05fad17097e1c22d58ece66272103aac5d575731bb291410"
+        "content_hash": "sha256:0df999ec8aab400adf36990ba84113a7835922d9b78b4f2c70358cb18ebe527f"
       },
       {
         "check": "present",
@@ -132,7 +132,6 @@
           "python3",
           "-m",
           "sim.characterize",
-          "--library",
           "--pdk-dir",
           "<IHP-Open-PDK git checkout at commit 5cccb161f7492697cfa52eb14dc03beb00bdca9e>/ihp-sg13g2"
         ]
@@ -280,7 +279,7 @@
         "path": "manifests/inventories/item9.analog.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:c54d8a39facab93b2c999a6d0db3a15c60c5dcfa79c8feda1100649ef6f1576f"
+      "content_hash": "sha256:f44afd0eb384c0099a75029a54cfa10e5803f8ce4943271dae1a3d591336fa0b"
     }
   }
 }
