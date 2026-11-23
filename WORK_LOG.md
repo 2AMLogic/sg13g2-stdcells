@@ -2,6 +2,23 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-23
+
+- **PR #212**: docs: give the signoff-manifest and characterization tails their own headings in layout/README.md
+- **Issue #208** (closed): layout/README.md: the LVS-evidence section's tail outlines signoff-manifest and characterization records as part of the #42/#73 LVS result
+- **PR #207**: docs: give the recorded LVS result its own heading in layout/README.md
+- **Issue #206** (closed): layout/README.md: the #198 re-verification subsection outlines the LVS signoff result under itself
+- **PR #203**: fix: route a diffusion-driven gate as a terminal of its net's Metal1 track
+- **Issue #201** (closed): layout: generated buffer leaves its internal gate disconnected from the Metal1 track
+- **PR #193**: feat: pin IHP-Open-PDK in characterization records and attest T1 item 9 analog
+
+### 2026-11-22
+
+- **PR #200**: docs(layout): document isolated re-verification of committed LVS reports
+- **Issue #198** (closed): Document how to reproduce the committed LVS checks and diagnose deck drift
+- **PR #199**: fix: compare generated netlists byte-for-byte and gate LVS --check on the generator
+- **Issue #196** (closed): Reuse the generator freshness check for LVS reference netlists
+
 ### 2026-11-21
 
 - **PR #185**: feat: verify document pins for digital item 6 signoff

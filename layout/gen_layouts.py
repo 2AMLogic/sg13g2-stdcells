@@ -549,6 +549,10 @@ def layout_cell(cell, proc, lay):
                 if g in driven:
                     # An internal net's gate label is not a pin: its riser stays
                     # on the pad's own column and the label on the pad centre.
+                    # pad_rect is kept alongside the riser on purpose: when the
+                    # track lands above the pad (ty0 > gate_pad_y) the riser box
+                    # is y-inverted and does not cover it; otherwise the riser
+                    # contains pad_rect exactly and the box is a harmless duplicate.
                     ty0, ty1 = tracks[g]
                     xs = [(r[0] + r[2]) // 2 for r, _ in net_m1[g]]
                     cands = [(None, [pad_rect,
@@ -561,7 +565,7 @@ def layout_cell(cell, proc, lay):
                     cands = [(gy, [bridge,
                                    (gx_node - mw // 2, min(gate_pad_y, gy - e),
                                     gx_node + mw // 2, max(gate_pad_y + R["cont_nm"], gy + e))])
-                             for gy in grid_ys for e in range(mw // 2, -1, -10)]
+                             for gy in grid_ys for e in range(mw // 2, -1, -grid)]
                     # Crowded channel (a cell outside the shipped set): the
                     # compact pad, labelled at its centre and so off the grid.
                     # The row-4 test names any shipped cell that lands here.

@@ -174,7 +174,9 @@ class PinOnGrid(unittest.TestCase):
         Metal1 bar up to a grid y in the channel.
 
     The label of an *internal* net's gate pad (a multi-stage cell's `X_i`)
-    stays on the pad centre: it is not a pin."""
+    stays on the pad centre. It is still checked: `off_grid_labels()` tests
+    every `metal1_label` with no exemption, so a shipped multi-stage cell would
+    fail this row for that label."""
 
     P = CFG["layout"]["gate_pitch_nm"]
     maxDiff = None
