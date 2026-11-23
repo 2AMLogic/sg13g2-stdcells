@@ -3,14 +3,14 @@
   "kind": "generic",
   "status": "pass",
   "t1_item": 10,
-  "summary": "T1 item 10 (Repo hygiene): 6/6 attestation checks passed (klt signoff --attest)",
+  "summary": "T1 item 10 (Repo hygiene): 7/7 attestation checks passed (klt signoff --attest)",
   "source": "manifests/inventories/item10.json",
   "attestation": {
     "producer": "klt signoff --attest",
     "inventory_schema_version": 1,
     "hash_algorithm": "sha256-raw-bytes",
-    "check_count": 6,
-    "passed_count": 6,
+    "check_count": 7,
+    "passed_count": 7,
     "checks": [
       {
         "check": "present",
@@ -31,7 +31,14 @@
         "role": "hygiene",
         "path": "README.md",
         "passed": true,
-        "content_hash": "sha256:1762405db6353d924c2ab565b827d10ed56668acd6445b7fcb0f157ee1900aad"
+        "content_hash": "sha256:508ef07eff9eac2fee1b062eb4d4d10a72241a58222ab4305f356a621c710e39"
+      },
+      {
+        "check": "present",
+        "role": "hygiene",
+        "path": "check-ci.sh",
+        "passed": true,
+        "content_hash": "sha256:8c15e96dea4e0bed23e176a580ba3229263558a949565b4f4cb3054f432bf666"
       },
       {
         "check": "command",
@@ -70,7 +77,7 @@
         "passed": true
       }
     ],
-    "description": "Repo hygiene: the three repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
+    "description": "Repo hygiene: the four repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. check-ci.sh is pinned because it holds the bytes of those three gates, so a weakening edit to a stage function fails the attestations stage until item 10 is re-minted. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
   },
   "provenance": {
     "klt_version": "0.9.3.dev4118+gd740468abb98",
@@ -82,7 +89,7 @@
         "path": "manifests/inventories/item10.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256"
+      "content_hash": "sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e"
     }
   }
 }
