@@ -97,13 +97,13 @@ def _response(simulation):
     }
 
 
-def _record_data(simulation):
-    return runner.build_record_data(_response(simulation), CELL, backend="local")
+def _cell_data(simulation):
+    return runner.build_cell_data(_response(simulation), CELL)
 
 
 def _library_data(simulation):
-    d = _record_data(simulation)
-    return {**d, "cells": [d], "record_id": RECORD_ID}
+    return {**runner.build_run_data(_response(simulation), backend="local"),
+            "cells": [_cell_data(simulation)], "record_id": RECORD_ID}
 
 
 def _notes(record_data):
@@ -111,10 +111,10 @@ def _notes(record_data):
     return next(line for line in md.splitlines() if line.startswith("**Notes**"))
 
 
-def test_build_record_data_captures_simulator_from_per_cell_block():
+def test_build_cell_data_captures_simulator_from_per_cell_block():
     # The response's top-level simulation is null (batch shape); the per-cell
     # entry is the only source -- reading the top-level key would drop it.
-    assert _record_data({"engine": "ngspice", "engine_version": "47"}).get("simulator") \
+    assert _cell_data({"engine": "ngspice", "engine_version": "47"}).get("simulator") \
         == {"engine": "ngspice", "version": "47"}
 
 
@@ -142,8 +142,8 @@ def test_sidecar_names_simulator_beside_klt(tmp_path):
     {"engine": None, "engine_version": "47"},
 ])
 def test_missing_simulator_renders_explicit_unknown(simulation):
-    data = _record_data(simulation)
-    captured = data["simulator"]
+    data = _library_data(simulation)
+    captured = data["cells"][0]["simulator"]
     assert captured == {"engine": (simulation or {}).get("engine"),
                         "version": (simulation or {}).get("engine_version")}
     assert captured["engine"] is None or captured["version"] is None

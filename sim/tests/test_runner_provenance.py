@@ -38,9 +38,8 @@ PDK = {"name": "IHP-Open-PDK", "revision": "5" * 40}
 
 
 def record_data():
-    """Minimal single-arc payload, the shape ``build_record_data()`` returns."""
+    """Minimal single-arc payload in the one record shape: run-level blocks plus ``cells``."""
     return {
-        "cell": "sg13g2_inv_1",
         "netlist_provenance": "netlist supplied to klt characterize: /tmp/sg13g2_inv_1.spice",
         "corner": {"name": "tt"},
         "backend": "local",
@@ -49,12 +48,15 @@ def record_data():
         "pdk": PDK,
         "axes": {"input_transition_ns": [0.01], "output_load_pf": [0.01]},
         "units": {},
-        "arcs": [{"related_pin": "A", "output_pin": "Y", "timing_sense": "positive_unate",
-                  "side_inputs": {},
-                  "cell_rise": [[0.05]], "cell_fall": [[0.06]],
-                  "rise_transition": [[0.02]], "fall_transition": [[0.03]],
-                  "rise_power": [[0.001]], "fall_power": [[0.002]]}],
-        "leakage": 1e-3,
+        "cells": [{
+            "cell": "sg13g2_inv_1",
+            "arcs": [{"related_pin": "A", "output_pin": "Y", "timing_sense": "positive_unate",
+                      "side_inputs": {},
+                      "cell_rise": [[0.05]], "cell_fall": [[0.06]],
+                      "rise_transition": [[0.02]], "fall_transition": [[0.03]],
+                      "rise_power": [[0.001]], "fall_power": [[0.002]]}],
+            "leakage": 1e-3,
+        }],
     }
 
 
@@ -77,7 +79,7 @@ def sidecar(tmp_path, path, git):
     config = tmp_path / "layout" / "example_config.json"
     config.parent.mkdir()
     config.write_text("{}\n")
-    library_data = {**record_data(), "cells": [record_data()], "record_id": path.stem}
+    library_data = {**record_data(), "record_id": path.stem}
     return runner.provenance_for(config, {"name": "tt"}, library_data, git=git)
 
 
@@ -308,14 +310,15 @@ def test_characterize_library_refuses_unpinnable_pdk_before_any_write(tmp_path, 
 def klt_response():
     """``klt characterize`` stdout shape (raw arc tables are ``{"values": ...}``)."""
     d = record_data()
+    c = d["cells"][0]
     arcs = [{**a, **{t: {"values": a[t]} for t in runner.TABLES if t in a}}
-            for a in d["arcs"]]
+            for a in c["arcs"]]
     return {
         "corner": d["corner"],
         "grid": d["axes"],
         "units": d["units"],
-        "cells": [{"cell": {"name": d["cell"]}, "arcs": arcs,
-                   "leakage": d["leakage"],
+        "cells": [{"cell": {"name": c["cell"]}, "arcs": arcs,
+                   "leakage": c["leakage"],
                    "simulation": {"engine": "ngspice", "engine_version": "47"}}],
     }
 

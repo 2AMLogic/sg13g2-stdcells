@@ -52,6 +52,13 @@ def fake_response(cell="sg13g2_inv_1", arcs=True):
             "provenance": {"klt_version": "x"}}
 
 
+def record_payload(response):
+    """The one record shape: run-level blocks plus a one-element ``cells`` list."""
+    return {**runner.build_run_data(response, "local"),
+            "netlist_provenance": "test netlist",
+            "cells": [runner.build_cell_data(response, SG13G2_INV_1)]}
+
+
 class RecordTests(unittest.TestCase):
     def test_missing_cell_or_arc_fails_loudly(self):
         with self.assertRaises(runner.CharacterizeFailed):
@@ -60,8 +67,8 @@ class RecordTests(unittest.TestCase):
             runner.extract_arcs(fake_response(arcs=False), SG13G2_INV_1)
 
     def test_driver_record_validates(self):
-        data = runner.build_record_data(fake_response(), SG13G2_INV_1, "local")
-        exts = runner.evidence_for(data)
+        data = record_payload(fake_response())
+        exts = runner.evidence_for(data, data["cells"][0])
         self.assertEqual(len(exts), 1)  # 1 arc x 1 slew x 1 load
         self.assertIsInstance(exts[0], CharacterizationExtensions)
         exts[0].validate()
@@ -71,10 +78,11 @@ class RecordTests(unittest.TestCase):
         resp = fake_response()
         resp["corner"] = {"name": "tt_1p20v_25c"}
         with self.assertRaises(Exception):
-            runner.evidence_for(runner.build_record_data(resp, SG13G2_INV_1, "local"))
+            data = record_payload(resp)
+            runner.evidence_for(data, data["cells"][0])
 
     def test_rerun_appends(self):
-        data = runner.build_record_data(fake_response(), SG13G2_INV_1, "local")
+        data = record_payload(fake_response())
         with tempfile.TemporaryDirectory() as d:
             a = runner.record(data, Path(d))
             b = runner.record(data, Path(d))
@@ -165,10 +173,19 @@ class LibraryRequestTests(unittest.TestCase):
 
 class LibraryRecordTests(unittest.TestCase):
     def test_multi_cell_record_validates_and_picks_each_cells_leakage(self):
-        a = runner.build_record_data(fake_response("sg13g2_inv_1"), SG13G2_INV_1, "local")
+        a = runner.build_cell_data(fake_response("sg13g2_inv_1"), SG13G2_INV_1)
         resp = fake_response("sg13g2_inv_1")
         resp["cells"].append({**fake_response("other")["cells"][0], "leakage": "x"})
-        self.assertIsNone(runner.build_record_data(resp, SG13G2_INV_1, "local")["leakage"])
+        self.assertIsNone(runner.build_cell_data(resp, SG13G2_INV_1)["leakage"])
+        run = runner.build_run_data(fake_response(), "local")
         with tempfile.TemporaryDirectory() as d:
-            path = runner.record({**a, "cells": [a, a]}, records_dir=Path(d))
-            self.assertIn('"cells"', path.read_text())
+            path = runner.record({**run, "netlist_provenance": "x", "cells": [a, a]},
+                                 records_dir=Path(d))
+            text = path.read_text()
+            self.assertIn('"cells"', text)
+            payload = json.loads(text.split("```json\n")[1].split("```")[0])
+            self.assertNotIn("arcs", payload)
+            self.assertNotIn("cell", payload)
+            self.assertNotIn("leakage", payload)
+            self.assertNotIn("klt", payload["cells"][0])
+            self.assertEqual(text.count('"input_transition_ns"'), 1)
