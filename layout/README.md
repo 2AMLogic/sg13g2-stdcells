@@ -849,8 +849,8 @@ That is the falsifiable half: a spec that cannot fail proves nothing.
 Manifest: `evidence["11.analog"]` in `manifests/sg13g2-stdcells.json` cites
 one group per cell — that cell's ERC report plus its item-4 LVS report
 (`net_correspondence` pairs VDD and VSS since #73) — and
-`manifests/signoff-report.*` are regenerated: **T1 13/22 at `5c444be`** (15/22 at the current head, see below), with
-`T1 #11 [analog]` `[MET]`, groups 4/4**; `klt signoff --manifest
+`manifests/signoff-report.*` are regenerated: **T1 13/22 at `5c444be`** (15/22 at `3d76ce2`, 16/22 at `b507f4f`; see below), with
+`T1 #11 [analog]` `[MET]`, groups 4/4; `klt signoff --manifest
 manifests/sg13g2-stdcells.json --check manifests/signoff-report.json` reads
 `status: match`. The digital half of item 11 (`flow/erc-spec.json`, declares
 no `ties[]`) is separate work, unchanged here.
@@ -864,8 +864,12 @@ minted. That regression is not this PR's change (the file is byte-identical to
 `main`); re-minting the item 9 envelope is separate work.
 
 Superseded at the `3d76ce2` merge of `main`: `main`'s re-minted item 9
-envelope landed in that merge, so at this head `T1 #9 [analog]` reads `[MET]`
+envelope landed in that merge, so at `3d76ce2` `T1 #9 [analog]` reads `[MET]`
 again and `manifests/signoff-report.txt` records **T1 15/22 items met** (klt
 `0.9.3.dev4116+ga9885c2c7fa3`). Item 11 analog newly `[MET]` is this PR's
 contribution; the item 9 recovery is not. The paragraph above is kept as the
 observation at `5c444be`.
+
+Superseded again at the `b507f4f` merge of `main`: the regenerated report
+records **T1 16/22 items met** (klt `0.9.3.dev4224+gcc049d4d9637`), with
+`T1 #9 [analog]` still `[MET]` and `T1 #11 [analog]` `[MET]`, `groups: 4/4`.
