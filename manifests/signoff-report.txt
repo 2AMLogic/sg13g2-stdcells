@@ -82,9 +82,9 @@ T1: 15/22 items met, 1 not_applicable
 [UNMET] T1 #8 [digital] Characterization report
         reason: no_evidence
 [MET  ] T1 #9 [analog] Testbenches shipped
-        cite: manifests/envelopes/item9.analog.attest.json (kind=generic, status=pass, content_hash=sha256:6fe2ceb19b29708e05ee25dc046d2894765cb7752e7f24cc47cf0599e14cf8c2, exit_status=0)
+        cite: manifests/envelopes/item9.analog.attest.json (kind=generic, status=pass, content_hash=sha256:1a89872f56b9596661105b45ad834a37d8ae235a1cc68966e4a3b9389d32f81d, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
-        bound: T1 item #9 -> manifests/inventories/item9.analog.json (content_hash=sha256:6fe2ceb19b29708e05ee25dc046d2894765cb7752e7f24cc47cf0599e14cf8c2)
+        bound: T1 item #9 -> manifests/inventories/item9.analog.json (content_hash=sha256:1a89872f56b9596661105b45ad834a37d8ae235a1cc68966e4a3b9389d32f81d)
 [MET  ] T1 #9 [digital] Testbenches shipped
         cite: manifests/envelopes/item9.digital.attest.json (kind=generic, status=pass, content_hash=sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches

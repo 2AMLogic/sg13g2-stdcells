@@ -19,7 +19,6 @@ DEFAULT_LOADS_PF: tuple[float, ...] = (0.001, 0.003, 0.01, 0.03, 0.1)
 #: variant directory.
 MODEL_LIB = "libs.tech/ngspice/models/cornerMOSlv.lib"
 OSDI_PRELOAD = ("libs.tech/ngspice/osdi/psp103.osdi",)
-CELL_NETLIST = "libs.ref/sg13g2_stdcell/spice/sg13g2_stdcell.spice"
 
 
 class RequestError(ValueError):
@@ -54,15 +53,9 @@ class CellSpec:
     inputs: tuple[str, ...]
     #: output pin name -> Liberty boolean function
     outputs: dict[str, str]
+    netlist: str  # relative to the PDK dir unless absolute
     vdd: str = "VDD"
     gnd: str = "VSS"
-    netlist: str = CELL_NETLIST  # relative to the PDK dir unless absolute
-
-
-#: Baseline leg: the PDK's own ``sg13g2_stdcell`` inverter -- the benchmark
-#: denominator of ``spec/0001-target-specification.md`` ("Baseline Liberty"), not
-#: one of this repo's generated cells (those go through :func:`cells_from_config`).
-SG13G2_INV_1 = CellSpec("sg13g2_inv_1", inputs=("A",), outputs={"Y": "!A"})
 
 
 def _axis(values, label: str) -> list[float]:
@@ -79,9 +72,8 @@ def _axis(values, label: str) -> list[float]:
 def _cell_entry(cell: CellSpec, pdk: Path) -> dict:
     """The klt block describing one cell: the only place a cell is described.
 
-    Both request forms use this, so a new pin attribute or power-pin convention is
-    changed once (the ``cell`` block of :func:`build_request` and each entry of
-    :func:`build_library_request`'s ``cells`` list are the same shape).
+    A new pin attribute or power-pin convention is changed once, here (each entry
+    of :func:`build_library_request`'s ``cells`` list).
     """
     if not cell.inputs or not cell.outputs:
         raise RequestError(f"cell {cell.name!r} needs at least one input and one output")
@@ -95,40 +87,6 @@ def _cell_entry(cell: CellSpec, pdk: Path) -> dict:
         "netlist": str(netlist),
         "pins": pins,
         "power_pins": {"vdd": cell.vdd, "gnd": cell.gnd},
-    }
-
-
-def _run_blocks(corner: str, pdk: Path, slews_ns, loads_pf) -> dict:
-    """The corner/grid/models/options blocks, identical in both request forms."""
-    return {
-        "corner": corner_block(corner),
-        "grid": {
-            "input_transition_ns": _axis(slews_ns, "slew"),
-            "output_load_pf": _axis(loads_pf, "load"),
-        },
-        "models": {"lib": str(pdk / MODEL_LIB)},
-        "options": {
-            "osdi_preload": [str(pdk / p) for p in OSDI_PRELOAD],
-            "keep_artifacts": False,
-        },
-    }
-
-
-def build_request(
-    cell: CellSpec,
-    corner: str,
-    pdk_dir: str | Path,
-    slews_ns=DEFAULT_SLEWS_NS,
-    loads_pf=DEFAULT_LOADS_PF,
-) -> dict:
-    """Return a single-cell, single-corner ``klt characterize`` request dict.
-
-    All paths are absolute so the request means the same wherever it is written.
-    """
-    pdk = Path(pdk_dir)
-    return {
-        "cell": _cell_entry(cell, pdk),
-        **_run_blocks(corner, pdk, slews_ns, loads_pf),
     }
 
 
@@ -191,7 +149,7 @@ def build_library_request(
 ) -> dict:
     """Return a multi-cell, single-corner ``klt characterize`` request (``cells`` form).
 
-    Same corner/grid/models/options as :func:`build_request`; one ``.lib`` results.
+    One ``.lib`` results.
     The library name defaults to :func:`library_view_name` of this corner, so a
     request never claims another corner's name.
     """
@@ -203,7 +161,16 @@ def build_library_request(
     library_name = library_name or library_view_name(corner)
     pdk = Path(pdk_dir)
     return {
-        **_run_blocks(corner, pdk, slews_ns, loads_pf),
+        "corner": corner_block(corner),
+        "grid": {
+            "input_transition_ns": _axis(slews_ns, "slew"),
+            "output_load_pf": _axis(loads_pf, "load"),
+        },
+        "models": {"lib": str(pdk / MODEL_LIB)},
+        "options": {
+            "osdi_preload": [str(pdk / p) for p in OSDI_PRELOAD],
+            "keep_artifacts": False,
+        },
         "library": {"name": library_name},
         "cells": [_cell_entry(c, pdk) for c in cells],
     }
