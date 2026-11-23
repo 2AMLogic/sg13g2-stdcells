@@ -38,13 +38,8 @@
         "role": "audit",
         "name": "netlists-fresh",
         "argv": [
-          "python3",
-          "design/gen_netlists.py",
-          "--config",
-          "layout/example_config.json",
-          "--out",
-          "layout/lvs/netlists",
-          "--check"
+          "./check-ci.sh",
+          "netlists"
         ],
         "cwd": ".",
         "exit_status": 0,
@@ -55,11 +50,8 @@
         "role": "audit",
         "name": "layouts-fresh",
         "argv": [
-          "python3",
-          "layout/gen_layouts.py",
-          "--config",
-          "layout/example_config.json",
-          "--check"
+          "./check-ci.sh",
+          "layouts"
         ],
         "cwd": ".",
         "exit_status": 0,
@@ -70,11 +62,8 @@
         "role": "audit",
         "name": "flow-evidence-accepts-committed-record",
         "argv": [
-          "flow/check-evidence.sh",
-          "flow/request-par.json",
-          "flow/records/20261104-df96543/place-and-route.json",
-          "flow/records/20261104-df96543/lvs.json",
-          "flow/records/20261104-df96543/erc.json"
+          "./check-ci.sh",
+          "evidence-accept"
         ],
         "cwd": ".",
         "exit_status": 0,
@@ -84,7 +73,7 @@
     "description": "Repo hygiene: the three repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
   },
   "provenance": {
-    "klt_version": "0.9.3.dev2575+g6bd18bbc8637",
+    "klt_version": "0.9.3.dev4118+gd740468abb98",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": null,
@@ -93,7 +82,7 @@
         "path": "manifests/inventories/item10.json",
         "scope": "repo"
       },
-      "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16"
+      "content_hash": "sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256"
     }
   }
 }

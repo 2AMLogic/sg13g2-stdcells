@@ -41,6 +41,13 @@ stage_tests() {
 # only. When the failure is a deliberate edit, re-attest locally with
 # `klt signoff --attest <item> --inventory <inventory> -o <envelope>` -- CI
 # has no klt, so re-attestation is always a local step.
+#
+# This stage and stage_manifest_pins below are ALSO declared as
+# `merge.treeChecks` in .loom/config.json (issue #228), so merge-pr.sh runs
+# them against the real merge tree (base + PR head) just before merging. PR CI
+# alone cannot see a PR that is green against an older main and red against
+# the current one. Keep the two command lists in step: a change to either
+# stage's command must be mirrored in .loom/config.json.
 stage_attestations() {
   python3 manifests/check_attestations.py
 }

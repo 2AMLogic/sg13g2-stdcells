@@ -2,7 +2,7 @@
   "block": "sg13g2-stdcells",
   "kind": "mixed-signal",
   "partition_boundary": {
-    "analog": "transistor-level cells (sg13g2_inv_1, sg13g2_nand2_1): SPICE characterization and layout DRC/LVS",
+    "analog": "transistor-level cells (sg13g2_inv_1, sg13g2_inv_2, sg13g2_inv_4, sg13g2_nand2_1): SPICE characterization, klt sim corner evidence and layout DRC/LVS",
     "digital": "add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline"
   },
   "evidence": {
@@ -48,7 +48,7 @@
     },
     "9.analog": {
       "file": "manifests/envelopes/item9.analog.attest.json",
-      "content_hash": "sha256:6eeb0589342109571879d90bbc9863051c47993d5066160a3ffcf07615668333"
+      "content_hash": "sha256:6fe2ceb19b29708e05ee25dc046d2894765cb7752e7f24cc47cf0599e14cf8c2"
     },
     "9.digital": {
       "file": "manifests/envelopes/item9.digital.attest.json",
@@ -56,16 +56,81 @@
     },
     "10.analog": {
       "file": "manifests/envelopes/item10.attest.json",
-      "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16"
+      "content_hash": "sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256"
     },
     "10.digital": {
       "file": "manifests/envelopes/item10.attest.json",
-      "content_hash": "sha256:50d2ba3a7c5aeb44920bcbaa19f374703e955b20b426fe8cf3ce3efb0677ca16"
+      "content_hash": "sha256:a8ff18a988067f7ad2f67a619fc507ed29bb782bd7b4956a4be0d05d17046256"
     },
     "11.digital": [
       "flow/records/20261104-df96543/erc.json",
       "flow/records/20261104-df96543/lvs.json",
       "flow/records/20261104-df96543/place-and-route.json"
+    ],
+    "5.analog": [
+      {
+        "file": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.function.report.json",
+        "content_hash": "sha256:e5dabd89579fec5d7051270dff59fca60b91f016c1be3241a69aba4e16f5c25f",
+        "rows": [
+          "9"
+        ]
+      },
+      {
+        "file": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.timing.report.json",
+        "content_hash": "sha256:7cd5ee86c808aa59d80998cb2d5c33282520985e28033a78e3bb612adda84dcd",
+        "rows": [
+          "9"
+        ]
+      },
+      {
+        "file": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_2.function.report.json",
+        "content_hash": "sha256:e350fb15802f784aa7bd1dd12a3dadcbc65a4f01bc6474f86dfa1b440bceebf4",
+        "rows": [
+          "9"
+        ]
+      },
+      {
+        "file": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_2.timing.report.json",
+        "content_hash": "sha256:8837656fd8f6b0db6efa438e938939fb98688740d246a045b69697a927bb7938",
+        "rows": [
+          "9"
+        ]
+      },
+      {
+        "file": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_4.function.report.json",
+        "content_hash": "sha256:0c6f01f4be932b4a1ac351c1301a54bae1e4a485588295d7f598a203b349eae5",
+        "rows": [
+          "9"
+        ]
+      },
+      {
+        "file": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_4.timing.report.json",
+        "content_hash": "sha256:309609365545204c322a605237bff8babeff07aeb1986b413deff1ec2e7ec096",
+        "rows": [
+          "9"
+        ]
+      },
+      {
+        "file": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.function.report.json",
+        "content_hash": "sha256:2bb2223cbb10321d6bca5bf4db89edd6dd5114dae864af6121d0d69a30a22402",
+        "rows": [
+          "9"
+        ]
+      },
+      {
+        "file": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.timing.report.json",
+        "content_hash": "sha256:811376c82a38897070195930fac885e7bd8961765595897d61072b535ce38fce",
+        "rows": [
+          "9"
+        ]
+      }
+    ]
+  },
+  "spec_rows": {
+    "5.analog": [
+      {
+        "id": "9"
+      }
     ]
   }
 }
