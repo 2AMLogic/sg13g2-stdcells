@@ -1,0 +1,69 @@
+{
+  "schema_version": 4,
+  "engine": "icarus",
+  "hdl_toplevel": "add8",
+  "testbench": "test_add8",
+  "status": "pass",
+  "test_count": 1,
+  "passed_count": 1,
+  "failed_count": 0,
+  "skipped_count": 0,
+  "tests": [
+    {
+      "name": "exhaustive",
+      "status": "passed",
+      "sim_time_ns": 131072.0,
+      "real_time_s": 2.5544073581695557
+    }
+  ],
+  "coverage": null,
+  "trace": null,
+  "environment": {
+    "engine": "icarus",
+    "engine_version": "13.0",
+    "tools": [],
+    "cocotb_version": "2.0.1",
+    "results_xml": {
+      "path": "verification/.klt/functional-verification/results_icarus.xml",
+      "scope": "repo",
+      "sha256": "sha256:f1a24417bd118b56d6d70e3eef31f01267d9914197d221ee5e6160894d23f512"
+    },
+    "test_log": {
+      "path": "verification/.klt/functional-verification/test_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:b6dbf2ad787015ecadecb14aa5d082e24bebf08c07e0fd36f6309aa028e203ce"
+    },
+    "build_log": {
+      "path": "verification/.klt/functional-verification/build_icarus.log",
+      "scope": "repo",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "random_seed": 1795493863,
+    "source_defines": [],
+    "env": {},
+    "parameters": {},
+    "plusargs": [],
+    "initial_state": null,
+    "sdf": null,
+    "sources": [
+      {
+        "path": "rtl/add8.v",
+        "scope": "repo",
+        "sha256": "634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139"
+      }
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.9.3.dev4596+gaca420899fc0",
+    "klt_git_commit": "aca420899fc0ad44114d56b88de4ea1275e035e0",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@aca420899fc0ad44114d56b88de4ea1275e035e0",
+    "klayout_version": "0.30.13",
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "role": "source",
+      "content_hash": "sha256:634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139"
+    },
+    "request_sha256": "6e0a4aab423e8e2a548fc857f842f4754434c760734387c08bce7d4d0d77799d"
+  }
+}
