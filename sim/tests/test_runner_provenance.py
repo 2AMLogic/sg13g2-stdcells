@@ -29,7 +29,6 @@ import tempfile
 import pytest
 
 from sim.characterize import runner
-from sim.characterize.request import DEFAULT_CORNER, SG13G2_INV_1
 from sim.harness.report import commit_stamp
 
 GIT = {"commit": "a" * 40, "short": "aaaaaaa", "branch": "main", "dirty": False}
@@ -303,33 +302,27 @@ def test_characterize_library_refuses_unpinnable_pdk_before_any_write(tmp_path, 
     assert not (tmp_path / "records").exists()
 
 
-# --- Scratch-dir hygiene of characterize_and_record (issue #149) ------------
+# --- Scratch-dir hygiene of characterize_library (issue #149) ---------------
 
-def klt_response():
-    """``klt characterize`` stdout shape (raw arc tables are ``{"values": ...}``)."""
-    d = record_data()
-    arcs = [{**a, **{t: {"values": a[t]} for t in runner.TABLES if t in a}}
-            for a in d["arcs"]]
-    return {
-        "corner": d["corner"],
-        "grid": d["axes"],
-        "units": d["units"],
-        "cells": [{"cell": {"name": d["cell"]}, "arcs": arcs,
-                   "leakage": d["leakage"],
-                   "simulation": {"engine": "ngspice", "engine_version": "47"}}],
-    }
+def write_config(tmp_path):
+    config = tmp_path / "layout" / "example_config.json"
+    config.parent.mkdir(exist_ok=True)
+    config.write_text(json.dumps(
+        {"process": {}, "cells": [{"name": "sg13g2_inv_1", "inputs": ["A"],
+                                   "outputs": {"Y": "!A"}}]}) + "\n")
+    return config
 
 
 def fake_klt_ok(cmd, capture_output=True, text=True, check=False):
     if "--version" in cmd:
         return subprocess.CompletedProcess(cmd, 0, stdout="klt 9.9.9-test", stderr="")
-    return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(klt_response()), stderr="")
+    return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(library_response()), stderr="")
 
 
 def scratch_names():
     """Every scratch dir of either prefix under the (hermetic) temp root."""
     root = Path(tempfile.gettempdir())
-    return sorted(p.name for pat in ("klt-characterize-*", "sg13g2-char-*")
+    return sorted(p.name for pat in ("klt-characterize-*", "sg13g2-char-*", "sg13g2-lib-*")
                   for p in root.glob(pat))
 
 
@@ -339,27 +332,31 @@ def hermetic_tempdir(tmp_path, monkeypatch):
     monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
 
 
-def test_characterize_and_record_leaves_no_scratch_dir(tmp_path, monkeypatch):
+def test_characterize_library_leaves_no_scratch_dir(tmp_path, monkeypatch):
     """Regression (issue #149): ``run_klt``'s ``workdir=None`` fallback leaked
     one ``/tmp/klt-characterize-*`` dir per call; the caller now owns a
     TemporaryDirectory and passes ``workdir=``."""
+    config = write_config(tmp_path)
     hermetic_tempdir(tmp_path, monkeypatch)
     monkeypatch.setattr(runner, "pdk_provenance", lambda pdk_dir: PDK)
+    monkeypatch.setattr(runner, "generate_netlists", lambda config, out: None)
     monkeypatch.setattr(runner.subprocess, "run", fake_klt_ok)
     monkeypatch.setattr(runner, "git_provenance", lambda repo_root: GIT)
     records_dir = tmp_path / "records"
 
     before = scratch_names()
-    path = runner.characterize_and_record(SG13G2_INV_1, DEFAULT_CORNER,
-                                          "/nonexistent-pdk", records_dir=records_dir)
+    path = runner.characterize_library(config, "tt", "/nonexistent-pdk",
+                                       lib_path=tmp_path / "out.lib",
+                                       records_dir=records_dir)
 
     assert scratch_names() == before
     assert list(records_dir.glob("*.md")) == [path]  # not vacuously green
 
 
-def test_characterize_and_record_failure_cleans_scratch_and_reports(tmp_path, monkeypatch):
+def test_characterize_library_failure_cleans_scratch_and_reports(tmp_path, monkeypatch):
     """The CharacterizeFailed path must also reap the scratch dir and keep
     carrying klt's output in the exception message."""
+    config = write_config(tmp_path)
     hermetic_tempdir(tmp_path, monkeypatch)
 
     def failing(cmd, capture_output=True, text=True, check=False):
@@ -370,12 +367,14 @@ def test_characterize_and_record_failure_cleans_scratch_and_reports(tmp_path, mo
 
     monkeypatch.setattr(runner.subprocess, "run", failing)
     monkeypatch.setattr(runner, "pdk_provenance", lambda pdk_dir: PDK)
+    monkeypatch.setattr(runner, "generate_netlists", lambda config, out: None)
     monkeypatch.setattr(runner, "git_provenance", lambda repo_root: GIT)
 
     before = scratch_names()
     with pytest.raises(runner.CharacterizeFailed) as excinfo:
-        runner.characterize_and_record(SG13G2_INV_1, DEFAULT_CORNER,
-                                       "/nonexistent-pdk", records_dir=tmp_path / "records")
+        runner.characterize_library(config, "tt", "/nonexistent-pdk",
+                                    lib_path=tmp_path / "out.lib",
+                                    records_dir=tmp_path / "records")
 
     assert "boom: missing cell arc" in str(excinfo.value)
     assert scratch_names() == before

@@ -17,7 +17,7 @@
         "role": "hygiene",
         "path": ".github/workflows/ci.yml",
         "passed": true,
-        "content_hash": "sha256:e362c2ca3e291e3808d193898e64846d067f7075ac6a6687af7b6b022c33f232"
+        "content_hash": "sha256:42495d4a48f73f78b123c2f54c3101f67136054c7d8df23803df30e625865301"
       },
       {
         "check": "present",
@@ -31,14 +31,14 @@
         "role": "hygiene",
         "path": "README.md",
         "passed": true,
-        "content_hash": "sha256:508ef07eff9eac2fee1b062eb4d4d10a72241a58222ab4305f356a621c710e39"
+        "content_hash": "sha256:00ae975fee0365d0d966a4f9bd9c590a86a2797674544534592976a90d23bf48"
       },
       {
         "check": "present",
         "role": "hygiene",
         "path": "check-ci.sh",
         "passed": true,
-        "content_hash": "sha256:8c15e96dea4e0bed23e176a580ba3229263558a949565b4f4cb3054f432bf666"
+        "content_hash": "sha256:e7b78415165bf5eaaf9c801cef74b673533df7549dbcb3161dd8a0faf5985f9e"
       },
       {
         "check": "command",
@@ -80,8 +80,8 @@
     "description": "Repo hygiene: the four repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. check-ci.sh is pinned because it holds the bytes of those three gates, so a weakening edit to a stage function fails the attestations stage until item 10 is re-minted. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
   },
   "provenance": {
-    "klt_version": "0.9.3.dev4118+gd740468abb98",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.9.3.dev4558+g8750382abcd8",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": null,
     "input": {

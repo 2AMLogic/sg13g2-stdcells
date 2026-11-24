@@ -2,8 +2,48 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-24
+
+- **PR #254**: fix: require ok status, routed geometry and array corners in evidence gate 4
+
 ### 2026-11-23
 
+- **PR #259**: docs: record as-built on-grid cell widths and row 10 implication
+- **Issue #244** (closed): Record the (columns + 2) cell-width cost of the row-4 grid phasing against row 10's area target
+- **PR #258**: docs: measure why buf and folded nand2/nor2 do not place, pin with a fixture
+- **PR #253**: ci: replay six-argument STA/FV evidence gate on the committed record
+- **Issue #189** (closed): CI never exercises the six-argument STA/FV evidence gate
+- **PR #250**: fix: require complete STA constraint_completeness in evidence gate 4
+- **Issue #247** (closed): flow/check-evidence.sh gate 4 does not check STA constraint_completeness
+- **PR #246**: docs(layout): document klt pin semantics and item 9 analog re-mint sequence
+- **Issue #243** (closed): item 9 analog klt pin churns: the attested envelope cannot be re-minted once the workers' klt rolls past pins.tools.klt
+- **PR #240**: feat(layout): place every pin label on the 420 nm routing grid
+- **Issue #225** (closed): layout: place the 15 off-grid pin labels on the 0.42 µm routing grid across the four shipped cells
+- **PR #238**: refactor(sim): remove single-cell characterization mode, one-mode CLI
+- **Issue #211** (closed): Remove bootstrap single-cell mode in sim/characterize: build_request, characterize_and_record and SG13G2_INV_1
+- **PR #226**: fix(manifests): check pinned-object elements of list evidence entries
+- **Issue #220** (closed): manifest-pin CI check skips list-shaped evidence entries, so the eight item-5 citation pins are unguarded in tool-free CI
+- **PR #242**: feat(manifests): content-pin check-ci.sh in item 10 hygiene inventory
+- **Issue #233** (closed): Consider content-pinning check-ci.sh in the T1 item 10 hygiene inventory
+- **PR #236**: docs(roadmap): cite rows 1/2 tests by name, not stale line numbers
+- **Issue #229** (closed): ROADMAP rows 1/2 cite stale test line numbers (test_gen_layouts.py:113,127,129,133)
+- **PR #234**: ci: run attestation checks on the merge tree before merge
+- **Issue #228** (closed): Attestation content-hash gate can go red on main from two green PRs (semantic merge conflict)
+- **PR #227**: test: check every pin label against the routing grid and record the off-grid labels
+- **Issue #221** (closed): spec row 4 (pin access on the routing grid) has no check and no tracking issue
+- **PR #224**: docs(sim): correct the item 5 timing tolerance rationale
+- **Issue #222** (closed): sim/item5/request.py's 2 % tolerance rationale quotes a stale worst-case drift (~0.03 %, not the recorded 0.058 %)
+- **PR #219**: refactor(manifests): route item10 audit checks through check-ci.sh stages
+- **Issue #218** (closed): Route manifests/inventories/item10.json checks through check-ci.sh instead of duplicating CI commands
+- **Issue #213** (closed): fix: re-attest item9.analog.attest.json after PR #199 updated design/gen_netlists.py
+- **PR #197**: feat(sim): grade T1 item 5 analog met with klt sim row-9 corner evidence
+- **Issue #180** (closed): T1 item 5 analog: commit klt sim corner evidence for the four generated cells with a declared spec-row set
+- **PR #195**: refactor: share one forced_strip_profile context manager between gen_controls and ForcedNotch
+- **Issue #192** (closed): Share the notch profile override between DRC controls and layout tests
+- **PR #191**: docs: link roadmap evidence grade to the committed signoff report
+- **Issue #188** (closed): Link the roadmap evidence grade to the committed signoff report
+- **PR #186**: feat: add multi-corner STA and functional-verification evidence to the add8 flow (T1 item 5 digital)
+- **Issue #175** (closed): T1 item 5 digital: add klt sta and klt functional-verification to the add8 flow and cite both
 - **PR #212**: docs: give the signoff-manifest and characterization tails their own headings in layout/README.md
 - **Issue #208** (closed): layout/README.md: the LVS-evidence section's tail outlines signoff-manifest and characterization records as part of the #42/#73 LVS result
 - **PR #207**: docs: give the recorded LVS result its own heading in layout/README.md

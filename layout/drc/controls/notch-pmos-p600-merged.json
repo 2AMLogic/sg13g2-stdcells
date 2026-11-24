@@ -63,6 +63,7 @@
       "gatpoly.separation.activ.1",
       "gatpoly.space.1",
       "gatpoly.width.1",
+      "metal1.enclosing.cont.1",
       "metal1.space.1",
       "metal1.width.1",
       "nwell.enclosing.nactiv.1",
@@ -85,17 +86,21 @@
     ],
     "rules_skipped": [
       "metal1.enclosing.via1.1",
+      "metal2.enclosing.via1.1",
       "metal2.enclosing.via2.1",
       "metal2.space.1",
       "metal2.width.1",
+      "metal3.enclosing.via2.1",
       "metal3.enclosing.via3.1",
       "metal3.space.1",
       "metal3.width.1",
+      "metal4.enclosing.via3.1",
       "metal4.enclosing.via4.1",
       "metal4.space.1",
       "metal4.width.1",
       "metal5.enclosing.mim.1",
       "metal5.enclosing.topvia1.1",
+      "metal5.enclosing.via4.1",
       "metal5.space.1",
       "metal5.width.1",
       "mim.enclosing.topvia1.1",
@@ -131,6 +136,7 @@
     "deck_scope": [
       "Act",
       "Cnt",
+      "Cont upper-landing containment (curated)",
       "Gat",
       "M1",
       "M2",
@@ -139,6 +145,7 @@
       "M5",
       "MIM",
       "NW",
+      "Offgrid",
       "TM1",
       "TM2",
       "TV1",
@@ -147,8 +154,11 @@
       "V2",
       "V3",
       "V4",
-      "pSD",
-      "x"
+      "Via1 upper-landing containment (curated)",
+      "Via2 upper-landing containment (curated)",
+      "Via3 upper-landing containment (curated)",
+      "Via4 upper-landing containment (curated)",
+      "pSD"
     ],
     "unmodeled_rules": [
       "LU.a",
@@ -179,6 +189,7 @@
       "gatpoly.separation.activ.1",
       "gatpoly.space.1",
       "gatpoly.width.1",
+      "metal1.enclosing.cont.1",
       "metal1.space.1",
       "metal1.width.1",
       "nwell.enclosing.nactiv.1",
@@ -206,6 +217,10 @@
         "reason": "no_applicable_geometry"
       },
       {
+        "id": "metal2.enclosing.via1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
         "id": "metal2.enclosing.via2.1",
         "reason": "no_applicable_geometry"
       },
@@ -218,6 +233,10 @@
         "reason": "no_applicable_geometry"
       },
       {
+        "id": "metal3.enclosing.via2.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
         "id": "metal3.enclosing.via3.1",
         "reason": "no_applicable_geometry"
       },
@@ -227,6 +246,10 @@
       },
       {
         "id": "metal3.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal4.enclosing.via3.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -247,6 +270,10 @@
       },
       {
         "id": "metal5.enclosing.topvia1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal5.enclosing.via4.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -343,20 +370,20 @@
     "nothing_checked_reasons": []
   },
   "provenance": {
-    "klt_version": "0.9.3.dev3+gd5d57daf9a14",
-    "klt_git_commit": "d5d57daf9a145961ea01f5f891e4d87c0d435807",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@d5d57daf9a145961ea01f5f891e4d87c0d435807",
-    "klayout_version": "0.30.13",
+    "klt_version": "0.9.3.dev4174+g85b21713e8c0",
+    "klt_git_commit": "85b21713e8c091699e4eb337463da4e259cd3b4c",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@85b21713e8c091699e4eb337463da4e259cd3b4c",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:cf6dfeadf75bd95bf89beb0a64e06ed43b65f6ff782df10ae200ea200a73d8e9",
-      "released": true
+      "content_hash": "sha256:e5459fe971c6c008d99bd59da48f6dc87cdb6d601ce7aabcc755fa134c19da20",
+      "released": false
     },
     "input": {
-      "content_hash": "sha256:2fe7bb1a8c8960e7c93a217b74cd8f63c449ec036e79f4f6543e1bc0e9535669",
+      "content_hash": "sha256:5409a33da05ff79a3d9585aea3b6ca7e08acab0309f14a2c7599ffdd7ab64771",
       "role": "layout"
     },
-    "klayout_version_mismatch": true
+    "klayout_version_mismatch": false
   }
 }

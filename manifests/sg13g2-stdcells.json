@@ -13,7 +13,7 @@
     "1.digital": "flow/records/20261104-df96543/synthesize.json",
     "2.analog": {
       "file": "manifests/envelopes/item2.analog.attest.json",
-      "content_hash": "sha256:aac8f95bb3bcc0b54f1d3b64a27466e61826bc050ceb48074840389e7a3e04c0"
+      "content_hash": "sha256:404f3d2b5d60a6ba18e788cceeb2dc1642e1ac51a6ea1b226b789c7807416fa2"
     },
     "2.digital": {
       "file": "flow/records/20261107-a1a4ec6/layout-attest.json",
@@ -52,7 +52,7 @@
     },
     "9.analog": {
       "file": "manifests/envelopes/item9.analog.attest.json",
-      "content_hash": "sha256:6fe2ceb19b29708e05ee25dc046d2894765cb7752e7f24cc47cf0599e14cf8c2"
+      "content_hash": "sha256:f44afd0eb384c0099a75029a54cfa10e5803f8ce4943271dae1a3d591336fa0b"
     },
     "9.digital": {
       "file": "manifests/envelopes/item9.digital.attest.json",
