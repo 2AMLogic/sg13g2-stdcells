@@ -87,9 +87,11 @@ One NMOS and one PMOS diffusion strip, Metal1 only. A device of F fingers (the
 alternating source and drain; the columns of one device are joined by a poly bridge
 below the NMOS diffusion (`poly_width_nm` tall, `poly_to_activ_nm` clear of it) and
 share one gate contact. A poly column crosses both strips, so the NMOS and PMOS
-device on one gate net get the same finger count, the larger of the two; the other
-is folded into that many fingers (same total width, which must divide evenly on
-`process.grid_nm`, default 10, else exit `3`). Cell width is `(columns + 2) *
+device on one gate net get the same finger count, the larger of the two --
+already reconciled by `design/gen_netlists.py` (`build` folds every device on a
+gate net to that gate's count, same total width, refusing a width with no equal
+split on `process.grid_nm`, default 10, else exit `3`), so the layout consumes
+the netlist's fingering as-is. Cell width is `(columns + 2) *
 gate_pitch_nm` plus one rule-derived gap per diffusion break, counting fingers.
 Each gap is rounded up to a whole number of gate pitches, so node columns after
 a break stay on the routing grid and a break cell's pins stay on the row-4 grid.
@@ -246,11 +248,10 @@ Outside that model the generator exits `3` naming the cell and the reason:
   would otherwise be drawn is exactly the split net the riser exists to
   avoid, so the refusal is the only other outcome).
 
-A failure message names the **netlist** finger width and the **drawn**
-(post-fold) one separately, because the fold divides a width that can be uniform
-in the netlist: `nor2_1`'s netlist is a uniform 500 nm and it is drawn as
-`2 x 250 nm`, so a message quoting only the drawn number sends the reader
-hunting for a width the netlist does not contain.
+A failure message names the device's fingered geometry once (`2 fingers of
+250 nm`): the netlist generator states the fold itself, so the netlist and the
+drawing cannot disagree on fingering -- there is no separate netlist width for
+the message to quote against the drawn one.
 
 #### What still blocks the AND/OR and AOI/OAI families
 

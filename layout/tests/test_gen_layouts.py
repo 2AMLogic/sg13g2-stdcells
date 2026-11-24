@@ -552,17 +552,34 @@ class MixedFingerWidths(unittest.TestCase):
             self.assertIn("x_nor2_1", r.stderr)
             self.assertFalse((pathlib.Path(d) / "gds").exists())
 
-    def test_failure_message_separates_netlist_and_drawn_width(self):
-        """The fold can divide a width that is uniform in the netlist, so a
-        message quoting one number sends the reader hunting for a width the
-        netlist does not contain (nor2's netlist is a uniform 500 nm)."""
+    def test_failure_message_names_one_fingered_geometry(self):
+        """The netlist generator states the fold itself (its `build` folds
+        devices on a gate net to the shared count), so the netlist and the
+        drawing cannot disagree on fingering and the message names one
+        geometry -- nor2's NMOS is 2 fingers of 250 nm in both (issue #272
+        dropped the layout-side fold that made the two differ)."""
         cell = {"name": "x_nor2_1", "family": "nor2", "drive": 1,
                 "inputs": ["A", "B"], "outputs": {"Y": "!(A+B)"}}
         with self.assertRaises(gl.PlaceError) as cm:
             gl.generate(self.mixed_cfg(cell))
         msg = str(cm.exception)
-        self.assertIn("netlist 500 nm", msg)
-        self.assertIn("drawn 2 x 250 nm", msg)
+        self.assertIn("2 fingers of 250 nm", msg)
+        self.assertNotIn("netlist 500 nm", msg)
+
+    def test_no_equal_split_names_the_gate_and_fingers(self):
+        """The divisibility refusal lives once, in the netlist generator: a
+        nor4's unit NMOS on gate A cannot share the gate's 4-finger split at
+        any width on this grid, and the failure names the gate and the split.
+        This is the scenario the demo config's removed `demo_nor4_1` encoded
+        (#267); no committed config reaches it."""
+        cell = {"name": "x_nor4_1", "family": "nor4", "drive": 1,
+                "inputs": ["A", "B", "C", "D"], "outputs": {"Y": "!(A+B+C+D)"}}
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(self.mixed_cfg(cell))
+        msg = str(cm.exception)
+        self.assertIn("x_nor4_1", msg)
+        self.assertIn("gate A", msg)
+        self.assertIn("4-finger split", msg)
 
     def test_implants_may_not_meet_in_the_channel(self):
         """Both implants grow `sd_enc_activ` into the channel, so a channel that
@@ -1126,15 +1143,8 @@ class FoldedSeriesInterleave(unittest.TestCase):
         holds: `_pairings` at every break budget, deduplicated."""
         c = gl.gn.build(cell, self.FIXTURE["process"])
         devs = [(i,) + d for i, d in enumerate(c.devices)]
-        fingers = {}
-        for d in devs:
-            fingers[d[3]] = max(fingers.get(d[3], 1), d[6])
-
-        def fold(d):
-            return d[:6] + (fingers[d[3]], d[6])
-
-        nd = [fold(d) for d in devs if d[1] == "n"]
-        pd = [fold(d) for d in devs if d[1] == "p"]
+        nd = [d for d in devs if d[1] == "n"]
+        pd = [d for d in devs if d[1] == "p"]
         out, seen = [], set()
         for budget in range(len(nd) + 1):
             cand = gl._pairings(nd, pd, budget, cap=300_000)

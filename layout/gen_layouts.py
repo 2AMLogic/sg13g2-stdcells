@@ -21,8 +21,9 @@ Placement model (deliberately small; anything outside it is a named failure):
     column per finger, diffusion shared between neighbouring devices; a device
     of F fingers is F adjacent columns alternating source/drain, joined by a
     poly bridge below the NMOS diffusion and given one gate contact. The NMOS
-    and PMOS device on one gate net are drawn with the same finger count (the
-    larger; a device with fewer netlist fingers is folded, same total width);
+    and PMOS device on one gate net carry the same finger count, already
+    reconciled by the netlist generator (the larger, same total width), so
+    the layout consumes the netlist's fingering as-is;
   * a strip may hold devices of different drawn finger widths: it is one merged
     polygon whose outer edge is fixed (the NMOS strip grows up, the PMOS strip
     grows down) and whose channel-facing edge steps at the device boundary. A
@@ -318,14 +319,13 @@ def _dev_at(order, devs_, cols_, c):
 
 
 def _dev_desc(d):
-    """A folded device's netlist geometry and its drawn geometry, both named.
+    """A device's fingered geometry, for failure messages.
 
-    The fold step can divide a width that is uniform in the netlist into fingers
-    that appear nowhere in it (a 500 nm 1-finger device folded to 2 fingers is
-    drawn as 2 x 250 nm), so a message quoting only one of the two sends the
-    reader looking for a number the netlist does not contain."""
-    return (f"{d[1].upper()}MOS on gate {d[3]} (netlist {d[5]} nm / {d[7]} "
-            f"finger{'' if d[7] == 1 else 's'} -> drawn {d[6]} x {d[5] // d[6]} nm)")
+    The netlist generator has already folded devices on a gate net to the
+    gate's shared finger count (design/gen_netlists.py), so the drawn
+    fingering is the netlist's own: one geometry, named once."""
+    return (f"{d[1].upper()}MOS on gate {d[3]} ({d[6]} finger{'' if d[6] == 1 else 's'} "
+            f"of {d[5] // d[6]} nm)")
 
 
 def _strip_profile(order, devs_, cols_):
@@ -396,24 +396,15 @@ def layout_cell(cell, proc, lay):
     R, P = lay["rules"], lay["gate_pitch_nm"]
     H = lay["row_height_nm"]
     c = gn.build(cell, proc)
+    # Finger counts come folded from the netlist generator: a poly column
+    # crosses both strips, so gn.build has already reconciled the NMOS and
+    # PMOS device on one gate net to the gate's shared count (same total
+    # width; a width with no equal split on the grid is refused there, naming
+    # the gate -- the one divisibility error).
+    grid = gn.grid_nm(proc)
     devs = [(i,) + d for i, d in enumerate(c.devices)]  # (i, kind, drain, gate, source, w, ng)
     ndevs = [(i, k, d, g, s, w, ng) for (i, k, d, g, s, w, ng) in devs if k == "n"]
     pdevs = [(i, k, d, g, s, w, ng) for (i, k, d, g, s, w, ng) in devs if k == "p"]
-    # Fingers per gate net: a poly column crosses both strips, so the NMOS and
-    # PMOS device on one gate net are drawn with the same finger count, the larger
-    # of the two. A device with fewer netlist fingers is folded (same total W).
-    grid = gn.grid_nm(proc)
-    fingers = {}
-    for d in devs:
-        fingers[d[3]] = max(fingers.get(d[3], 1), d[6])
-
-    def fold(d):
-        k = fingers[d[3]]
-        if d[5] % (k * grid):
-            raise PlaceError(f"{d[1]}MOS device of {d[5]} nm on gate {d[3]} cannot be drawn as {k} fingers on the {grid} nm grid")
-        return d[:6] + (k, d[6])  # drawn finger count, then the netlist one (for messages)
-
-    ndevs, pdevs = [fold(d) for d in ndevs], [fold(d) for d in pdevs]
     nord, nbrk, pord, pbrk = order_strips(ndevs, pdevs)
     cols = [(j, k) for j, (i, _, _) in enumerate(nord) for k in range(ndevs[i][6])]  # column -> (position in order, finger)
     pcols = [(j, k) for j, (i, _, _) in enumerate(pord) for k in range(pdevs[i][6])]
