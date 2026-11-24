@@ -340,10 +340,37 @@ Findings, in the order the issue asked for:
   crossing (not measured with `klt lvs`).
   The `n1`-skip the issue suggested needs adjacent fingers to share the
   diffusion, which only a one-finger-per-device stack does.
+  **Re-measured 2026-11-24 (issue #257), after the diffusion break (#169)
+  merged: the break does not lift these rows.** The binding arrangement is
+  not the three-nodes-on-one-strip count but the fold itself: a folded
+  series device alternates its two terminals on successive boundaries
+  (`l r l ...`), so `n1` and `Y` interleave *inside the series device's own
+  columns*, and a break lands between devices, where neither net is. Break
+  pairings do drop `n1` to two islands -- and still cross: whichever net
+  takes the upper channel track, the other's far-side stubs cross its band
+  inside that span. Measured by exhausting the model's own pairing search
+  (`_pairings`: every ordering, orientation and break position) crossed with
+  both track assignments (the second reached by renaming `n1` ahead of `Y`;
+  neither net is a gate, so the alphabetical track order is the only
+  difference), with `layout_cell` as the oracle -- the numbers are held by
+  `test_gen_layouts.py::FoldedSeriesInterleave`: at the fixture geometry
+  (420 nm pitch, 3360 nm row, `channel_tracks` 2 and 3) all 64 candidates
+  per cell exit 3, 16 of each nand2's on the `Metal1 of Y overlaps n1`
+  crossing itself and the rest -- and all 64 of each nor2's -- earlier on
+  the gate-contact spot the same interleave crowds; at a synthetic 1260 nm
+  pitch, where the 300 nm gate pads fit beside the stripes, every candidate
+  of all four cells dies on the overlap, and taller rows (4200, 4620 nm)
+  lift nothing: the crossing, not the pad, is the pitch- and
+  row-height-independent limit.
 * **What would place them** (each is a change to the model, not a tuning):
-  interleaved fingers with a net-aware LVS reference, a diffusion break
-  (#169), gate contacts outside the channel, or a second routing layer.
-  Follow-up issues: #256 (buffer input pad), #257 (folded series stack).
+  interleaved fingers with a net-aware LVS reference, gate contacts outside
+  the channel (for the folded series stack, measured: at the 1260 nm pitch
+  above the pads fit and the crossing still fires, so this alone no longer
+  places nand2/nor2), or a second routing layer (outside the ratified
+  Metal1-only rows; a spec decision record). The diffusion break (#169,
+  merged) is measured off this list for nand2/nor2: it cannot land inside a
+  device. Follow-up issues: #256 (buffer input pad), #257 (the
+  re-measurement above).
 
 ### Pin placement on the routing grid (issue #225)
 
