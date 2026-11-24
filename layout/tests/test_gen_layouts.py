@@ -592,20 +592,10 @@ class DiffusionBreaks(unittest.TestCase):
              "inputs": ["A1", "A2", "B1", "B2"], "outputs": {"X": "!((A1*A2)+(B1*B2))"}}
 
     def force_break(self, strip="p", at=1):
-        """Patch order_strips to force one diffusion break into the pairing
-        the model picks, keeping everything else about it."""
-        real = gl.order_strips
-
-        def patched(ndevs, pdevs):
-            nord, nbrk, pord, pbrk = real(ndevs, pdevs)
-            if strip == "p":
-                pbrk = tuple(sorted(set(pbrk) | {at}))
-            else:
-                nbrk = tuple(sorted(set(nbrk) | {at}))
-            return nord, nbrk, pord, pbrk
-
-        gl.order_strips = patched
-        self.addCleanup(setattr, gl, "order_strips", real)
+        """The shared forcing (`gen_controls.forced_break`), entered for the
+        rest of the test: one diffusion break forced into the pairing the
+        model picks, keeping everything else about it."""
+        self.enterContext(gc.forced_break(strip, at))
 
     def strip_runs_at(self, S, layer, edge_y, i):
         return sorted((b for b in S.boxes if b[0] == layer and b[i + 1] == edge_y), key=lambda b: b[1])
@@ -686,18 +676,8 @@ class DiffusionBreaks(unittest.TestCase):
 
     def test_break_output_is_byte_deterministic(self):
         def gen():
-            cfg = copy.deepcopy(CFG)
-            real = gl.order_strips
-
-            def patched(ndevs, pdevs):
-                nord, nbrk, pord, pbrk = real(ndevs, pdevs)
-                return nord, nbrk, pord, tuple(sorted(set(pbrk) | {1}))
-
-            gl.order_strips = patched
-            try:
-                return gl.generate(cfg)
-            finally:
-                gl.order_strips = real
+            with gc.forced_break("p", 1):
+                return gl.generate(copy.deepcopy(CFG))
         a, b = gen(), gen()
         self.assertEqual(a, b)
         self.assertTrue(read_gds_boxes(a["sg13g2_nand2_1.gds"]))
