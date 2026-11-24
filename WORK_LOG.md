@@ -4,7 +4,21 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-24
 
+- **PR #263**: docs: name both flow-record variables in the CI section
+- **Issue #264** (closed): Remove unused extra/notes slot and as_dict from sim/harness BaseExtensions
+- **Issue #260** (closed): Share the simulation report setup in manifest list-pin tests
+- **PR #262**: refactor(manifests): share report setup in list-pin tests via item5 fixture
+- **Issue #255** (closed): README names only FLOW_RECORD, but CI now gates on two flow records
 - **PR #254**: fix: require ok status, routed geometry and array corners in evidence gate 4
+- **Issue #190** (closed): A degraded klt sta envelope still grades met: neither the evidence gate nor the signoff grader pins status or geometry_source
+- **PR #252**: docs: add add8 baseline characterization report for T1 item 8 digital
+- **PR #251**: refactor(sim): delegate item-5 function parse/eval to design.gen_netlists
+- **Issue #239** (closed): Deduplicate boolean function parser/evaluator in sim/item5/request.py using design/gen_netlists.py
+- **PR #248**: feat(sim): record klt pex post-layout deltas as findings for the four cells
+- **PR #241**: test: assert merge.treeChecks entries match check-ci.sh stage commands
+- **Issue #237** (closed): merge.treeChecks and check-ci.sh stage commands are kept in step only by a comment
+- **PR #204**: layout: place multi-chain strips via rule-derived diffusion breaks
+- **Issue #169** (closed): layout: place cells that need a diffusion break in gen_layouts.py (XOR/mux, AOI/OAI, AND/OR, even-finger series stacks)
 
 ### 2026-11-23
 
