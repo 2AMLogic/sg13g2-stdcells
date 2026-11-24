@@ -52,7 +52,7 @@
     },
     "9.analog": {
       "file": "manifests/envelopes/item9.analog.attest.json",
-      "content_hash": "sha256:1a89872f56b9596661105b45ad834a37d8ae235a1cc68966e4a3b9389d32f81d"
+      "content_hash": "sha256:f44afd0eb384c0099a75029a54cfa10e5803f8ce4943271dae1a3d591336fa0b"
     },
     "9.digital": {
       "file": "manifests/envelopes/item9.digital.attest.json",
