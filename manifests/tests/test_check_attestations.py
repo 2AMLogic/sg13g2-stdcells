@@ -551,7 +551,7 @@ def test_manifest_mixed_list_strings_and_pinned_objects(item5_reports, capsys):
         {"file": "sim/records/a.report.json", "content_hash": "deadbeef"},
         42,
         None,
-        ["nested"],
+        [["too deep"]],
     ],
 )
 def test_manifest_list_malformed_element_exits_2_not_traceback(
@@ -563,6 +563,24 @@ def test_manifest_list_malformed_element_exits_2_not_traceback(
     # traceback.
     assert run_item5_manifest(item5_reports, [element]) == 2
     assert 'evidence["5.analog"][0]' in capsys.readouterr().err
+
+
+def test_manifest_nested_group_pins_checked_and_counted(item5_reports, capsys):
+    # Item 11's analog evidence is a list of cited groups, each a list of a
+    # pinned record plus bare paths. A group's pinned object is checked and
+    # counted; its bare strings are locations without a pin.
+    group = [
+        {"file": "sim/records/a.report.json", "content_hash": sha(b"a netlist")},
+        "sim/records/b.report.json",
+    ]
+    assert run_item5_manifest(item5_reports, [group]) == 0
+    assert "1 evidence pins" in capsys.readouterr().out
+
+
+def test_manifest_nested_group_wrong_pin_fails_naming_group(item5_reports, capsys):
+    group = [{"file": "sim/records/a.report.json", "content_hash": sha(b"x")}]
+    assert run_item5_manifest(item5_reports, [group]) == 1
+    assert 'evidence["5.analog"][0][0]' in capsys.readouterr().err
 
 
 def test_manifest_empty_or_string_only_list_still_pins_nothing(tmp_path, capsys):

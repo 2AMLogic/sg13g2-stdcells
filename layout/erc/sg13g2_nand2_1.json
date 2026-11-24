@@ -4,6 +4,7 @@
     "path": "layout/gds/sg13g2_nand2_1.gds",
     "scope": "repo"
   },
+  "top": "sg13g2_nand2_1",
   "spec": "layout/erc-spec.json",
   "pdk": null,
   "findings_only": false,
@@ -13,34 +14,6 @@
   "gates": [
     {
       "gate_id": "gate0",
-      "net": "A",
-      "gate_area_um2": 0.234,
-      "antenna_verdict": "unchecked",
-      "levels": [
-        {
-          "layer": "GatPoly",
-          "step_area_um2": 0.4501,
-          "cumulative_area_um2": 0.4501,
-          "antenna_ratio": 1.923504,
-          "antenna_ratio_max": null,
-          "antenna_ratio_source": null,
-          "verdict": "unchecked",
-          "remedy": null
-        },
-        {
-          "layer": "Metal1",
-          "step_area_um2": 0.0256,
-          "cumulative_area_um2": 0.4757,
-          "antenna_ratio": 2.032906,
-          "antenna_ratio_max": null,
-          "antenna_ratio_source": null,
-          "verdict": "unchecked",
-          "remedy": null
-        }
-      ]
-    },
-    {
-      "gate_id": "gate1",
       "net": "B",
       "gate_area_um2": 0.234,
       "antenna_verdict": "unchecked",
@@ -57,9 +30,37 @@
         },
         {
           "layer": "Metal1",
-          "step_area_um2": 0.0256,
-          "cumulative_area_um2": 0.4757,
-          "antenna_ratio": 2.032906,
+          "step_area_um2": 0.0528,
+          "cumulative_area_um2": 0.5029,
+          "antenna_ratio": 2.149145,
+          "antenna_ratio_max": null,
+          "antenna_ratio_source": null,
+          "verdict": "unchecked",
+          "remedy": null
+        }
+      ]
+    },
+    {
+      "gate_id": "gate1",
+      "net": "A",
+      "gate_area_um2": 0.234,
+      "antenna_verdict": "unchecked",
+      "levels": [
+        {
+          "layer": "GatPoly",
+          "step_area_um2": 0.4501,
+          "cumulative_area_um2": 0.4501,
+          "antenna_ratio": 1.923504,
+          "antenna_ratio_max": null,
+          "antenna_ratio_source": null,
+          "verdict": "unchecked",
+          "remedy": null
+        },
+        {
+          "layer": "Metal1",
+          "step_area_um2": 0.0528,
+          "cumulative_area_um2": 0.5029,
+          "antenna_ratio": 2.149145,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -155,18 +156,18 @@
   },
   "ties_disclosure": null,
   "provenance": {
-    "klt_version": "0.9.3.dev2575+g6bd18bbc8637",
-    "klt_git_commit": "6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.9.3.dev5253+gdb1e2f17146d",
+    "klt_git_commit": "db1e2f17146dc834ec4aab351ef9ffd8c716d36c",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@db1e2f17146dc834ec4aab351ef9ffd8c716d36c",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:eaaf298957eeced674e4030635c66ba6bdee98adde15fe36203ba047fd7b0669",
+      "content_hash": "sha256:b2634caf6d96c00579ce3340e47a24b84d8671937d9886ff3aa92f7cdc539ea8",
       "released": false
     },
     "input": {
-      "content_hash": "sha256:9bef3c012a6e531bb37e80305b9e740dbf4cee06c2febf71d81b419461c0f303",
+      "content_hash": "sha256:12f02067276b8d3c9d583ceaf18c7b76e1e459371aa28256cd85dd01796d5868",
       "role": "layout"
     },
     "spec": {
@@ -191,7 +192,7 @@
       },
       {
         "kind": "well",
-        "id": "-250,1850,1510,3750",
+        "id": "-40,1850,1720,3750",
         "ties": [
           "nwell_tap"
         ]

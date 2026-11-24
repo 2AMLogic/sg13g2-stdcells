@@ -4,6 +4,7 @@
     "path": "layout/gds/sg13g2_inv_4.gds",
     "scope": "repo"
   },
+  "top": "sg13g2_inv_4",
   "spec": "layout/erc-spec.json",
   "pdk": null,
   "findings_only": false,
@@ -29,9 +30,9 @@
         },
         {
           "layer": "Metal1",
-          "step_area_um2": 0.0256,
-          "cumulative_area_um2": 1.738,
-          "antenna_ratio": 2.571006,
+          "step_area_um2": 0.0528,
+          "cumulative_area_um2": 1.7652,
+          "antenna_ratio": 2.611243,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -118,18 +119,18 @@
   },
   "ties_disclosure": null,
   "provenance": {
-    "klt_version": "0.9.3.dev2575+g6bd18bbc8637",
-    "klt_git_commit": "6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.9.3.dev5253+gdb1e2f17146d",
+    "klt_git_commit": "db1e2f17146dc834ec4aab351ef9ffd8c716d36c",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@db1e2f17146dc834ec4aab351ef9ffd8c716d36c",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:eaaf298957eeced674e4030635c66ba6bdee98adde15fe36203ba047fd7b0669",
+      "content_hash": "sha256:b2634caf6d96c00579ce3340e47a24b84d8671937d9886ff3aa92f7cdc539ea8",
       "released": false
     },
     "input": {
-      "content_hash": "sha256:e6d2fc1fb4b6a0a0f8010b1b32308fba9dbeb68ca4453deb41626049be72903b",
+      "content_hash": "sha256:9ef5817bbba510eab7091681449a5b6bf1e4df852a4d65a85f2265bdd03bd448",
       "role": "layout"
     },
     "spec": {
@@ -154,7 +155,7 @@
       },
       {
         "kind": "well",
-        "id": "-250,1850,2350,3750",
+        "id": "-40,1850,2560,3750",
         "ties": [
           "nwell_tap"
         ]

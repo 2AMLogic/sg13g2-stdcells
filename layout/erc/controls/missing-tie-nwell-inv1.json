@@ -4,6 +4,7 @@
     "path": "layout/erc/controls/missing-tie-nwell-inv1.gds",
     "scope": "repo"
   },
+  "top": "missing_tie_nwell_inv1",
   "spec": "layout/erc-spec.json",
   "pdk": null,
   "findings_only": false,
@@ -29,9 +30,9 @@
         },
         {
           "layer": "Metal1",
-          "step_area_um2": 0.0256,
-          "cumulative_area_um2": 0.4757,
-          "antenna_ratio": 2.814793,
+          "step_area_um2": 0.0528,
+          "cumulative_area_um2": 0.5029,
+          "antenna_ratio": 2.97574,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -71,9 +72,9 @@
       "gate_id": null,
       "layer": "nwell_tap",
       "bbox": {
-        "left": -250,
+        "left": -40,
         "bottom": 1850,
-        "right": 1090,
+        "right": 1300,
         "top": 3750
       },
       "islands": null
@@ -134,18 +135,18 @@
   },
   "ties_disclosure": null,
   "provenance": {
-    "klt_version": "0.9.3.dev2575+g6bd18bbc8637",
-    "klt_git_commit": "6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.9.3.dev5253+gdb1e2f17146d",
+    "klt_git_commit": "db1e2f17146dc834ec4aab351ef9ffd8c716d36c",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@db1e2f17146dc834ec4aab351ef9ffd8c716d36c",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:eaaf298957eeced674e4030635c66ba6bdee98adde15fe36203ba047fd7b0669",
+      "content_hash": "sha256:b2634caf6d96c00579ce3340e47a24b84d8671937d9886ff3aa92f7cdc539ea8",
       "released": false
     },
     "input": {
-      "content_hash": "sha256:bdae034becd84197d5c19eeec7c5938951c71de006c0c8648e97596ad5c6abc2",
+      "content_hash": "sha256:6e97152c48c04915602a50eb15fc629f2cf3780a91b39d416a4e596005bfb2aa",
       "role": "layout"
     },
     "spec": {

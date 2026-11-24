@@ -82,9 +82,9 @@ T1: 16/22 items met, 1 not_applicable
 [UNMET] T1 #8 [digital] Characterization report
         reason: no_evidence
 [MET  ] T1 #9 [analog] Testbenches shipped
-        cite: manifests/envelopes/item9.analog.attest.json (kind=generic, status=pass, content_hash=sha256:1a89872f56b9596661105b45ad834a37d8ae235a1cc68966e4a3b9389d32f81d, exit_status=0)
+        cite: manifests/envelopes/item9.analog.attest.json (kind=generic, status=pass, content_hash=sha256:f44afd0eb384c0099a75029a54cfa10e5803f8ce4943271dae1a3d591336fa0b, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
-        bound: T1 item #9 -> manifests/inventories/item9.analog.json (content_hash=sha256:1a89872f56b9596661105b45ad834a37d8ae235a1cc68966e4a3b9389d32f81d)
+        bound: T1 item #9 -> manifests/inventories/item9.analog.json (content_hash=sha256:f44afd0eb384c0099a75029a54cfa10e5803f8ce4943271dae1a3d591336fa0b)
 [MET  ] T1 #9 [digital] Testbenches shipped
         cite: manifests/envelopes/item9.digital.attest.json (kind=generic, status=pass, content_hash=sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
@@ -99,7 +99,7 @@ T1: 16/22 items met, 1 not_applicable
         bound: T1 item #10 -> manifests/inventories/item10.json (content_hash=sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e)
 [MET  ] T1 #11 [analog] Power delivery (structural)
         groups: 4/4 cited groups graded met
-        cite: layout/erc/sg13g2_inv_1.json (kind=erc, status=not_checked, content_hash=sha256:91c226f6336a7fb8ef2245c00f25f297c098d8368a445de84fe7df8c1bd95dc0, exit_status=0)
+        cite: layout/erc/sg13g2_inv_1.json (kind=erc, status=not_checked, content_hash=sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
         also: layout/lvs/sg13g2_inv_1.json (kind=lvs, status=match)
         power delivery: supplies=VDD, VSS, pdn=no (no P&R cited), power_connectivity=unchecked
@@ -876,5 +876,5 @@ spec rows (1):
         from: sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.timing.report.json (B_s0p4_l0p1_in_slew_rise)
         from: sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.timing.report.json (B_s0p4_l0p1_in_slew_fall)
 
-source: docs/design-evidence-tiers.md (content_hash=sha256:2bc576233450be5e650805a4e5fda8567b7c6120dee5aff3fb8732d5f7a1b4f6)
-build: klt 0.9.3.dev4224+gcc049d4d9637
+source: docs/design-evidence-tiers.md (content_hash=sha256:589f39656b16d78d72504caff9088eddeed49136e2513d074cae1bc95e53837c)
+build: klt 0.9.3.dev5253+gdb1e2f17146d
