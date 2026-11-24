@@ -51,7 +51,12 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
 - **LVS (row 8): met.** All four `layout/lvs/*.json` are `status: match` with
   `error_count: 0`, closed by the well and substrate taps (#79). The rung
   above is not reached: `environment.extracted_netlist` is `null` in all four
-  reports and T1 #7 is `[UNMET]`, so no extracted view has been verified.
+  reports and T1 #7 is `[UNMET]` (no `7.analog` citation). `klt pex` was run
+  on all four cells with the item 5 benches
+  (`sim/item7/records/20261123-202000-5e308b6.md`): `sg13g2_inv_1/2/4` graded
+  with failing delta rows against the 2 % limits (25 / 50 / 81 of 152), bodies
+  all biased; `sg13g2_nand2_1` timing hit the 120 s cap, tracked as
+  2AMLogic/klayout-tools#7646. Recorded as findings, not cited.
 - **Liberty (row 9).** `views/sg13g2_stdcells_tt_1p20v_25c.lib` holds the four
   cells at TT / 1.20 V / 25 C, emitted by `klt characterize` (#40), with a
   provenance sidecar and the record `sim/characterize/records/20261115-220740-13dc481.md`.
@@ -185,7 +190,8 @@ each item's own done-criterion, not against whether its issue closed.
   different topology?
 - **Rows 10-12 benchmark** against the re-characterized baseline. Which
   combinational designs beyond `add8`? The spec leaves that to the benchmark issue.
-- **T1 items 6-7** (statistical evidence, post-layout verification). What
+- **T1 items 6-7** (statistical evidence, post-layout verification; item 7
+  attempted in #181, see the LVS row above). What
   does each accept as evidence for a cell library rather than a block?
   Item 5 analog left this list: its row set is row 9, covered by the
   `sim/item5/` envelopes (#180); item 5 digital is separate and still

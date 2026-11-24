@@ -37,6 +37,8 @@ from dataclasses import dataclass, field
 from itertools import product
 from pathlib import Path
 
+from design.gen_netlists import evaluate as _gn_evaluate, parse as _gn_parse
+
 from ..characterize.request import MODEL_LIB, OSDI_PRELOAD, CellSpec
 
 #: The one spec row this item-5 analog evidence set grades: row 9, "Liberty
@@ -194,84 +196,27 @@ def parse_liberty(text: str) -> LibertyView:
 
 # ------------------------------------------------- function parse/eval
 
-_TOKEN_RE = re.compile(r"\s*(?:([A-Za-z_][A-Za-z0-9_]*)|(.))")
-_OPS = {"*": "and", "+": "or", "^": "xor"}
-
-
 def parse_function(expr: str):
     """Parse a config/Liberty boolean function over the gen_netlists grammar.
 
-    Same strict grammar ``design/gen_netlists.py`` parses (``!`` ``*`` ``^``
-    ``+``; operators may not be mixed at one nesting level without
+    Delegates to ``design.gen_netlists.parse`` (the one grammar: ``!`` ``*``
+    ``^`` ``+``; operators may not be mixed at one nesting level without
     parentheses), so a function string means the same tree here as there.
+    Parse failures are re-raised as :class:`RequestError`.
     """
-    toks = [(m.group(1) or m.group(2),) for m in _TOKEN_RE.finditer(expr)
-            if (m.group(1) or (m.group(2) and m.group(2).strip()))]
-    pos = [0]
-
-    def peek():
-        return toks[pos[0]][0] if pos[0] < len(toks) else None
-
-    def take(kind):
-        if peek() != kind:
-            raise RequestError(f"expected {kind!r} in {expr!r}")
-        pos[0] += 1
-        return toks[pos[0] - 1][0]
-
-    def identifier():
-        kind = peek()
-        if not (kind and kind.isidentifier()):
-            raise RequestError(f"expected an identifier in {expr!r}")
-        return take(kind)
-
-    def atom():
-        if peek() == "!":
-            take("!")
-            return ("not", atom())
-        if peek() == "(":
-            take("(")
-            e = chain()
-            take(")")
-            return e
-        return ("var", identifier())
-
-    def chain():
-        first = atom()
-        sym = peek()
-        if sym not in _OPS:
-            return first
-        items = [first]
-        while peek() == sym:
-            take(sym)
-            items.append(atom())
-        if peek() in _OPS:
-            raise RequestError(f"mixed operators without parentheses in {expr!r}")
-        return (_OPS[sym], items)
-
-    e = chain()
-    if pos[0] != len(toks):
-        raise RequestError(f"trailing input in {expr!r}")
-    return e
+    try:
+        return _gn_parse(expr)
+    except ValueError as exc:
+        raise RequestError(str(exc)) from exc
 
 
 def evaluate_function(node, env: dict) -> int:
     """Evaluate a parsed function tree over ``{pin: 0|1}``."""
-    kind = node[0]
-    if kind == "var":
-        try:
-            return int(bool(env[node[1]]))
-        except KeyError as exc:
-            raise RequestError(f"function references unknown pin {node[1]!r}") from exc
-    if kind == "not":
-        return 1 - evaluate_function(node[1], env)
-    if kind == "and":
-        return int(all(evaluate_function(x, env) for x in node[1]))
-    if kind == "or":
-        return int(any(evaluate_function(x, env) for x in node[1]))
-    r = 0
-    for x in node[1]:
-        r ^= evaluate_function(x, env)
-    return r
+    try:
+        return _gn_evaluate(node, {k: int(bool(v)) for k, v in env.items()})
+    except KeyError as exc:
+        raise RequestError(
+            f"function references unknown pin {exc.args[0]!r}") from exc
 
 
 # ----------------------------------------------------------------- arcs
