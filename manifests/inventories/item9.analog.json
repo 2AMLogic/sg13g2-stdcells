@@ -31,7 +31,7 @@
       "revision": "5cccb161f7492697cfa52eb14dc03beb00bdca9e"
     },
     "tools": {
-      "klt": "0.9.3.dev4954+g093d4f7a60a9",
+      "klt": "0.9.3.dev5425+gfcb95f422140",
       "ngspice": "47"
     }
   }
