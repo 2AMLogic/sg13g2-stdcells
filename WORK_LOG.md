@@ -4,6 +4,8 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-24
 
+- **PR #281**: chore(layout): drop unread pin fields, append correction paragraph
+- **Issue #62** (closed): Remove two unused layout toolchain fields and append a correction to the bootstrap note
 - **PR #214**: fix(sim): make run_klt workdir required, drop leaking mkdtemp fallback
 - **Issue #202** (closed): Remove leaking workdir=None mkdtemp fallback in sim/characterize/runner.py:run_klt and pass tmp_path from test_runner_batch_flags.py
 - **PR #278**: test: add substrate-tap ERC negative control (missing-tie-substrate-inv1)
