@@ -429,76 +429,55 @@ def write_report(root: Path, rel: str, envelope: dict) -> None:
     p.write_text(json.dumps(envelope, indent=1) + "\n")
 
 
-def test_manifest_list_of_pinned_objects_checked_and_counted(tmp_path, capsys):
+@pytest.fixture
+def item5_reports(tmp_path):
+    root, _ = make_repo(
+        tmp_path,
+        {"sim/records/a.spice": b"a netlist", "sim/records/b.spice": b"b netlist"},
+        {},
+    )
+    for name, content in (("a", b"a netlist"), ("b", b"b netlist")):
+        write_report(
+            root,
+            f"sim/records/{name}.report.json",
+            netlist_report_envelope(f"sim/records/{name}.spice", content),
+        )
+    return root
+
+
+def run_item5_manifest(root, pins):
+    manifest = {"block": "fake", "evidence": {"5.analog": pins}}
+    return run_manifest(root, write_manifest(root, manifest))
+
+
+def test_manifest_list_of_pinned_objects_checked_and_counted(item5_reports, capsys):
     # #220: item-5 analog evidence is a list of {file, content_hash, rows}
     # citations. Each element pins the provenance.input.content_hash of the
     # report envelope it names -- the same comparison a top-level object
     # pin gets -- and each must be checked and counted instead of the whole
     # list being skipped.
-    root, _ = make_repo(
-        tmp_path,
-        {"sim/records/a.spice": b"a netlist", "sim/records/b.spice": b"b netlist"},
-        {},
-    )
-    write_report(
-        root,
-        "sim/records/a.report.json",
-        netlist_report_envelope("sim/records/a.spice", b"a netlist"),
-    )
-    write_report(
-        root,
-        "sim/records/b.report.json",
-        netlist_report_envelope("sim/records/b.spice", b"b netlist"),
-    )
-    manifest = write_manifest(
-        root,
-        {
-            "block": "fake",
-            "evidence": {
-                "5.analog": [
-                    {"file": "sim/records/a.report.json",
-                     "content_hash": sha(b"a netlist"), "rows": ["9"]},
-                    {"file": "sim/records/b.report.json",
-                     "content_hash": sha(b"b netlist"), "rows": ["9"]},
-                ]
-            },
-        },
-    )
-    assert run_manifest(root, manifest) == 0
+    assert run_item5_manifest(
+        item5_reports,
+        [
+            {"file": "sim/records/a.report.json",
+             "content_hash": sha(b"a netlist"), "rows": ["9"]},
+            {"file": "sim/records/b.report.json",
+             "content_hash": sha(b"b netlist"), "rows": ["9"]},
+        ],
+    ) == 0
     assert "2 evidence pins" in capsys.readouterr().out
 
 
-def test_manifest_list_of_pinned_objects_wrong_pin_fails(tmp_path, capsys):
-    root, _ = make_repo(
-        tmp_path,
-        {"sim/records/a.spice": b"a netlist", "sim/records/b.spice": b"b netlist"},
-        {},
-    )
-    write_report(
-        root,
-        "sim/records/a.report.json",
-        netlist_report_envelope("sim/records/a.spice", b"a netlist"),
-    )
-    write_report(
-        root,
-        "sim/records/b.report.json",
-        netlist_report_envelope("sim/records/b.spice", b"b netlist"),
-    )
-    manifest = write_manifest(
-        root,
-        {
-            "block": "fake",
-            "evidence": {
-                "5.analog": [
-                    {"file": "sim/records/a.report.json",
-                     "content_hash": sha(b"a netlist")},
-                    {"file": "sim/records/b.report.json",
-                     "content_hash": sha(b"tampered")},
-                ]
-            },
-        },
-    )
-    assert run_manifest(root, manifest) == 1
+def test_manifest_list_of_pinned_objects_wrong_pin_fails(item5_reports, capsys):
+    assert run_item5_manifest(
+        item5_reports,
+        [
+            {"file": "sim/records/a.report.json",
+             "content_hash": sha(b"a netlist")},
+            {"file": "sim/records/b.report.json",
+             "content_hash": sha(b"tampered")},
+        ],
+    ) == 1
     err = capsys.readouterr().err
     assert 'evidence["5.analog"][1]' in err
     assert "sim/records/b.report.json" in err
@@ -550,30 +529,18 @@ def test_manifest_list_pinned_object_naming_non_json_report_fails(
     assert "not valid JSON" in err
 
 
-def test_manifest_mixed_list_strings_and_pinned_objects(tmp_path, capsys):
+def test_manifest_mixed_list_strings_and_pinned_objects(item5_reports, capsys):
     # A list may mix bare path strings with pinned objects: element by
     # element, strings are skipped as locations without a pin, objects are
     # checked (#220).
-    root, _ = make_repo(tmp_path, {"sim/records/a.spice": b"a netlist"}, {})
-    write_report(
-        root,
-        "sim/records/a.report.json",
-        netlist_report_envelope("sim/records/a.spice", b"a netlist"),
-    )
-    manifest = write_manifest(
-        root,
-        {
-            "block": "fake",
-            "evidence": {
-                "5.analog": [
-                    "sim/records/old-run/a.report.json",
-                    {"file": "sim/records/a.report.json",
-                     "content_hash": sha(b"a netlist")},
-                ]
-            },
-        },
-    )
-    assert run_manifest(root, manifest) == 0
+    assert run_item5_manifest(
+        item5_reports,
+        [
+            "sim/records/old-run/a.report.json",
+            {"file": "sim/records/a.report.json",
+             "content_hash": sha(b"a netlist")},
+        ],
+    ) == 0
     assert "1 evidence pins" in capsys.readouterr().out
 
 
@@ -588,23 +555,13 @@ def test_manifest_mixed_list_strings_and_pinned_objects(tmp_path, capsys):
     ],
 )
 def test_manifest_list_malformed_element_exits_2_not_traceback(
-    tmp_path, capsys, element
+    item5_reports, capsys, element
 ):
     # A malformed list element -- an object missing its pin fields, a bad
     # hash format, or a non-string/non-object element -- is a structural
     # error (exit 2) naming the key and the element index, never a
     # traceback.
-    root, _ = make_repo(tmp_path, {"sim/records/a.spice": b"a netlist"}, {})
-    write_report(
-        root,
-        "sim/records/a.report.json",
-        netlist_report_envelope("sim/records/a.spice", b"a netlist"),
-    )
-    manifest = write_manifest(
-        root,
-        {"block": "fake", "evidence": {"5.analog": [element]}},
-    )
-    assert run_manifest(root, manifest) == 2
+    assert run_item5_manifest(item5_reports, [element]) == 2
     assert 'evidence["5.analog"][0]' in capsys.readouterr().err
 
 
