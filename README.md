@@ -191,10 +191,10 @@ call it too, so there is no second copy to drift. To reproduce CI locally, run
 - `layouts` — generated layouts are fresh
 - `evidence-accept` — the evidence check accepts the committed flow record
 - `evidence-reject` — the evidence check rejects the negative control
-- `evidence-sta-fv-accept` — the six-argument check (STA and functional-verification gates) accepts the committed record
-- `evidence-sta-fv-reject` — the six-argument check rejects jq-minted mutants of that record
+- `evidence-sta-fv-accept` — the six-argument check (STA and functional-verification gates) accepts the committed `STA_FV_RECORD` record
+- `evidence-sta-fv-reject` — the six-argument check rejects jq-minted mutants of the `STA_FV_RECORD` record
 
-Which flow record CI gates on is the `FLOW_RECORD` line of that script.
+Which flow records CI gates on are the `FLOW_RECORD` and `STA_FV_RECORD` lines of that script.
 
 T1 item 10 inventory: README present (this file), license present
 ([LICENSE](LICENSE)), CI present (`.github/workflows/ci.yml`), and the CI entry script that
