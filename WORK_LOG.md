@@ -4,6 +4,15 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-24
 
+- **PR #276**: refactor: drop the layout-side gate-finger fold duplicated by gen_netlists
+- **Issue #272** (closed): gen_layouts' per-gate finger fold is now redundant with the netlist generator's
+- **PR #273**: layout: pick each strip independently in the greedy pairing fallback
+- **Issue #269** (closed): Simplify greedy strip pairing by choosing each strip independently
+- **PR #270**: tests: reuse gen_controls.forced_break for DiffusionBreaks forcing
+- **Issue #268** (closed): Share gen_controls.forced_break with DiffusionBreaks in layout tests
+- **PR #266**: fix(flow): time the committed routed DEF so STA geometry is re-hashable
+- **Issue #235** (closed): Item 5 digital's STA geometry cannot be re-derived from the repo: the timed DEF is uncommitted scratch
+- **Issue #181** (closed): T1 item 7 analog: klt pex schematic-vs-extracted delta on the four generated cells
 - **PR #267**: feat: cite graded klt pex reports for item 7 after finger reconciliation
 - **PR #265**: test: exhaust the pairing space to re-name the folded series stack limit
 - **Issue #257** (closed): layout: join the internal node of a folded series stack without crossing the output
