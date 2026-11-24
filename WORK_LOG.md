@@ -4,6 +4,10 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-24
 
+- **PR #278**: test: add substrate-tap ERC negative control (missing-tie-substrate-inv1)
+- **Issue #232** (closed): ERC: no negative control for the substrate tie, the one tie the grader says rests on a caller assertion
+- **PR #187**: Add klt erc supply/tie evidence: T1 item 11 analog MET (groups 4/4)
+- **Issue #179** (closed): T1 item 11 analog: run klt erc supply checks on the four generated cells and cite them with their LVS reports
 - **PR #276**: refactor: drop the layout-side gate-finger fold duplicated by gen_netlists
 - **Issue #272** (closed): gen_layouts' per-gate finger fold is now redundant with the netlist generator's
 - **PR #273**: layout: pick each strip independently in the greedy pairing fallback
