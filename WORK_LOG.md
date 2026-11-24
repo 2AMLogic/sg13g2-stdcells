@@ -4,6 +4,9 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-24
 
+- **PR #267**: feat: cite graded klt pex reports for item 7 after finger reconciliation
+- **PR #265**: test: exhaust the pairing space to re-name the folded series stack limit
+- **Issue #257** (closed): layout: join the internal node of a folded series stack without crossing the output
 - **PR #263**: docs: name both flow-record variables in the CI section
 - **Issue #264** (closed): Remove unused extra/notes slot and as_dict from sim/harness BaseExtensions
 - **Issue #260** (closed): Share the simulation report setup in manifest list-pin tests

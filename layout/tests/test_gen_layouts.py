@@ -552,17 +552,34 @@ class MixedFingerWidths(unittest.TestCase):
             self.assertIn("x_nor2_1", r.stderr)
             self.assertFalse((pathlib.Path(d) / "gds").exists())
 
-    def test_failure_message_separates_netlist_and_drawn_width(self):
-        """The fold can divide a width that is uniform in the netlist, so a
-        message quoting one number sends the reader hunting for a width the
-        netlist does not contain (nor2's netlist is a uniform 500 nm)."""
+    def test_failure_message_names_one_fingered_geometry(self):
+        """The netlist generator states the fold itself (its `build` folds
+        devices on a gate net to the shared count), so the netlist and the
+        drawing cannot disagree on fingering and the message names one
+        geometry -- nor2's NMOS is 2 fingers of 250 nm in both (issue #272
+        dropped the layout-side fold that made the two differ)."""
         cell = {"name": "x_nor2_1", "family": "nor2", "drive": 1,
                 "inputs": ["A", "B"], "outputs": {"Y": "!(A+B)"}}
         with self.assertRaises(gl.PlaceError) as cm:
             gl.generate(self.mixed_cfg(cell))
         msg = str(cm.exception)
-        self.assertIn("netlist 500 nm", msg)
-        self.assertIn("drawn 2 x 250 nm", msg)
+        self.assertIn("2 fingers of 250 nm", msg)
+        self.assertNotIn("netlist 500 nm", msg)
+
+    def test_no_equal_split_names_the_gate_and_fingers(self):
+        """The divisibility refusal lives once, in the netlist generator: a
+        nor4's unit NMOS on gate A cannot share the gate's 4-finger split at
+        any width on this grid, and the failure names the gate and the split.
+        This is the scenario the demo config's removed `demo_nor4_1` encoded
+        (#267); no committed config reaches it."""
+        cell = {"name": "x_nor4_1", "family": "nor4", "drive": 1,
+                "inputs": ["A", "B", "C", "D"], "outputs": {"Y": "!(A+B+C+D)"}}
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate(self.mixed_cfg(cell))
+        msg = str(cm.exception)
+        self.assertIn("x_nor4_1", msg)
+        self.assertIn("gate A", msg)
+        self.assertIn("4-finger split", msg)
 
     def test_implants_may_not_meet_in_the_channel(self):
         """Both implants grow `sd_enc_activ` into the channel, so a channel that
@@ -718,6 +735,36 @@ class DiffusionBreaks(unittest.TestCase):
             with self.assertRaises(gl.PlaceError) as cm:
                 gl.generate(cfg)
             self.assertIn(fragment, str(cm.exception), name)
+
+
+class GreedyFallback(unittest.TestCase):
+    """The first-fit pairing `order_strips` falls back to when the bounded
+    search exhausts its step cap (strips too large to search): at each
+    position the lowest gate net and device indices win, and each strip
+    independently takes the first orientation that continues its chain, or
+    the first orientation at all when only breaking ones remain. The cap
+    fires only on strips far larger than any census cell, so the fallback is
+    asserted directly (the way NotchPredicate asserts its predicate), on a
+    pairing with repeated gate nets and a break in each strip at a position
+    where the other strip continues -- the tie-breaking the fallback owns,
+    frozen from the nested-scan implementation it replaces (issue #269)."""
+
+    def dev(self, i, kind, l, g, r, fingers=1):
+        return (i, kind, l, g, r, 500 * fingers, fingers, fingers)
+
+    def test_repeated_gates_and_asymmetric_breaks(self):
+        ndevs = [self.dev(0, "n", "Y", "A", "Z", fingers=2),  # even fingers: the chain ends on its left net
+                 self.dev(1, "n", "Y", "A", "X"),
+                 self.dev(2, "n", "M", "B", "K"),  # no free B device continues X: the NMOS strip parts here
+                 self.dev(3, "n", "K", "B", "W")]
+        pdevs = [self.dev(0, "p", "Q", "A", "Z"),
+                 self.dev(1, "p", "Z", "A", "V"),
+                 self.dev(2, "p", "V", "B", "T"),  # continues its chain where the NMOS strip parts ...
+                 self.dev(3, "p", "R", "B", "S")]  # ... and parts where the NMOS strip continues
+        self.assertEqual(gl._greedy_pairing(ndevs, pdevs), (
+            [(0, "Y", "Z"), (1, "Y", "X"), (2, "M", "K"), (3, "K", "W")], (2,),
+            [(0, "Q", "Z"), (1, "Z", "V"), (2, "V", "T"), (3, "R", "S")], (3,),
+        ))
 
 
 def m1_components(S):
@@ -1126,15 +1173,8 @@ class FoldedSeriesInterleave(unittest.TestCase):
         holds: `_pairings` at every break budget, deduplicated."""
         c = gl.gn.build(cell, self.FIXTURE["process"])
         devs = [(i,) + d for i, d in enumerate(c.devices)]
-        fingers = {}
-        for d in devs:
-            fingers[d[3]] = max(fingers.get(d[3], 1), d[6])
-
-        def fold(d):
-            return d[:6] + (fingers[d[3]], d[6])
-
-        nd = [fold(d) for d in devs if d[1] == "n"]
-        pd = [fold(d) for d in devs if d[1] == "p"]
+        nd = [d for d in devs if d[1] == "n"]
+        pd = [d for d in devs if d[1] == "p"]
         out, seen = [], set()
         for budget in range(len(nd) + 1):
             cand = gl._pairings(nd, pd, budget, cap=300_000)

@@ -21,8 +21,9 @@ Placement model (deliberately small; anything outside it is a named failure):
     column per finger, diffusion shared between neighbouring devices; a device
     of F fingers is F adjacent columns alternating source/drain, joined by a
     poly bridge below the NMOS diffusion and given one gate contact. The NMOS
-    and PMOS device on one gate net are drawn with the same finger count (the
-    larger; a device with fewer netlist fingers is folded, same total width);
+    and PMOS device on one gate net carry the same finger count, already
+    reconciled by the netlist generator (the larger, same total width), so
+    the layout consumes the netlist's fingering as-is;
   * a strip may hold devices of different drawn finger widths: it is one merged
     polygon whose outer edge is fixed (the NMOS strip grows up, the PMOS strip
     grows down) and whose channel-facing edge steps at the device boundary. A
@@ -215,51 +216,44 @@ class _SearchExhausted(Exception):
 def _greedy_pairing(ndevs, pdevs):
     """A deterministic first-fit pairing for strips too large to search: at
     each position the lowest gate net and device indices win, and each strip
-    continues its chain where an orientation allows it, breaking otherwise."""
-    n = len(ndevs)
+    continues its chain where an orientation allows it, breaking otherwise.
+    The caller has checked the two strips share one gate-net multiset, so
+    each round both strips find the same lowest gate with an unused device
+    and can pick from it independently: one first-fit choice per strip."""
     gates = {}
     for i, d in enumerate(ndevs):
         gates.setdefault(d[3], ([], []))[0].append(i)
     for i, d in enumerate(pdevs):
         gates.setdefault(d[3], ([], []))[1].append(i)
+
+    def first_fit(devs, side, tail, used):
+        """The lowest unused device of the lowest gate that has one, in the
+        first orientation that continues the chain, or in the first
+        orientation at all when only breaking ones remain."""
+        for g in sorted(gates):
+            live = [i for i in gates[g][side] if i not in used]
+            if not live:
+                continue
+            breaking = None
+            for i in live:
+                for opt in _step_options(devs, i, tail):
+                    if not opt[2]:
+                        return i, opt[0], opt[1], False
+                    if breaking is None:
+                        breaking = (i, opt[0], opt[1])
+            return (*breaking, True)
+
     nord, pord, nbrk, pbrk = [], [], (), ()
     used_n, used_p = set(), set()
-    for k in range(n):
-        ntail = _tail(nord, ndevs) if nord else None
-        ptail = _tail(pord, pdevs) if pord else None
-        for g in sorted(gates):
-            nis = [i for i in gates[g][0] if i not in used_n]
-            pis = [j for j in gates[g][1] if j not in used_p]
-            if not (nis and pis):
-                continue
-            placed = False
-            for pref in ((False, False), (False, True), (True, False), (True, True)):
-                for i in nis:
-                    for nopt in _step_options(ndevs, i, ntail):
-                        if nopt[2] != pref[0]:
-                            continue
-                        for j in pis:
-                            for popt in _step_options(pdevs, j, ptail):
-                                if popt[2] != pref[1]:
-                                    continue
-                                nord.append((i, nopt[0], nopt[1]))
-                                pord.append((j, popt[0], popt[1]))
-                                used_n.add(i)
-                                used_p.add(j)
-                                nbrk = nbrk + (k,) if nopt[2] else nbrk
-                                pbrk = pbrk + (k,) if popt[2] else pbrk
-                                placed = True
-                                break
-                            if placed:
-                                break
-                        if placed:
-                            break
-                    if placed:
-                        break
-                if placed:
-                    break
-            if placed:
-                break
+    for k in range(len(ndevs)):
+        i, nl, nr, nnew = first_fit(ndevs, 0, _tail(nord, ndevs) if nord else None, used_n)
+        j, pl, pr, pnew = first_fit(pdevs, 1, _tail(pord, pdevs) if pord else None, used_p)
+        nord.append((i, nl, nr))
+        pord.append((j, pl, pr))
+        used_n.add(i)
+        used_p.add(j)
+        nbrk = nbrk + (k,) if nnew else nbrk
+        pbrk = pbrk + (k,) if pnew else pbrk
     return nord, nbrk, pord, pbrk
 
 
@@ -318,14 +312,13 @@ def _dev_at(order, devs_, cols_, c):
 
 
 def _dev_desc(d):
-    """A folded device's netlist geometry and its drawn geometry, both named.
+    """A device's fingered geometry, for failure messages.
 
-    The fold step can divide a width that is uniform in the netlist into fingers
-    that appear nowhere in it (a 500 nm 1-finger device folded to 2 fingers is
-    drawn as 2 x 250 nm), so a message quoting only one of the two sends the
-    reader looking for a number the netlist does not contain."""
-    return (f"{d[1].upper()}MOS on gate {d[3]} (netlist {d[5]} nm / {d[7]} "
-            f"finger{'' if d[7] == 1 else 's'} -> drawn {d[6]} x {d[5] // d[6]} nm)")
+    The netlist generator has already folded devices on a gate net to the
+    gate's shared finger count (design/gen_netlists.py), so the drawn
+    fingering is the netlist's own: one geometry, named once."""
+    return (f"{d[1].upper()}MOS on gate {d[3]} ({d[6]} finger{'' if d[6] == 1 else 's'} "
+            f"of {d[5] // d[6]} nm)")
 
 
 def _strip_profile(order, devs_, cols_):
@@ -396,24 +389,15 @@ def layout_cell(cell, proc, lay):
     R, P = lay["rules"], lay["gate_pitch_nm"]
     H = lay["row_height_nm"]
     c = gn.build(cell, proc)
+    # Finger counts come folded from the netlist generator: a poly column
+    # crosses both strips, so gn.build has already reconciled the NMOS and
+    # PMOS device on one gate net to the gate's shared count (same total
+    # width; a width with no equal split on the grid is refused there, naming
+    # the gate -- the one divisibility error).
+    grid = gn.grid_nm(proc)
     devs = [(i,) + d for i, d in enumerate(c.devices)]  # (i, kind, drain, gate, source, w, ng)
     ndevs = [(i, k, d, g, s, w, ng) for (i, k, d, g, s, w, ng) in devs if k == "n"]
     pdevs = [(i, k, d, g, s, w, ng) for (i, k, d, g, s, w, ng) in devs if k == "p"]
-    # Fingers per gate net: a poly column crosses both strips, so the NMOS and
-    # PMOS device on one gate net are drawn with the same finger count, the larger
-    # of the two. A device with fewer netlist fingers is folded (same total W).
-    grid = gn.grid_nm(proc)
-    fingers = {}
-    for d in devs:
-        fingers[d[3]] = max(fingers.get(d[3], 1), d[6])
-
-    def fold(d):
-        k = fingers[d[3]]
-        if d[5] % (k * grid):
-            raise PlaceError(f"{d[1]}MOS device of {d[5]} nm on gate {d[3]} cannot be drawn as {k} fingers on the {grid} nm grid")
-        return d[:6] + (k, d[6])  # drawn finger count, then the netlist one (for messages)
-
-    ndevs, pdevs = [fold(d) for d in ndevs], [fold(d) for d in pdevs]
     nord, nbrk, pord, pbrk = order_strips(ndevs, pdevs)
     cols = [(j, k) for j, (i, _, _) in enumerate(nord) for k in range(ndevs[i][6])]  # column -> (position in order, finger)
     pcols = [(j, k) for j, (i, _, _) in enumerate(pord) for k in range(pdevs[i][6])]
