@@ -7,6 +7,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from collections import Counter
+from unittest.mock import patch
 
 LAYOUT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(LAYOUT))
@@ -590,20 +592,10 @@ class DiffusionBreaks(unittest.TestCase):
              "inputs": ["A1", "A2", "B1", "B2"], "outputs": {"X": "!((A1*A2)+(B1*B2))"}}
 
     def force_break(self, strip="p", at=1):
-        """Patch order_strips to force one diffusion break into the pairing
-        the model picks, keeping everything else about it."""
-        real = gl.order_strips
-
-        def patched(ndevs, pdevs):
-            nord, nbrk, pord, pbrk = real(ndevs, pdevs)
-            if strip == "p":
-                pbrk = tuple(sorted(set(pbrk) | {at}))
-            else:
-                nbrk = tuple(sorted(set(nbrk) | {at}))
-            return nord, nbrk, pord, pbrk
-
-        gl.order_strips = patched
-        self.addCleanup(setattr, gl, "order_strips", real)
+        """The shared forcing (`gen_controls.forced_break`), entered for the
+        rest of the test: one diffusion break forced into the pairing the
+        model picks, keeping everything else about it."""
+        self.enterContext(gc.forced_break(strip, at))
 
     def strip_runs_at(self, S, layer, edge_y, i):
         return sorted((b for b in S.boxes if b[0] == layer and b[i + 1] == edge_y), key=lambda b: b[1])
@@ -684,18 +676,8 @@ class DiffusionBreaks(unittest.TestCase):
 
     def test_break_output_is_byte_deterministic(self):
         def gen():
-            cfg = copy.deepcopy(CFG)
-            real = gl.order_strips
-
-            def patched(ndevs, pdevs):
-                nord, nbrk, pord, pbrk = real(ndevs, pdevs)
-                return nord, nbrk, pord, tuple(sorted(set(pbrk) | {1}))
-
-            gl.order_strips = patched
-            try:
-                return gl.generate(cfg)
-            finally:
-                gl.order_strips = real
+            with gc.forced_break("p", 1):
+                return gl.generate(copy.deepcopy(CFG))
         a, b = gen(), gen()
         self.assertEqual(a, b)
         self.assertTrue(read_gds_boxes(a["sg13g2_nand2_1.gds"]))
@@ -736,6 +718,36 @@ class DiffusionBreaks(unittest.TestCase):
             with self.assertRaises(gl.PlaceError) as cm:
                 gl.generate(cfg)
             self.assertIn(fragment, str(cm.exception), name)
+
+
+class GreedyFallback(unittest.TestCase):
+    """The first-fit pairing `order_strips` falls back to when the bounded
+    search exhausts its step cap (strips too large to search): at each
+    position the lowest gate net and device indices win, and each strip
+    independently takes the first orientation that continues its chain, or
+    the first orientation at all when only breaking ones remain. The cap
+    fires only on strips far larger than any census cell, so the fallback is
+    asserted directly (the way NotchPredicate asserts its predicate), on a
+    pairing with repeated gate nets and a break in each strip at a position
+    where the other strip continues -- the tie-breaking the fallback owns,
+    frozen from the nested-scan implementation it replaces (issue #269)."""
+
+    def dev(self, i, kind, l, g, r, fingers=1):
+        return (i, kind, l, g, r, 500 * fingers, fingers, fingers)
+
+    def test_repeated_gates_and_asymmetric_breaks(self):
+        ndevs = [self.dev(0, "n", "Y", "A", "Z", fingers=2),  # even fingers: the chain ends on its left net
+                 self.dev(1, "n", "Y", "A", "X"),
+                 self.dev(2, "n", "M", "B", "K"),  # no free B device continues X: the NMOS strip parts here
+                 self.dev(3, "n", "K", "B", "W")]
+        pdevs = [self.dev(0, "p", "Q", "A", "Z"),
+                 self.dev(1, "p", "Z", "A", "V"),
+                 self.dev(2, "p", "V", "B", "T"),  # continues its chain where the NMOS strip parts ...
+                 self.dev(3, "p", "R", "B", "S")]  # ... and parts where the NMOS strip continues
+        self.assertEqual(gl._greedy_pairing(ndevs, pdevs), (
+            [(0, "Y", "Z"), (1, "Y", "X"), (2, "M", "K"), (3, "K", "W")], (2,),
+            [(0, "Q", "Z"), (1, "Z", "V"), (2, "V", "T"), (3, "R", "S")], (3,),
+        ))
 
 
 def m1_components(S):
@@ -1117,6 +1129,128 @@ class T1Fixture(unittest.TestCase):
                 with self.assertRaises(gl.PlaceError) as cm:
                     gl.generate(cfg)
                 self.assertIn("nets ['X', 'X_i'] need 2 channel tracks, config allows 1", str(cm.exception))
+
+
+class FoldedSeriesInterleave(unittest.TestCase):
+    """Issue #257, re-measured after the diffusion break (#169) merged: the
+    break does not lift the folded nand2/nor2 rows of `t1_row3360.json`. A
+    folded series device alternates its two terminals on successive
+    boundaries (l r l ...), so the internal node `n1` and the output `Y`
+    interleave *inside the series device's own columns* -- a break lands
+    between devices, where neither net is, so no ordering separates them:
+    whichever net takes the upper channel track, the other's far-side stubs
+    cross its band inside that span. The measurement exhausts the model's
+    own pairing search (`_pairings`: every ordering, orientation and break
+    position) crossed with both track assignments -- the second reached by
+    renaming `n1` ahead of `Y`, neither net being a gate, so the
+    alphabetical track order is the only difference -- with `layout_cell`
+    itself as the oracle. If a generator change places one of these cells,
+    these tests failing are the signal to re-measure the README table
+    ("What blocks buf, folded nand2 and folded nor2")."""
+
+    FIXTURE = json.loads((pathlib.Path(__file__).resolve().parent / "fixtures" / "t1_row3360.json").read_text())
+    CELLS = [c for c in FIXTURE["cells"] if c["family"] in ("nand2", "nor2")]
+
+    def pairings(self, cell):
+        """Every (n_order, n_breaks, p_order, p_breaks) the search space
+        holds: `_pairings` at every break budget, deduplicated."""
+        c = gl.gn.build(cell, self.FIXTURE["process"])
+        devs = [(i,) + d for i, d in enumerate(c.devices)]
+        fingers = {}
+        for d in devs:
+            fingers[d[3]] = max(fingers.get(d[3], 1), d[6])
+
+        def fold(d):
+            return d[:6] + (fingers[d[3]], d[6])
+
+        nd = [fold(d) for d in devs if d[1] == "n"]
+        pd = [fold(d) for d in devs if d[1] == "p"]
+        out, seen = [], set()
+        for budget in range(len(nd) + 1):
+            cand = gl._pairings(nd, pd, budget, cap=300_000)
+            if cand is None:
+                break
+            for p in cand:
+                key = (tuple(p[0]), p[1], tuple(p[2]), p[3])
+                if key not in seen:
+                    seen.add(key)
+                    out.append(p)
+        return out
+
+    def renamed_build(self):
+        """A `gn.build` with `n1` renamed ahead of `Y`, swapping the two
+        channel tracks: neither net is a gate net, so the alphabetical track
+        order is the only thing the rename changes."""
+        build = gl.gn.build
+
+        def patched(cell, proc):
+            c = gl.gn.Cell(cell["name"], proc)
+            c.devices = [(k, "An" if d == "n1" else d, g, "An" if s == "n1" else s, w, ng)
+                         for (k, d, g, s, w, ng) in build(cell, proc).devices]
+            return c
+
+        return patched
+
+    def outcomes(self, cell, tracks, pitch=None, row=None):
+        """Count layout_cell outcomes for each spelling of the internal net."""
+        lay = copy.deepcopy(self.FIXTURE["layout"])
+        lay["channel_tracks"] = tracks
+        if pitch is not None:
+            lay["gate_pitch_nm"] = pitch
+        if row is not None:
+            lay["row_height_nm"] = row
+        proc = self.FIXTURE["process"]
+        summary = {}
+        for internal_net, build in (("n1", gl.gn.build), ("An", self.renamed_build())):
+            counts = Counter()
+            with patch.object(gl.gn, "build", build):
+                # Each pairing embeds the terminal names from this build.
+                pairings = self.pairings(cell)
+                self.assertEqual(len(pairings), 32)
+                for pairing in pairings:
+                    with patch.object(gl, "order_strips", return_value=pairing):
+                        try:
+                            gl.layout_cell(cell, proc, lay)
+                            verdict = "placed"
+                        except gl.PlaceError as e:
+                            verdict = str(e).partition(" (")[0]
+                            if verdict.startswith("no Metal1-clean spot for the gate contact of "):
+                                verdict = "gate-contact spot"
+                    counts[verdict] += 1
+            summary[internal_net] = counts
+        return summary
+
+    def test_exhausts_the_pairing_space_at_the_fixture_geometry(self):
+        for cell in self.CELLS:
+            for tracks in (2, 3):
+                with self.subTest(cell=cell["name"], channel_tracks=tracks):
+                    if cell["family"] == "nand2":
+                        expected = {
+                            "n1": {"Metal1 of Y overlaps n1": 8, "gate-contact spot": 24},
+                            "An": {"Metal1 of An overlaps Y": 8, "gate-contact spot": 24},
+                        }
+                    else:
+                        expected = {"n1": {"gate-contact spot": 32}, "An": {"gate-contact spot": 32}}
+                    self.assertEqual(self.outcomes(cell, tracks), expected)
+
+    def test_taller_rows_lift_nothing(self):
+        for cell in self.CELLS:
+            for row in (4200, 4620):
+                with self.subTest(cell=cell["name"], row_height_nm=row):
+                    for counts in self.outcomes(cell, 2, row=row).values():
+                        self.assertNotIn("placed", counts)
+
+    def test_a_pitch_that_fits_the_pads_leaves_only_the_crossing(self):
+        """At a 1260 nm pitch the 300 nm gate pads fit beside the poly
+        stripes, so the pad-crowding failure of the 420 nm fixture drops out
+        and every candidate of all four cells dies on the Y/n1 Metal1
+        crossing itself: the crossing, not the pad, is the pitch- and
+        row-height-independent limit (the recorded README numbers)."""
+        for cell in self.CELLS:
+            with self.subTest(cell=cell["name"]):
+                self.assertEqual(self.outcomes(cell, 2, pitch=1260),
+                                 {"n1": {"Metal1 of Y overlaps n1": 32},
+                                  "An": {"Metal1 of An overlaps Y": 32}})
 
 
 class FakeProcess(unittest.TestCase):

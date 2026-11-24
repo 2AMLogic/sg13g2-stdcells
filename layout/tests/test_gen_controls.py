@@ -52,7 +52,7 @@ class Table(unittest.TestCase):
 
 class Regeneration(unittest.TestCase):
     def test_each_control_matches_its_committed_stream_and_pinned_hash(self):
-        prof0, hit0 = gl._strip_profile, gl._notch_violation
+        prof0, hit0, order0 = gl._strip_profile, gl._notch_violation, gl.order_strips
         files = gc.generate_controls(CFG)
         self.assertEqual(set(files), {f"{r['stem']}.gds" for r in gc.TABLE})
         for stem, data in files.items():
@@ -66,6 +66,7 @@ class Regeneration(unittest.TestCase):
                 )
         self.assertIs(gl._strip_profile, prof0)
         self.assertIs(gl._notch_violation, hit0)
+        self.assertIs(gl.order_strips, order0)
 
 
 class CheckMode(unittest.TestCase):
@@ -119,20 +120,32 @@ class PatchRestoration(unittest.TestCase):
         """The p420 forcing with the notch check left live is exactly the
         refusal the recorded row stubbed off -- a failed row must not leave
         the generator patched for the next one."""
-        prof0, hit0 = gl._strip_profile, gl._notch_violation
+        prof0, hit0, order0 = gl._strip_profile, gl._notch_violation, gl.order_strips
         row = dict(gc.TABLE[0], notch_off=False)
         with self.assertRaises(gl.PlaceError):
             gc.regenerate(row, CFG)
         self.assertIs(gl._strip_profile, prof0)
         self.assertIs(gl._notch_violation, hit0)
+        self.assertIs(gl.order_strips, order0)
+
+    def test_failed_break_row_restores_order_strips(self):
+        """A break row that fails to place inside `forced_break` must not
+        leave `order_strips` patched for the next one."""
+        order0 = gl.order_strips
+        row = next(r for r in gc.TABLE if "breaks" in r)
+        broken = dict(row, layout=dict(row["layout"], row_height_nm=1))
+        with self.assertRaises(gl.PlaceError):
+            gc.regenerate(broken, CFG)
+        self.assertIs(gl.order_strips, order0)
 
     def test_generate_controls_restores_attributes_when_a_row_fails(self):
-        prof0, hit0 = gl._strip_profile, gl._notch_violation
+        prof0, hit0, order0 = gl._strip_profile, gl._notch_violation, gl.order_strips
         broken = dict(gc.TABLE[1], layout=dict(gc.TABLE[1]["layout"], row_height_nm=1))
         with self.assertRaises(gl.PlaceError):
             gc.generate_controls(CFG, [gc.TABLE[0], broken, gc.TABLE[2]])
         self.assertIs(gl._strip_profile, prof0)
         self.assertIs(gl._notch_violation, hit0)
+        self.assertIs(gl.order_strips, order0)
 
 
 if __name__ == "__main__":

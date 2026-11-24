@@ -64,17 +64,15 @@
    }
   },
   {
-   "name": "demo_nor4_1",
-   "family": "nor4",
+   "name": "demo_nor2_1",
+   "family": "nor2",
    "drive": 1,
    "inputs": [
     "A",
-    "B",
-    "C",
-    "D"
+    "B"
    ],
    "outputs": {
-    "Y": "!(A+B+C+D)"
+    "Y": "!(A+B)"
    }
   },
   {

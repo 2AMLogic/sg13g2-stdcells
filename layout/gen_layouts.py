@@ -215,51 +215,44 @@ class _SearchExhausted(Exception):
 def _greedy_pairing(ndevs, pdevs):
     """A deterministic first-fit pairing for strips too large to search: at
     each position the lowest gate net and device indices win, and each strip
-    continues its chain where an orientation allows it, breaking otherwise."""
-    n = len(ndevs)
+    continues its chain where an orientation allows it, breaking otherwise.
+    The caller has checked the two strips share one gate-net multiset, so
+    each round both strips find the same lowest gate with an unused device
+    and can pick from it independently: one first-fit choice per strip."""
     gates = {}
     for i, d in enumerate(ndevs):
         gates.setdefault(d[3], ([], []))[0].append(i)
     for i, d in enumerate(pdevs):
         gates.setdefault(d[3], ([], []))[1].append(i)
+
+    def first_fit(devs, side, tail, used):
+        """The lowest unused device of the lowest gate that has one, in the
+        first orientation that continues the chain, or in the first
+        orientation at all when only breaking ones remain."""
+        for g in sorted(gates):
+            live = [i for i in gates[g][side] if i not in used]
+            if not live:
+                continue
+            breaking = None
+            for i in live:
+                for opt in _step_options(devs, i, tail):
+                    if not opt[2]:
+                        return i, opt[0], opt[1], False
+                    if breaking is None:
+                        breaking = (i, opt[0], opt[1])
+            return (*breaking, True)
+
     nord, pord, nbrk, pbrk = [], [], (), ()
     used_n, used_p = set(), set()
-    for k in range(n):
-        ntail = _tail(nord, ndevs) if nord else None
-        ptail = _tail(pord, pdevs) if pord else None
-        for g in sorted(gates):
-            nis = [i for i in gates[g][0] if i not in used_n]
-            pis = [j for j in gates[g][1] if j not in used_p]
-            if not (nis and pis):
-                continue
-            placed = False
-            for pref in ((False, False), (False, True), (True, False), (True, True)):
-                for i in nis:
-                    for nopt in _step_options(ndevs, i, ntail):
-                        if nopt[2] != pref[0]:
-                            continue
-                        for j in pis:
-                            for popt in _step_options(pdevs, j, ptail):
-                                if popt[2] != pref[1]:
-                                    continue
-                                nord.append((i, nopt[0], nopt[1]))
-                                pord.append((j, popt[0], popt[1]))
-                                used_n.add(i)
-                                used_p.add(j)
-                                nbrk = nbrk + (k,) if nopt[2] else nbrk
-                                pbrk = pbrk + (k,) if popt[2] else pbrk
-                                placed = True
-                                break
-                            if placed:
-                                break
-                        if placed:
-                            break
-                    if placed:
-                        break
-                if placed:
-                    break
-            if placed:
-                break
+    for k in range(len(ndevs)):
+        i, nl, nr, nnew = first_fit(ndevs, 0, _tail(nord, ndevs) if nord else None, used_n)
+        j, pl, pr, pnew = first_fit(pdevs, 1, _tail(pord, pdevs) if pord else None, used_p)
+        nord.append((i, nl, nr))
+        pord.append((j, pl, pr))
+        used_n.add(i)
+        used_p.add(j)
+        nbrk = nbrk + (k,) if nnew else nbrk
+        pbrk = pbrk + (k,) if pnew else pbrk
     return nord, nbrk, pord, pbrk
 
 
