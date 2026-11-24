@@ -1136,3 +1136,12 @@ observation at `5c444be`.
 Superseded again at the `b507f4f` merge of `main`: the regenerated report
 records **T1 16/22 items met** (klt `0.9.3.dev4224+gcc049d4d9637`), with
 `T1 #9 [analog]` still `[MET]` and `T1 #11 [analog]` `[MET]`, `groups: 4/4`.
+
+Re-rendered at the `e037d3a` head merge of `main` (2026-11-24):
+`manifests/signoff-report.json` and `manifests/signoff-report.txt` were both
+produced in one pass by a single klt build (`0.9.3.dev5326+g7a0e2ff48fab`), so
+the pair carries one provenance stamp. The report still records **T1 16/22
+items met**, with `T1 #9 [analog]` `[MET]` and `T1 #11 [analog]` `[MET]`,
+`groups: 4/4`; `klt signoff --check` reports `status: match`. This supersedes
+the build named in the `b507f4f` paragraph above, which stays as the record of
+that merge.

@@ -46,7 +46,14 @@ cp "$rec/lvs.json" build/lvs.out.json; cp "$rec/erc.json" build/erc.json
 # -- with 2.0 ns input/output delays against the same 10 ns clock.
 def="$(jq -r 'if (.def_path|type)=="object" then .def_path.path else .def_path end' "$rec/place-and-route.json")"
 case "$def" in /*) ;; *) def="$(cd .. && pwd)/$def";; esac
-jq --arg d "$def" '.def=$d' request-sta.json > build/sta.json
+# Time a copy committed with the record, not the .klt/ scratch original
+# (issue #235): flow/.klt/ is gitignored, so a def_path naming it can never
+# be re-hashed and klt signoff leaves the geometry at input_verified: null.
+# The copy lands next to add8.routed.gds/.v and, unlike the GDS, has no
+# hash-only mode: a hash without bytes cannot be re-hashed, which is the
+# whole point of the copy.
+cp "$def" "$rec/add8.routed.def"
+jq --arg d "$(pwd)/$rec/add8.routed.def" '.def=$d' request-sta.json > build/sta.json
 klt sta build/sta.json "${PDK_ARGS[@]}" --format json > "$rec/sta.json"
 # Exhaustive cocotb regression (verification/test_add8.py, 2^17 cases) through
 # the FV verb. klt exits 3 on failing tests: keep the envelope and gate on it

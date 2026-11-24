@@ -9113,13 +9113,13 @@
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:589f39656b16d78d72504caff9088eddeed49136e2513d074cae1bc95e53837c",
   "build": {
-    "version": "0.9.3.dev5253+gdb1e2f17146d",
-    "package_version": "0.9.3.dev5253+gdb1e2f17146d",
-    "git_commit": "db1e2f17146dc834ec4aab351ef9ffd8c716d36c",
+    "version": "0.9.3.dev5326+g7a0e2ff48fab",
+    "package_version": "0.9.3.dev5326+g7a0e2ff48fab",
+    "git_commit": "7a0e2ff48fab49180e1f12c42b364dfcce053ac9",
     "git_tag": null,
     "dirty": false,
     "is_release": false,
-    "grading_ruleset_id": "sha256:655754996ac9a0b1ae2b9aada74f7e036ace96f55af1e3a9a204d97a3370b6fc"
+    "grading_ruleset_id": "sha256:b6669a5ac6a817b1c87bf3ee61d2e221a62bb3cba90902bfd59306398220191a"
   },
   "items": [
     {
@@ -9821,12 +9821,12 @@
       "reason": null,
       "graded_by_build": true,
       "citation": {
-        "file": "flow/records/20261121-be3a384/sta.json",
+        "file": "flow/records/20261124-32b1130/sta.json",
         "command": null,
         "kind": "sta",
         "check_status": "ok",
         "content_hash": "sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68",
-        "input_verified": null,
+        "input_verified": true,
         "exit_status": 0,
         "detail": {
           "geometry_source": "routed"
@@ -9834,14 +9834,14 @@
       },
       "citations_graded": [
         {
-          "citation": "flow/records/20261121-be3a384/sta.json",
+          "citation": "flow/records/20261124-32b1130/sta.json",
           "status": "met",
           "reason": null,
           "content_hash": "sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68",
-          "input_verified": null
+          "input_verified": true
         },
         {
-          "citation": "flow/records/20261121-be3a384/functional-verification.json",
+          "citation": "flow/records/20261124-32b1130/functional-verification.json",
           "status": "met",
           "reason": null,
           "content_hash": "sha256:634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139",
@@ -9850,19 +9850,19 @@
       ],
       "citations": [
         {
-          "file": "flow/records/20261121-be3a384/sta.json",
+          "file": "flow/records/20261124-32b1130/sta.json",
           "command": null,
           "kind": "sta",
           "check_status": "ok",
           "content_hash": "sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68",
-          "input_verified": null,
+          "input_verified": true,
           "exit_status": 0,
           "detail": {
             "geometry_source": "routed"
           }
         },
         {
-          "file": "flow/records/20261121-be3a384/functional-verification.json",
+          "file": "flow/records/20261124-32b1130/functional-verification.json",
           "command": null,
           "kind": "functional-verification",
           "check_status": "pass",
