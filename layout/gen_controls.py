@@ -247,16 +247,26 @@ def main(argv=None):
     except gl.PlaceError as e:
         print(f"gen_controls: cannot place: {e}", file=sys.stderr)
         return 3
-    outdir = pathlib.Path(a.out) if a.out else CONTROLS
-    erc_outdir = pathlib.Path(a.erc_out) if a.erc_out else ERC_CONTROLS
-    rc = gn.sync_outputs(
-        files, outdir, "*.gds", check=a.check, tool="gen_controls", script="layout/gen_controls.py",
-        plural="control GDS", out_of_date="control GDS file(s)",
-    )
-    rc |= gn.sync_outputs(
-        erc_files, erc_outdir, "*.gds", check=a.check, tool="gen_controls", script="layout/gen_controls.py",
-        plural="ERC control GDS", out_of_date="ERC control GDS file(s)",
-    )
+    # A bare `--out` keeps its single-output behavior (only the notch DRC set is
+    # written there); a bare `--erc-out` writes only the ERC set. With neither,
+    # both committed sets are regenerated in place. Each set is pruned by its
+    # own `*.gds` sync, so the two directories must never coincide.
+    both_default = not a.out and not a.erc_out
+    targets = []
+    if a.out or both_default:
+        targets.append((files, pathlib.Path(a.out) if a.out else CONTROLS, "control GDS", "control GDS file(s)"))
+    if a.erc_out or both_default:
+        targets.append((erc_files, pathlib.Path(a.erc_out) if a.erc_out else ERC_CONTROLS, "ERC control GDS", "ERC control GDS file(s)"))
+    if len(targets) == 2 and targets[0][1].resolve() == targets[1][1].resolve():
+        print(f"gen_controls: --out and --erc-out resolve to the same directory {targets[0][1]}; "
+              "each set prunes *.gds, so they must differ", file=sys.stderr)
+        return 2
+    rc = 0
+    for tfiles, tdir, plural, out_of_date in targets:
+        rc |= gn.sync_outputs(
+            tfiles, tdir, "*.gds", check=a.check, tool="gen_controls", script="layout/gen_controls.py",
+            plural=plural, out_of_date=out_of_date,
+        )
     return rc
 
 

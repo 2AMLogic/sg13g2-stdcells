@@ -1035,7 +1035,7 @@ declare exactly the config's `vdd_net`/`vss_net` as supplies and tie both);
 **Install.** The shared pin's commit (`klt_install`, left unchanged by #179)
 advertises `erc` but predates the `well_complement_of` tie schema
 `erc-spec.json` uses: it exits 1 with `ties[1].well_boxes` required for the null
-`well_layer`. The ERC reports were produced by klt `6bd18bbc8637`, so install
+`well_layer`. The ERC reports were produced by klt `db1e2f17146d` (KLayout 0.30.13), so install
 that build for this runner (a throwaway env, never the host tool):
 
 ```
@@ -1084,8 +1084,10 @@ checked with none skipped.**
 | `sg13g2_inv_4` | clean | 0 | 1 | 1 |
 | `sg13g2_nand2_1` | clean | 0 | 1 | 1 |
 
-Reports were produced by klt 0.9.3.dev2575+g6bd18bbc8637 on klayout 0.30.12
-(each report's `provenance`). One `klt erc` friction is recorded here without
+Reports were produced by klt 0.9.3.dev5253+gdb1e2f17146d on klayout 0.30.13
+(each report's `provenance`). An earlier run of the same cells (klt
+0.9.3.dev2575+g6bd18bbc8637, klayout 0.30.12) was superseded by this one when
+the reports were re-run on the current GDS (0c14073); it is kept here as history. One `klt erc` friction is recorded here without
 an upstream filing: the first run, without `--deck`, disclosed the
 substrate-continuity check as `substrate_isolation_undecidable` and
 `klt signoff` correctly refused to grade item 11 on it — the report's own
