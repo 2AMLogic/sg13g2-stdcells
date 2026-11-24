@@ -31,7 +31,7 @@
         "role": "hygiene",
         "path": "README.md",
         "passed": true,
-        "content_hash": "sha256:1f007c647bcfc86e8a933576f373025e554fe48879dc1951a6678b359c89fdba"
+        "content_hash": "sha256:00ae975fee0365d0d966a4f9bd9c590a86a2797674544534592976a90d23bf48"
       },
       {
         "check": "present",
@@ -80,8 +80,8 @@
     "description": "Repo hygiene: the four repo-owned files README.md names as its T1 item 10 inventory, backed by the three dependency-free gates of .github/workflows/ci.yml. check-ci.sh is pinned because it holds the bytes of those three gates, so a weakening edit to a stage function fails the attestations stage until item 10 is re-minted. Each gate fails when a committed artifact drifts from the generator or config that produced it, so none of them can pass vacuously. Resync-managed paths (.gitignore, .loom/, .claude/, CLAUDE.md) are deliberately not listed -- see klt signoff docs, 'what belongs in a hygiene inventory'. One envelope serves both partitions."
   },
   "provenance": {
-    "klt_version": "0.9.3.dev4260+gad8f069464a3",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.9.3.dev4558+g8750382abcd8",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": null,
     "input": {
