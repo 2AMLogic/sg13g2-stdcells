@@ -1017,7 +1017,7 @@ re-minted: none of the edited files is envelope-pinned.
 T1 item 11 (analog, power delivery, structural) grades — on every cell in the
 config, with the shared supply spec `layout/erc-spec.json` and the curated
 `sg13g2` deck (`klt lvs` extracts inline with the same deck). It writes
-`layout/erc/<cell>.json` and, for the negative control,
+`layout/erc/<cell>.json` and, for the negative controls,
 `layout/erc/controls/<stem>.json`.
 
 ```
@@ -1097,17 +1097,30 @@ substrate-continuity check as `substrate_isolation_undecidable` and
 the substrate is shared and the check is *evaluated*, finding nothing) is the
 documented path, not a workaround.
 
-The negative control is `layout/erc/controls/missing-tie-nwell-inv1.gds`:
-`layout/gen_controls.py`'s ERC table (same script, second output directory —
-`layout/erc/controls/` beside `layout/drc/controls/`) draws `sg13g2_inv_1`
-with the shipped engine and filters out the well-tap band's
-activ/implant/contact boxes — identified by y-position alone (the band is the
-only `nsd`-polarity activ above `row_height − p_diff_top_margin`), with no
-generator internals patched — and `layout/run_erc.py` runs it against the
-same spec and **requires** its report to show `erc.missing_tie` (it does:
-`well/tub region has no 'nwell_tap' tap contact drawn inside it`, net VDD).
-That is the falsifiable half: a spec that cannot fail proves nothing.
-`gen_controls.py --check` (CI's `layouts` stage) rebuilds the stream.
+The negative controls are the two streams under `layout/erc/controls/`
+(issues #179 and #232): `layout/gen_controls.py`'s ERC table (same script,
+second output directory — `layout/erc/controls/` beside
+`layout/drc/controls/`) draws `sg13g2_inv_1` with the shipped engine and
+filters out one tap band's activ/implant/contact boxes — identified by
+y-position alone (the well band is the only `nsd`-polarity activ above
+`row_height − p_diff_top_margin`, the substrate band the only
+`psd`-polarity activ below `n_diff_y0`), with no generator internals
+patched — and `layout/run_erc.py` runs each against the same spec and
+**requires** its report to show `erc.missing_tie` (both do:
+`well/tub region has no 'nwell_tap' tap contact drawn inside it`, net VDD,
+and `well/tub region has no 'substrate_tap' tap contact drawn inside it`,
+net VSS). That is the falsifiable half: a spec that cannot fail proves
+nothing. The substrate control (issue #232) closes the gap the signoff
+grader singles out: `substrate_tap`'s region is the n-well complement, a
+caller assertion graded `checked_by_well_assertion` — the one tie whose
+clean verdict otherwise rested on the caller's word — and the measured
+control shows the assertion is falsifiable anyway (`klt erc` distinguishes
+the removed tap from the NMOS source/drain diffusion that remains in the
+asserted region, connected to the same VSS net: one `erc.missing_tie`
+finding, `erc_status: violations`, no other rule fired). The issue's
+suspected risk — that the leftover p-implant diffusion might satisfy the
+tie — is thereby refuted by measurement, not assumption.
+`gen_controls.py --check` (CI's `layouts` stage) rebuilds both streams.
 
 Manifest: `evidence["11.analog"]` in `manifests/sg13g2-stdcells.json` cites
 one group per cell — that cell's ERC report plus its item-4 LVS report

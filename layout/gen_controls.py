@@ -76,14 +76,17 @@ TABLE = [
      "breaks": ("p", 1)},
 ]
 
-# One row per committed ERC tap control (issue #179), in recording order:
-# `stem` the committed filename (`.gds`/`.json` appended); `cell` the base
-# config cell; `top` the committed stream's structure name (`_lib` appended
-# for the library); `remove` which tap band is filtered out -- "nwell" (the
-# n-well tie to VDD) or "substrate" (the p-substrate tie to VSS).
+# One row per committed ERC tap control (issues #179 and #232), in recording
+# order: `stem` the committed filename (`.gds`/`.json` appended); `cell` the
+# base config cell; `top` the committed stream's structure name (`_lib`
+# appended for the library); `remove` which tap band is filtered out --
+# "nwell" (the n-well tie to VDD) or "substrate" (the p-substrate tie to
+# VSS).
 ERC_TABLE = [
     {"stem": "missing-tie-nwell-inv1", "cell": INV1, "top": "missing_tie_nwell_inv1",
      "remove": "nwell"},
+    {"stem": "missing-tie-substrate-inv1", "cell": INV1, "top": "missing_tie_substrate_inv1",
+     "remove": "substrate"},
 ]
 
 

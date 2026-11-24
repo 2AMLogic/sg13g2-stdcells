@@ -152,6 +152,16 @@ class RecordedEvidence(unittest.TestCase):
         self.assertEqual(findings[0]["net"], "VDD")
         self.assertEqual(findings[0]["layer"], "nwell_tap")
 
+    def test_negative_control_shows_missing_tie_substrate(self):
+        """The substrate tie's region is a caller assertion (the n-well
+        complement), the half the signoff grader flags as resting on the
+        caller's word -- its control must falsify it anyway (issue #232)."""
+        rep = json.loads((LAYOUT / "erc" / "controls" / "missing-tie-substrate-inv1.json").read_text())
+        findings = run_erc.missing_ties(rep)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["net"], "VSS")
+        self.assertEqual(findings[0]["layer"], "substrate_tap")
+
     def test_control_streams_present_for_the_runner(self):
         """run_erc fails loudly with no control streams; the committed recipe
         (layout/gen_controls.py) must keep exactly the tabulated set on disk."""
