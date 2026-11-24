@@ -352,16 +352,17 @@ Findings, in the order the issue asked for:
   (`_pairings`: every ordering, orientation and break position) crossed with
   both track assignments (the second reached by renaming `n1` ahead of `Y`;
   neither net is a gate, so the alphabetical track order is the only
-  difference), with `layout_cell` as the oracle -- the numbers are held by
-  `test_gen_layouts.py::FoldedSeriesInterleave`: at the fixture geometry
-  (420 nm pitch, 3360 nm row, `channel_tracks` 2 and 3) all 64 candidates
-  per cell exit 3, 16 of each nand2's on the `Metal1 of Y overlaps n1`
-  crossing itself and the rest -- and all 64 of each nor2's -- earlier on
-  the gate-contact spot the same interleave crowds; at a synthetic 1260 nm
-  pitch, where the 300 nm gate pads fit beside the stripes, every candidate
-  of all four cells dies on the overlap, and taller rows (4200, 4620 nm)
-  lift nothing: the crossing, not the pad, is the pitch- and
-  row-height-independent limit.
+  difference), with `layout_cell` as the oracle.
+  `test_gen_layouts.py::FoldedSeriesInterleave` checks 32 pairings per track
+  order at the fixture geometry (420 nm pitch, 3360 nm row). With either
+  `channel_tracks` setting (2 or 3), all 64 candidates per cell fail placement
+  (exit 3). For each nand2, 8 report `Metal1 of Y overlaps n1` in the
+  original order and 8 report `Metal1 of An overlaps Y` in the reversed
+  order. The other 24 pairings in each order fail at the gate contact, as
+  do all 32 per order for each nor2. At a synthetic 1260 nm pitch the
+  300 nm gate pads fit beside the stripes, and all 32 pairings in each
+  order reach the Metal1 crossing for all four cells. Taller rows
+  (4200 and 4620 nm) also leave all four cells unplaced.
 * **What would place them** (each is a change to the model, not a tuning):
   interleaved fingers with a net-aware LVS reference, gate contacts outside
   the channel (for the folded series stack, measured: at the 1260 nm pitch

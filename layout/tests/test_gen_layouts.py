@@ -7,6 +7,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from collections import Counter
+from unittest.mock import patch
 
 LAYOUT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(LAYOUT))
@@ -1180,8 +1182,7 @@ class FoldedSeriesInterleave(unittest.TestCase):
         return patched
 
     def outcomes(self, cell, tracks, pitch=None, row=None):
-        """{verdict: count} over every pairing x both track orders, each run
-        through `layout_cell` (any placement error it names counts)."""
+        """Count layout_cell outcomes for each spelling of the internal net."""
         lay = copy.deepcopy(self.FIXTURE["layout"])
         lay["channel_tracks"] = tracks
         if pitch is not None:
@@ -1189,48 +1190,45 @@ class FoldedSeriesInterleave(unittest.TestCase):
         if row is not None:
             lay["row_height_nm"] = row
         proc = self.FIXTURE["process"]
-        real_order, real_build = gl.order_strips, gl.gn.build
         summary = {}
-        try:
-            for pairing in self.pairings(cell):
-                for build in (real_build, self.renamed_build()):
-                    gl.order_strips = lambda ndevs, pdevs, _p=pairing: _p
-                    gl.gn.build = build
-                    try:
-                        gl.layout_cell(cell, proc, lay)
-                        verdict = "placed"
-                    except gl.PlaceError as e:
-                        m = str(e)
-                        verdict = ("overlaps" if "overlaps" in m else
-                                   "gate-contact spot" if "gate contact" in m else
-                                   "riser" if "riser" in m else "other")
-                    summary[verdict] = summary.get(verdict, 0) + 1
-        finally:
-            gl.order_strips = real_order
-            gl.gn.build = real_build
+        for internal_net, build in (("n1", gl.gn.build), ("An", self.renamed_build())):
+            counts = Counter()
+            with patch.object(gl.gn, "build", build):
+                # Each pairing embeds the terminal names from this build.
+                pairings = self.pairings(cell)
+                self.assertEqual(len(pairings), 32)
+                for pairing in pairings:
+                    with patch.object(gl, "order_strips", return_value=pairing):
+                        try:
+                            gl.layout_cell(cell, proc, lay)
+                            verdict = "placed"
+                        except gl.PlaceError as e:
+                            verdict = str(e).partition(" (")[0]
+                            if verdict.startswith("no Metal1-clean spot for the gate contact of "):
+                                verdict = "gate-contact spot"
+                    counts[verdict] += 1
+            summary[internal_net] = counts
         return summary
 
     def test_exhausts_the_pairing_space_at_the_fixture_geometry(self):
         for cell in self.CELLS:
             for tracks in (2, 3):
                 with self.subTest(cell=cell["name"], channel_tracks=tracks):
-                    s = self.outcomes(cell, tracks)
-                    self.assertNotIn("placed", s)
-                    self.assertEqual(sum(s.values()), 2 * len(self.pairings(cell)))
                     if cell["family"] == "nand2":
-                        # The Y/n1 crossing itself is directly reachable: the
-                        # pairings whose pads fit die on the Metal1 overlap.
-                        self.assertGreater(s.get("overlaps", 0), 0)
+                        expected = {
+                            "n1": {"Metal1 of Y overlaps n1": 8, "gate-contact spot": 24},
+                            "An": {"Metal1 of An overlaps Y": 8, "gate-contact spot": 24},
+                        }
                     else:
-                        # nor2: every candidate dies earlier, on the gate
-                        # contact spot the same interleave crowds.
-                        self.assertEqual(s, {"gate-contact spot": 2 * len(self.pairings(cell))})
+                        expected = {"n1": {"gate-contact spot": 32}, "An": {"gate-contact spot": 32}}
+                    self.assertEqual(self.outcomes(cell, tracks), expected)
 
     def test_taller_rows_lift_nothing(self):
         for cell in self.CELLS:
             for row in (4200, 4620):
                 with self.subTest(cell=cell["name"], row_height_nm=row):
-                    self.assertNotIn("placed", self.outcomes(cell, 2, row=row))
+                    for counts in self.outcomes(cell, 2, row=row).values():
+                        self.assertNotIn("placed", counts)
 
     def test_a_pitch_that_fits_the_pads_leaves_only_the_crossing(self):
         """At a 1260 nm pitch the 300 nm gate pads fit beside the poly
@@ -1241,7 +1239,8 @@ class FoldedSeriesInterleave(unittest.TestCase):
         for cell in self.CELLS:
             with self.subTest(cell=cell["name"]):
                 self.assertEqual(self.outcomes(cell, 2, pitch=1260),
-                                 {"overlaps": 2 * len(self.pairings(cell))})
+                                 {"n1": {"Metal1 of Y overlaps n1": 32},
+                                  "An": {"Metal1 of An overlaps Y": 32}})
 
 
 class FakeProcess(unittest.TestCase):
