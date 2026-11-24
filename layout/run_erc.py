@@ -55,7 +55,7 @@ DECK = "sg13g2"
 # that build advertises `erc` and then rejects the spec. The reports were
 # produced by this build, so it is the install for this runner.
 ERC_INSTALL = ("git+https://github.com/2AMLogic/klayout-tools@"
-               "6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe")
+               "db1e2f17146dc834ec4aab351ef9ffd8c716d36c")
 SCHEMA_HINT = ("the spec's substrate tie uses `well_complement_of` with a null `well_layer`; "
                "klt builds older than the ERC-capable one demand `well_boxes` instead. "
                "Install a compatible build: uv tool install --force " + ERC_INSTALL

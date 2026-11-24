@@ -1039,8 +1039,8 @@ advertises `erc` but predates the `well_complement_of` tie schema
 that build for this runner (a throwaway env, never the host tool):
 
 ```
-uvx --from "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe" klt --help
-uv tool install --force git+https://github.com/2AMLogic/klayout-tools@6bd18bbc8637f6d767b3c24e77bd5db7a39e4bbe   # on a machine you own
+uvx --from "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@db1e2f17146dc834ec4aab351ef9ffd8c716d36c" klt --help
+uv tool install --force git+https://github.com/2AMLogic/klayout-tools@db1e2f17146dc834ec4aab351ef9ffd8c716d36c   # on a machine you own
 ```
 
 The runner prints this command when `klt` lacks `erc` and, on a `well_boxes`
