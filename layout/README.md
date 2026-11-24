@@ -90,8 +90,12 @@ share one gate contact. A poly column crosses both strips, so the NMOS and PMOS
 device on one gate net get the same finger count, the larger of the two; the other
 is folded into that many fingers (same total width, which must divide evenly on
 `process.grid_nm`, default 10, else exit `3`). Cell width is `(columns + 2) *
-gate_pitch_nm`, counting fingers. Each strip must be a single chain of devices
-sharing source/drain nets, and both chains must have the same gate-net sequence.
+gate_pitch_nm` plus one rule-derived gap per diffusion break, counting fingers.
+Each gap is rounded up to a whole number of gate pitches, so node columns after
+a break stay on the routing grid and a break cell's pins stay on the row-4 grid.
+A strip is one or more **chains** of devices sharing source/drain nets
+(issue #169); both strips share one gate-net sequence, so every poly column
+still crosses both.
 
 A gate whose net is also driven from diffusion (a multi-stage cell's internal
 net, e.g. `buf`'s `Y_i`) is routed as a terminal of that net (issue #201):
@@ -165,15 +169,73 @@ Two limits the step brings with it:
   when the strip's tallest run is far above it, because the contact has to fit
   inside that device's own run.
 
+### Diffusion breaks (issue #169)
+
+A strip orders as chains separated by a **diffusion break** where no ordering
+chains everything -- which is the common case once the fold makes devices
+even-fingered, because F alternating columns end on the net they started on for
+even F, so a continuation needs the next device to start on that same left net.
+The pairing search (`order_strips`) deepens on the **union** of the two strips'
+break position sets: a break in either strip shifts the columns after it in
+both (a poly column must cross both strips at one x), so the union is what
+costs width, and a cell that places as single chains keeps the exact ordering
+-- and the exact bytes -- the single-chain model picked. Strips too large to
+search exhaustively (a step cap fires; the 15-device-per-strip mux4 census row
+is the current example) fall back to a deterministic greedy first-fit pairing:
+a wider but still rule-legal ordering, never a silent refusal.
+
+The break itself is one gap of
+`max(activ_space_nm + 2 * hang, psd_space_nm + 2 * (hang + sd_enc_activ_nm))`
+rounded up to a whole number of gate pitches, where `hang` is
+`cont_nm / 2 + activ_enc_cont_nm` -- every value from `layout.rules`, no new
+key. The quantum is the routing grid: node columns are the grid (issue #225),
+so a gap that was not a multiple of `gate_pitch_nm` would shift every column
+after the break off it and take that cell's pins off spec row 4's grid
+(970 nm needed at the shipped rules, 1260 nm drawn at the 420 nm pitch; the
+cost is up to one pitch of width per break, and
+`DiffusionBreaks.test_break_cell_pins_stay_on_the_row4_grid` holds it). `nwell_space_nm` does not widen it
+because the n-well does not part: it bridges the gap (each side reaches past
+the gap's midpoint, so the pieces merge into one well) and the cell keeps its
+one well and one tap. Likewise a strip whose chain continues through the
+*other* strip's break (a phantom break -- the gap is in the column lattice, not
+in this strip's diffusion) bridges it: its activ and implant rectangles reach
+to the midpoint and merge, so an unbroken strip stays one diffusion island per
+chain. A strip that does break parts its activ and implant by the gap, which
+clears `activ_space_nm` on both strips and `psd_space_nm` on the PMOS strip by
+construction; the notch predicate skips a valley that spans one of its own
+breaks (legal by construction) and measures the n-well's with the bridged
+geometry. The taps span the gap: their activ and tie implant are drawn over the
+full column range including it, with one contact at every node position on
+either side of it.
+
+The break splits whatever net its two sides carried, and every diffusion node
+is its own island anyway (the channels separate them), so each net with more
+than one attachment needs its Metal1 join on a channel track as before. That
+is the named next limit for some of the census cells that used to fail with
+`needs a diffusion break` (the others hit the contact floor or the n-well
+notch, per the table below): `nand4_1` reports `nets ['Y', 'n1', 'n2', 'n3'] need
+4 channel tracks, config allows 1`. The channel-routing gap is tracked
+separately from this issue.
+
+The capability is measured, not just asserted:
+`layout/drc/controls/break-pmos-p420.gds` is the shipped `nand2_1` with one
+break forced into its PMOS pairing (the same forcing
+`test_gen_layouts.py::DiffusionBreaks` exercises, via `layout/gen_controls.py`),
+and its `klt drc --deck sg13g2` report and `klt lvs` match against the
+committed `nand2_1` reference netlist sit next to it -- the DRC report with
+`activ.space.1`, `psd.space.1` and `nwell.space.1` all in `rules_checked`, the
+LVS report showing the split VDD node re-joined by its rail stubs and the body
+verification passing on the one bridged well. Recorded on klt
+`0.9.3.dev4263+g473bcdb00d05` / klayout `0.30.12`.
+
 Outside that model the generator exits `3` naming the cell and the reason:
-* a diffusion break is needed (XOR, mux) -- including any series stack of
-  even-finger devices: F alternating columns end on the net they started on for even
-  F, so the next device in the chain cannot share that diffusion (`nand4_1`);
-* a gate net driving the columns of two different devices;
-* more nets to join than `channel_tracks` -- every extra finger boundary re-attaches
-  its net, so a series stack that is folded (`nand2_2`: `Y` and `n1`) needs two
-  tracks where the config allows one, and a second track does not rescue it
-  (the measured limits are in the issue #171 section below);
+* a gate net driving the columns of two different devices (XOR, mux: the
+  inverter and the driven device share the input net);
+* more nets to join than `channel_tracks` -- every extra finger boundary
+  re-attaches its net, so a series stack that is folded (`nand2_2`: `Y` and
+  `n1`) needs two tracks where the config allows one (a second track does not
+  rescue it; the measured limits are in the issue #171 section below), and a
+  cell that breaks adds its split nets to that count (`nand4_1`: four);
 * a strip whose height profile is tall-short-tall, or a device drawn too short
   for a contact (both above);
 * a channel narrower than the two implant enclosures (`2 * sd_enc_activ_nm`),
@@ -192,24 +254,40 @@ hunting for a width the netlist does not contain.
 
 #### What still blocks the AND/OR and AOI/OAI families
 
-Lifting the one-height-per-strip limit does not by itself add a cell: each of
-the four cells issue #74 originally named is blocked by a *further* limit, and
-three of them by one this generator has never had. Measured on `2546575` by
-building a one-cell config per cell and reading the reported failure:
+Neither lifting the one-height-per-strip limit (#74) nor the diffusion break
+(#169) adds a cell on its own: each of the cells issue #74 originally named is
+still blocked by a *further* limit, now measured past the break. Measured on
+this branch by building a one-cell config per cell and reading the reported
+failure:
 
 | cell | drawn NMOS / PMOS finger widths | next limit |
 |---|---|---|
 | `and2_1` | `[1000, 1000, 500]` / `[800]` | needs 2 channel tracks (`X`, `X_i`), config allows 1 |
-| `or2_1` | `[250, 500]` / `[800]` | PMOS needs a diffusion break |
-| `a21oi_1` | `[250, 500]` / `[800]` | NMOS needs a diffusion break |
-| `o21ai_1` | `[500, 1000]` / `[800]` | no shared gate-net sequence (gate nets cannot align in columns) |
-| `xor2_1` | `[250, 500]` / `[400, 800]` | NMOS needs a diffusion break |
+| `or2_1` | `[250, 500]` / `[800]` | 250 nm fingers are too short for a contact |
+| `a21oi_1` | `[250, 500]` / `[800]` | 250 nm fingers are too short for a contact |
+| `o21ai_1` | `[500, 1000]` / `[800]` | needs 3 channel tracks (`Y`, `n1`, `n2`), config allows 1 |
+| `xor2_1` | `[250, 500]` / `[400, 800]` | 250 nm fingers are too short for a contact |
+| `a22oi_1` | `[500]` / `[800]` | needs 4 channel tracks (`X`, `n1`, `n2`, `n3`), config allows 1 |
+| `nand4_1` | `[500]` / `[400]` | needs 4 channel tracks (`Y`, `n1`, `n2`, `n3`), config allows 1 |
+| `mux2_1` | `[500]` / `[400, 800]` | PMOS height profile notches over columns 8..9, a 550 nm `nwell` opening under the 620 nm minimum |
 
-So the capability is exercised in `test_gen_layouts.py::MixedFingerWidths` on
-synthetic configs, the way `FakeProcess` exercises a second process -- `and2_1`
-places with a stepped NMOS strip once the synthetic row gives it two channel
-tracks and a wider pitch. The committed config's `channel_tracks` and `rules`
-are unchanged.
+No cell fails with `needs a diffusion break` any more: the break model moved
+every one of them to its next named limit, dominated by the one-track channel
+(`channel_tracks: 1`) and the 300 nm contact floor. The same holds for the
+13-cell demo census of `design/example_config.json` under the committed
+layout/process blocks (`test_gen_layouts.py::DiffusionBreaks` asserts it) and
+for the 40-cell `2AMLogic/sg13cmos5l-stdcells` census (`d91a3a3`): there 3 of
+40 place (the three inverters, unchanged), and of the 21 former break rows 12
+now name their channel-track count, 5 the contact floor (`and4_1`, `mux4_1`,
+`nand4_1`, `nor4_1`, `or4_1`), 1 an n-well notch (`mux2_1`) and 3 the
+repeated-gate limit (`mux2_2`, `xnor2_1`, `xor2_1`). The break geometry itself places and measures clean on the
+recorded `break-pmos-p420` control above.
+
+So the capability is exercised in `test_gen_layouts.py::MixedFingerWidths` and
+`::DiffusionBreaks` on synthetic and forced configurations, the way
+`FakeProcess` exercises a second process -- `and2_1` places with a stepped NMOS
+strip once the synthetic row gives it two channel tracks and a wider pitch. The
+committed config's `channel_tracks` and `rules` are unchanged.
 
 #### What blocks buf, folded nand2 and folded nor2 on a 3360 nm row (issue #171)
 
@@ -371,13 +449,14 @@ Multi-input cells with fingers (`nand2_2`, `buf_2`, ...) are not in the config: 
 `channel_tracks: 1` they exit `3` (see above), so the second multi-finger cell
 is the 4-finger inverter, not a multi-input cell.
 
-### Recorded notch controls (issue #86)
+### Recorded notch and break controls (issues #86, #169)
 
 `layout/drc/controls/` holds the measured counterpart of the height-profile
-predicate: four stub-forced layouts covering the predicate's arms (the
-`opening >= threshold` admit, the `opening <= 0` merged admit, and the
-refusal), each with its `klt drc --deck sg13g2 --format json` report next to
-it (and `klt drc --check` passing against the committed GDS):
+predicate and of the diffusion break: four stub-forced layouts covering the
+predicate's arms (the `opening >= threshold` admit, the `opening <= 0` merged
+admit, and the refusal), plus one break-forced layout, each with its
+`klt drc --deck sg13g2 --format json` report next to it (and `klt drc --check`
+passing against the committed GDS):
 
 * `notch-nmos-p840-admitted` -- an `and2`-shaped row at `gate_pitch_nm` 840
   whose NMOS strip is forced from `[1000, 1000, 500]` to `[1000, 500, 1000]`.
@@ -405,6 +484,24 @@ it (and `klt drc --check` passing against the committed GDS):
   shipped-cell geometry at a placeable pitch, so no control covers it. The
   deck agrees the merged rows are clean: `clean`, 0 violations, with all
   three space-or-notch rules in `rules_checked`.
+* `break-pmos-p420` -- the shipped `nand2_1` with one diffusion break forced
+  into the PMOS pairing `order_strips` picks (issue #169; the forcing
+  `layout/tests/test_gen_layouts.py::DiffusionBreaks` exercises). The PMOS
+  activ parts across a 960 nm gap (`1260 - 2 * 150 >= activ_space_nm`; the
+  gap is the 970 nm rule need rounded up to three 420 nm pitches), its psd by
+  more than `psd_space_nm`, the n-well bridges into one region, the NMOS
+  strip bridges the phantom break, and the split VDD node is re-joined by its
+  rail stubs. The deck agrees: `clean`, 0 violations, with `activ.space.1`,
+  `psd.space.1` and `nwell.space.1` in `rules_checked`; the `.lvs.json` next
+  to the DRC report records `klt lvs` matching the committed `nand2_1`
+  reference netlist (nets 6/6, devices 4/4, body verification `verified`),
+  recorded on klt `0.9.3.dev4263+g473bcdb00d05` / klayout `0.30.12`.
+  This row supersedes the record made on the half-pitch phase with a 970 nm
+  gap (GDS sha256 `46f490b8...`, klt `0.9.3.dev3062`): main moved the cell onto
+  the routing-grid phase (issue #225, `(columns + 2)` pitches wide) and the
+  break gap was quantized to whole gate pitches, so the geometry changed and
+  the old report no longer described the committed GDS. New GDS sha256
+  `6601c09b...`.
 
 The controls are regenerable the way the shipped GDS is:
 `python3 layout/gen_controls.py --check` rebuilds every stream in memory and
@@ -412,16 +509,18 @@ fails on any drift (`check-ci.sh layouts` runs it on every PR); without
 `--check` it rewrites the `.gds` files (the `.json` reports are recorded
 evidence and are never touched). The script holds the control table -- per
 control the base cell, the `layout` overrides, the forced strip profile and
-whether `_notch_violation` was stubbed off -- and drives the generator's own
-drawing engine with `_strip_profile` patched, the same forcing
-`layout/tests/test_gen_layouts.py::ForcedNotch` exercises. Two inputs the
-per-control notes above do not spell out: the config cell is renamed to
-`notch_<strip>_p<pitch>` -- it is the stream's GDS structure name, with
-`_lib` appended for the library name (`notch_n_p420_lib` / `notch_n_p420`)
--- and the two 840-pitch rows need `row_height_nm` 4200 and
-`channel_tracks` 2 alongside the `gate_pitch_nm` 840 bump; the table is the
-source of truth for both. The committed GDS is deterministic, and each
-report's `provenance.input.content_hash` pins the exact stream it graded. Recorded on klt `0.9.2.dev1029+g76f47afa48f1` /
+whether `_notch_violation` was stubbed off, or the `(strip, position)` pair
+forcing a diffusion break -- and drives the generator's own drawing engine
+with `_strip_profile` or `order_strips` patched, the same forcing
+`layout/tests/test_gen_layouts.py::ForcedNotch` and `::DiffusionBreaks`
+exercise. Two inputs the per-control notes above do not spell out: the config
+cell is renamed to `notch_<strip>_p<pitch>` (or `break_<strip>_p<pitch>`) --
+it is the stream's GDS structure name, with `_lib` appended for the library
+name (`notch_n_p420_lib` / `notch_n_p420`) -- and the two 840-pitch rows need
+`row_height_nm` 4200 and `channel_tracks` 2 alongside the `gate_pitch_nm` 840
+bump; the table is the source of truth for both. The committed GDS is
+deterministic, and each report's `provenance.input.content_hash` pins the
+exact stream it graded. Recorded on klt `0.9.2.dev1029+g76f47afa48f1` /
 klayout `0.30.13`, deck `sg13g2` -- except `notch-pmos-p600-merged`, recorded
 on klt `0.9.3.dev3+gd5d57daf9a14` (klayout `0.30.13`). The deck's
 `content_hash` is byte-identical across the two klt versions

@@ -290,13 +290,23 @@ class MultiFinger(unittest.TestCase):
             self.assertEqual(r.returncode, 3)
             self.assertIn("x_nand2_2", r.stderr)
 
-    def test_even_finger_series_chain_needs_diffusion_break(self):
+    def test_even_finger_series_stack_needs_two_tracks(self):
+        """The break model places nand4's even-finger series stack as two
+        chains, but the stack's middle net is split across them, so with one
+        track the refusal is the channel-track one, naming the split net."""
         cfg = copy.deepcopy(CFG)
         cfg["cells"] = [{"name": "x_nand4_1", "family": "nand4", "drive": 1, "inputs": ["A", "B", "C", "D"], "outputs": {"Y": "!(A*B*C*D)"}}]
         with self.assertRaises(gl.PlaceError) as cm:
             gl.generate(cfg)
         self.assertIn("x_nand4_1", str(cm.exception))
-        self.assertIn("diffusion", str(cm.exception))
+        self.assertIn("channel tracks", str(cm.exception))
+        self.assertIn("'n2'", str(cm.exception))
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d) / "c.json"
+            p.write_text(json.dumps(cfg))
+            r = run("--config", str(p))
+            self.assertEqual(r.returncode, 3)
+            self.assertIn("x_nand4_1", r.stderr)
 
     def test_no_rule_value_loosened(self):
         self.assertEqual(CFG["layout"]["rules"], {
@@ -444,8 +454,8 @@ class MixedFingerWidths(unittest.TestCase):
     """One diffusion strip, devices of different drawn finger widths (issue #74).
 
     No cell in `example_config.json` has a mixed-width strip -- every candidate
-    that does is still blocked by a limit this slice does not lift (a diffusion
-    break, a second channel track, gate-net realignment), so the capability is
+    that does is still blocked by a limit this slice does not lift (a second
+    channel track, a contact floor, gate-net realignment), so the capability is
     exercised on synthetic configs, the way `FakeProcess` exercises a second
     process. `channel_tracks` and every `rules` value in the committed config are
     untouched; see `test_no_rule_value_loosened`."""
@@ -562,6 +572,172 @@ class MixedFingerWidths(unittest.TestCase):
         self.assertIn("sd_enc_activ", str(cm.exception))
 
 
+class DiffusionBreaks(unittest.TestCase):
+    """Several diffusion chains per strip, separated by a diffusion break
+    (issue #169): the break is a rule-derived gap, both strips shift at the
+    union of their break positions so poly columns still cross both, the
+    continuing strip bridges the other's break with its own diffusion, the
+    n-well bridges every break (one well, one tap), and a net the break splits
+    must be re-joined in Metal1 like any multi-node net -- the channel-track
+    budget is the named limit it is, and some census break cells hit it next
+    (others hit the contact floor or the n-well notch). No reachable cell
+    places through a break under the committed config, so the geometry is exercised the way `ForcedNotch` exercises a profile: one
+    break forced into the pairing the model picks -- the forcing behind the
+    recorded `break-pmos-p420` control, whose DRC report and LVS match are
+    committed in layout/drc/controls/."""
+
+    A22OI = {"name": "x_a22oi_1", "family": "a22oi", "drive": 1,
+             "inputs": ["A1", "A2", "B1", "B2"], "outputs": {"X": "!((A1*A2)+(B1*B2))"}}
+
+    def force_break(self, strip="p", at=1):
+        """Patch order_strips to force one diffusion break into the pairing
+        the model picks, keeping everything else about it."""
+        real = gl.order_strips
+
+        def patched(ndevs, pdevs):
+            nord, nbrk, pord, pbrk = real(ndevs, pdevs)
+            if strip == "p":
+                pbrk = tuple(sorted(set(pbrk) | {at}))
+            else:
+                nbrk = tuple(sorted(set(nbrk) | {at}))
+            return nord, nbrk, pord, pbrk
+
+        gl.order_strips = patched
+        self.addCleanup(setattr, gl, "order_strips", real)
+
+    def strip_runs_at(self, S, layer, edge_y, i):
+        return sorted((b for b in S.boxes if b[0] == layer and b[i + 1] == edge_y), key=lambda b: b[1])
+
+    def forced(self, cfg=None):
+        cfg = cfg or CFG
+        return gl.layout_cell(cell_named("sg13g2_nand2_1"), cfg["process"], cfg["layout"])
+
+    def test_forced_break_places_and_parts_the_strip(self):
+        self.force_break("p", 1)
+        S, W, H = self.forced()
+        # (N+2)*pitch + one gap: the 970 nm rule need rounded up to 3 pitches
+        self.assertEqual((W, H), (4 * 420 + 1260, 3360))
+        lay = CFG["layout"]
+        pruns = self.strip_runs_at(S, "activ", lay["row_height_nm"] - lay["p_diff_top_margin_nm"], 3)
+        self.assertEqual(len(pruns), 2, "the PMOS strip must part at its break")
+
+    def test_break_gap_meets_the_space_rules(self):
+        R, lay = CFG["layout"]["rules"], CFG["layout"]
+        self.force_break("p", 1)
+        S, _, _ = self.forced()
+        act_hang = R["cont_nm"] // 2 + R["activ_enc_cont_nm"]
+        pruns = self.strip_runs_at(S, "activ", lay["row_height_nm"] - lay["p_diff_top_margin_nm"], 3)
+        self.assertGreaterEqual(pruns[1][1] - pruns[0][3], R["activ_space_nm"])
+        psd = self.strip_runs_at(S, "psd", lay["row_height_nm"] - lay["p_diff_top_margin_nm"] + R["sd_enc_activ_nm"], 3)
+        self.assertEqual(len(psd), 2)
+        self.assertGreaterEqual(psd[1][1] - psd[0][3], R["psd_space_nm"])
+        gap = pruns[1][1] - pruns[0][3] + 2 * act_hang  # the break width between node centres
+        self.assertGreaterEqual(gap, 970)  # the rule need (psd binds) ...
+        self.assertEqual(gap, 1260)  # ... rounded up to whole gate pitches (node columns stay on the grid)
+        self.assertEqual(gap % CFG["layout"]["gate_pitch_nm"], 0)
+
+    def test_break_cell_pins_stay_on_the_row4_grid(self):
+        """The gap is a whole number of gate pitches, so node columns after a
+        break are still routing-grid columns (issue #225 phase) and spec row 4's
+        `off_grid_labels` is empty for a break cell, for a PMOS-strip break."""
+        P = CFG["layout"]["gate_pitch_nm"]
+        self.force_break("p", 1)
+        S, W, _ = self.forced()
+        self.assertEqual(off_grid_labels(S, P), [])
+        self.assertEqual(W % P, 0)
+
+    def test_continuing_strip_bridges_the_break(self):
+        """The NMOS chain runs through the PMOS break: one activ run spans
+        the gap, so the unbroken strip's diffusion stays continuous."""
+        self.force_break("p", 1)
+        lay = CFG["layout"]
+        S, _, _ = self.forced()
+        nruns = self.strip_runs_at(S, "activ", lay["n_diff_y0_nm"], 1)
+        self.assertEqual(len(nruns), 1)
+        pruns = self.strip_runs_at(S, "activ", lay["row_height_nm"] - lay["p_diff_top_margin_nm"], 3)
+        self.assertLess(pruns[0][3], nruns[0][3])  # the gap is inside the NMOS span
+
+    def test_nwell_bridges_the_break_as_one_well(self):
+        self.force_break("p", 1)
+        S, W, H = self.forced()
+        nwell = sorted((b for b in S.boxes if b[0] == "nwell"), key=lambda b: b[1])
+        # A uniform strip that breaks draws one box per chain, but each
+        # reaches past the gap's midpoint, so the two merge into one region:
+        # one well, one tap -- no nwell_space is owed across the break.
+        self.assertEqual(len(nwell), 2)
+        for a, b in zip(nwell, nwell[1:]):
+            self.assertLessEqual(b[1], a[3], "the n-well boxes must overlap across the break")
+        self.assertLessEqual(nwell[0][1], 420 - (CFG["layout"]["rules"]["cont_nm"] // 2
+                                                 + CFG["layout"]["rules"]["activ_enc_cont_nm"]
+                                                 + CFG["layout"]["rules"]["nwell_enc_pactiv_nm"]))
+        self.assertGreater(nwell[-1][3], W)
+
+    def test_break_width_comes_from_the_rules(self):
+        cfg = copy.deepcopy(CFG)
+        # The binding rule grows the gap: need 970 -> 1370, so the gap goes from
+        # 3 to 4 pitches. (+100 would stay inside the 1260 nm quantum.)
+        cfg["layout"]["rules"]["psd_space_nm"] += 400
+        self.force_break("p", 1)
+        a = self.forced()[1]
+        b = self.forced(cfg)[1]
+        self.assertEqual(b - a, CFG["layout"]["gate_pitch_nm"])
+
+    def test_break_output_is_byte_deterministic(self):
+        def gen():
+            cfg = copy.deepcopy(CFG)
+            real = gl.order_strips
+
+            def patched(ndevs, pdevs):
+                nord, nbrk, pord, pbrk = real(ndevs, pdevs)
+                return nord, nbrk, pord, tuple(sorted(set(pbrk) | {1}))
+
+            gl.order_strips = patched
+            try:
+                return gl.generate(cfg)
+            finally:
+                gl.order_strips = real
+        a, b = gen(), gen()
+        self.assertEqual(a, b)
+        self.assertTrue(read_gds_boxes(a["sg13g2_nand2_1.gds"]))
+
+    def test_committed_config_names_the_split_nets(self):
+        """a22oi's strips order only as two chains each; every internal net
+        then has nodes in both chains and the split is named per net, with
+        the break no longer the failure."""
+        with self.assertRaises(gl.PlaceError) as cm:
+            gl.generate({**copy.deepcopy(CFG), "cells": [self.A22OI]})
+        msg = str(cm.exception)
+        self.assertIn("x_a22oi_1", msg)
+        self.assertIn("channel tracks", msg)
+        for net in ("'X'", "'n1'", "'n2'", "'n3'"):
+            self.assertIn(net, msg)
+        self.assertNotIn("diffusion break", msg)
+
+    def test_demo_census_reports_no_diffusion_break(self):
+        """AC of issue #169: every demo cell either places or names a different
+        limit. demo_xor2_1 / demo_mux2_1 / demo_a21oi_1 land on their measured
+        next limits (a contact floor, a 550 nm nwell opening, a contact floor)."""
+        design = json.loads((LAYOUT.parent / "design" / "example_config.json").read_text())
+        for cell in design["cells"]:
+            cfg = copy.deepcopy(CFG)
+            cfg["cells"] = [cell]
+            try:
+                gl.generate(cfg)
+                continue
+            except gl.PlaceError as e:
+                msg = str(e)
+            self.assertNotIn("diffusion break", msg, cell["name"])
+        for name, fragment in (("demo_xor2_1", "too short for a contact"),
+                               ("demo_mux2_1", "an opening of 550 nm in nwell"),
+                               ("demo_a21oi_1", "too short for a contact")):
+            cell = next(c for c in design["cells"] if c["name"] == name)
+            cfg = copy.deepcopy(CFG)
+            cfg["cells"] = [cell]
+            with self.assertRaises(gl.PlaceError) as cm:
+                gl.generate(cfg)
+            self.assertIn(fragment, str(cm.exception), name)
+
+
 def m1_components(S):
     """Metal1 boxes grouped into connected components: two boxes whose edges
     touch or that overlap are one conductor, the way extraction merges
@@ -662,15 +838,42 @@ class DrivenGateRoute(unittest.TestCase):
             gl.generate(cfg)
         msg = str(cm.exception)
         self.assertIn("buf", msg)
-        self.assertIn("Y_i", msg)
-        self.assertIn("riser", msg)
+        # Whichever gate pad runs out of room first is the one named: the
+        # input's contact or the internal net's riser.
+        self.assertRegex(msg, r"riser|gate contact of A")
         with tempfile.TemporaryDirectory() as d:
             p = pathlib.Path(d) / "c.json"
             p.write_text(json.dumps(cfg))
             r = run("--config", str(p))
             self.assertEqual(r.returncode, 3)
-            self.assertIn("Y_i", r.stderr)
+            self.assertRegex(r.stderr, r"riser|gate contact of A")
             self.assertFalse((pathlib.Path(d) / "gds").exists())
+
+    def test_break_selected_buffer_beside_inverter_is_placed_or_refused(self):
+        """A buffer on A beside an inverter on B needs an automatic diffusion
+        break (issue #169 review). Its internal gate net Y_i must either be
+        one conductor with the first stage's drains, or the cell must be
+        refused naming Y_i and the riser -- never drawn with Y_i's pad as an
+        island (the split LVS reports as net.split)."""
+        cfg = copy.deepcopy(CFG)
+        cfg["layout"].update(row_height_nm=6200, gate_pitch_nm=840, channel_tracks=5)
+        cfg["cells"] = [{"name": "probe", "family": "probe", "drive": 1,
+                         "inputs": ["A", "B"], "outputs": {"Y": "A", "Z": "!B"}}]
+        try:
+            S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        except gl.PlaceError as e:
+            self.assertIn("Y_i", str(e))
+            self.assertIn("riser", str(e))
+            return
+        # Read the drawn conductor, not its rectangle count: Y_i's component
+        # must carry the second stage's gate contact AND drain contacts in
+        # both strips, or the gate is an island however many boxes it has.
+        comp, conts = self.route(S, "Y_i")
+        self.assertTrue(any(self.on_poly(S, c) for c in conts), "no gate contact on the Y_i route")
+        mid = cfg["layout"]["row_height_nm"] // 2
+        diffs = [c for c in conts if not self.on_poly(S, c)]
+        self.assertTrue(any((c[2] + c[4]) // 2 < mid for c in diffs), "Y_i does not reach the NMOS strip")
+        self.assertTrue(any((c[2] + c[4]) // 2 > mid for c in diffs), "Y_i does not reach the PMOS strip")
 
 
 def notch_layers(cfg=CFG):

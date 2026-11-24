@@ -42,11 +42,13 @@ CONTROLS = pathlib.Path(__file__).resolve().parent / "drc" / "controls"
 INV4 = "sg13g2_inv_4"
 AND2 = {"family": "and2", "drive": 1, "inputs": ["A", "B"], "outputs": {"X": "(A*B)"}}
 
-# One row per committed control, in recording order (#86, then #114):
-# `stem` is the committed filename (`.gds` appended); `cell` the base cell;
-# `layout` the overrides on the shipped config's layout block; `force` the
-# strip drawn with a forced height profile; `notch_off` whether
-# `_notch_violation` was stubbed off so the refused notch is drawn.
+# One row per committed control, in recording order (#86, then #114, then
+# #169): `stem` is the committed filename (`.gds` appended); `cell` the base
+# cell; `layout` the overrides on the shipped config's layout block; `force`
+# the strip drawn with a forced height profile; `notch_off` whether
+# `_notch_violation` was stubbed off so the refused notch is drawn; `breaks`
+# a (strip, order position) pair forcing a diffusion break there, patching
+# `order_strips` instead of the profile.
 TABLE = [
     {"stem": "notch-nmos-p420-refused", "cell": INV4, "layout": {},
      "force": ("n", [500, 320, 500, 500]), "notch_off": True},
@@ -58,6 +60,8 @@ TABLE = [
      "force": ("p", [800, 500, 800]), "notch_off": True},
     {"stem": "notch-pmos-p600-merged", "cell": INV4, "layout": {"gate_pitch_nm": 600},
      "force": ("p", [800, 500, 800, 800]), "notch_off": False},
+    {"stem": "break-pmos-p420", "cell": "sg13g2_nand2_1", "layout": {},
+     "breaks": ("p", 1)},
 ]
 
 
@@ -86,7 +90,7 @@ def forced_strip_profile(strip, profile, notch_off=False):
         return list(profile) if devs_[0][1] == strip else p
 
     gl._strip_profile = patched_prof
-    gl._notch_violation = (lambda *a: None) if notch_off else real_hit
+    gl._notch_violation = (lambda *a, **k: None) if notch_off else real_hit
     try:
         yield
     finally:
@@ -94,21 +98,52 @@ def forced_strip_profile(strip, profile, notch_off=False):
         gl._notch_violation = real_hit
 
 
+@contextlib.contextmanager
+def forced_break(strip, at):
+    """Force one diffusion break at order position `at` of `strip`.
+
+    Patches `gl.order_strips`: the pairing the model picks is kept and one
+    break is added to it. Restored on exit even if the cell fails to place."""
+    real_order = gl.order_strips
+
+    def patched_order(ndevs, pdevs):
+        nord, nbrk, pord, pbrk = real_order(ndevs, pdevs)
+        if strip == "p":
+            pbrk = tuple(sorted(set(pbrk) | {at}))
+        else:
+            nbrk = tuple(sorted(set(nbrk) | {at}))
+        return nord, nbrk, pord, pbrk
+
+    gl.order_strips = patched_order
+    try:
+        yield
+    finally:
+        gl.order_strips = real_order
+
+
 def regenerate(row, config):
     """One control as {committed filename: bytes}, via the shared forcing.
 
-    `forced_strip_profile` wraps `gl.generate`, so a failed row cannot leave
+    The forcing context wraps `gl.generate`, so a failed row cannot leave
     the generator patched for the next one."""
     cfg = copy.deepcopy(config)
     cfg["layout"].update(row["layout"])
     cell = _base_cell(cfg, row["cell"])
-    strip, profile = row["force"]
-    # The naming rule every committed stream follows: the config's cell name
-    # is the GDS structure name, with "_lib" appended for the library name.
-    cell["name"] = f"notch_{strip}_p{cfg['layout']['gate_pitch_nm']}"
+    if "breaks" in row:
+        strip = row["breaks"][0]
+        # The naming rule every committed stream follows: the config's cell
+        # name is the GDS structure name, with "_lib" appended for the library.
+        cell["name"] = f"break_{strip}_p{cfg['layout']['gate_pitch_nm']}"
+    else:
+        strip, profile = row["force"]
+        cell["name"] = f"notch_{strip}_p{cfg['layout']['gate_pitch_nm']}"
     cfg["cells"] = [cell]
 
-    with forced_strip_profile(strip, profile, notch_off=row["notch_off"]):
+    if "breaks" in row:
+        forcing = forced_break(*row["breaks"])
+    else:
+        forcing = forced_strip_profile(strip, row["force"][1], notch_off=row["notch_off"])
+    with forcing:
         files = gl.generate(cfg)
     (name,) = files  # one control cell in, one stream out
     return {f"{row['stem']}.gds": files[name]}

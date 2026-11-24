@@ -37,13 +37,14 @@ class Table(unittest.TestCase):
 
     def test_generated_streams_carry_the_naming_rule(self):
         """The naming rule the README never stated: the config cell name is
-        the stream's GDS structure name (`notch_<strip>_p<pitch>`), with
+        the stream's GDS structure name (`notch_<strip>_p<pitch>` for a
+        profile forcing, `break_<strip>_p<pitch>` for a break forcing), with
         `_lib` appended for the library name."""
         for row in gc.TABLE:
             with self.subTest(control=row["stem"]):
-                strip, _profile = row["force"]
                 pitch = row["layout"].get("gate_pitch_nm", CFG["layout"]["gate_pitch_nm"])
-                cell_name = f"notch_{strip}_p{pitch}"
+                stem = f"break_{row['breaks'][0]}" if "breaks" in row else f"notch_{row['force'][0]}"
+                cell_name = f"{stem}_p{pitch}"
                 data = gc.regenerate(row, CFG)[f"{row['stem']}.gds"]
                 self.assertIn(cell_name.encode(), data)
                 self.assertIn((cell_name + "_lib").encode(), data)

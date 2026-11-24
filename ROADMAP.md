@@ -100,21 +100,28 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
 
 ### What the layout generator can place today
 
-Probed on `176f794` by running `layout/gen_layouts.py` on one-cell configs
-derived from `layout/example_config.json` (same process and rules):
+Probed on this branch (the diffusion-break model of #169 landed) by running
+`layout/gen_layouts.py` on one-cell configs derived from
+`layout/example_config.json` (same process and rules):
 
 | Result | Cells | Reason reported (exit 3) |
 |---|---|---|
 | places | `inv_1/2/4/8/16`, `nand2_1` | |
-| fails | `nor2_1`, `nor2_2` | diffusion 250 nm tall is too short for a contact |
-| fails | `nand2_2`, `buf_1`, `and2_1` | needs 2 channel tracks, config allows 1 |
-| fails | `or2_1`, `nor3_1` | PMOS devices do not form a single diffusion chain (needs a diffusion break) |
-| fails | `nand3_1`, `nand4_1`, `a21oi_1`, `a22oi_1`, `xor2_1` | NMOS devices do not form a single diffusion chain (needs a diffusion break) |
-| fails | `o21ai_1` | no NMOS/PMOS strip orderings share one gate-net sequence |
+| fails | `nor2_1`, `nor2_2`, `or2_1`, `or2_2`, `nor3_1`, `a21oi_1`, `xor2_1`, `xnor2_1` | diffusion 250 nm tall is too short for a contact |
+| fails | `nand2_2` | needs 2 channel tracks (`Y` and the stack net `n1`), config allows 1 |
+| fails | `buf_1`, `and2_1` | needs 2 channel tracks (`X` and the inverter net `X_i`), config allows 1 |
+| fails | `nand3_1`, `o21ai_1` | needs 3 channel tracks, config allows 1 |
+| fails | `nand4_1`, `a22oi_1` | needs 4 channel tracks (the break splits the series middles), config allows 1 |
+| fails | `mux2_1` | PMOS height profile notches over columns 8..9, a 550 nm `nwell` opening under the 620 nm minimum |
 | fails | `nor4_1` | 500 nm device cannot be drawn as 4 fingers on the 10 nm grid |
 
-The placement model is what holds the generator to 6 of the 20 cells probed
-above (row 5 targets 40); `layout/example_config.json`, which lists four of
+No cell reports `needs a diffusion break` any more: the break model (#169)
+moved each of those cells to its next named limit, dominated by the one-track
+channel and the 300 nm contact floor. The break geometry itself is measured
+clean on the recorded `break-pmos-p420` control (DRC clean, LVS match,
+`layout/drc/controls/`). The placement model is what holds the generator to 6
+of the 23 cells probed above (row 5 targets 40);
+`layout/example_config.json`, which lists four of
 those six, is what holds the committed count at 4.
 
 ## Now
@@ -129,8 +136,9 @@ each item's own done-criterion, not against whether its issue closed.
    PR #85 — one strip may now hold devices of different finger widths — but
    it added no cell. Each of the four is blocked by a further limit, named in
    the placement table above and in `layout/README.md`: `and2_1` needs 2
-   channel tracks, `or2_1` a PMOS diffusion break, `a21oi_1` an NMOS
-   diffusion break, `o21ai_1` a shared gate-net sequence. Done when
+   channel tracks, `or2_1` and `a21oi_1` draw 250 nm fingers (under the
+   300 nm contact floor), `o21ai_1` needs 3 channel tracks (the diffusion
+   break of #169 moved the last two forward). Done when
    `and2_1`, `or2_1`, `a21oi_1` and `o21ai_1` are in
    `layout/example_config.json` with committed GDS, netlists and clean
    `klt drc` reports, and the unit tests cover the new cases.
@@ -149,11 +157,13 @@ each item's own done-criterion, not against whether its issue closed.
 
 ## Next
 
-- **Diffusion breaks** in `gen_layouts.py` (unlocks `or2_1` and `nor3_1` on
-  the PMOS side and `nand3_1`, `nand4_1`, `a21oi_1`, `a22oi_1` and `xor2_1`
-  on the NMOS side — see the placement table above). Overlaps the Now cell
-  additions, which edit the same file. Done when those cells are generated,
-  DRC-clean and LVS-matched.
+- **Channel tracks beyond one** in `gen_layouts.py` (the diffusion breaks of
+  #169 landed; the census cells that used to fail with `needs a diffusion
+  break` now name their next limit — for several of them a channel-track
+  count: `nand4_1`/`a22oi_1` need 4, `nand3_1`/`o21ai_1` 3, `and2_1`/`buf_1`
+  2; the rest hit the contact floor or the n-well notch — see the placement
+  table above). Overlaps the Now cell additions, which edit the same file.
+  Done when those cells are generated, DRC-clean and LVS-matched.
 - **`nor2` placement.** Done when `nor2_1` and `nor2_2` generate without
   relaxing a rule; the PR states whether the fix is sizing or geometry.
 - **Cell area in the Liberty view** (row 10 needs it). Done when each cell
@@ -172,10 +182,12 @@ each item's own done-criterion, not against whether its issue closed.
 - **The 40-cell set.** Which 40 cells and drive strengths? The spec names
   the families only.
 - **Two channel tracks** (`and2_1`, `buf_1`, `nand2_2`, every folded series
-  stack). It is now the named next limit for `and2_1`: PR #85 removed the
-  mixed-width refusal ahead of it. Does the 3.36 um row leave room for a
-  second Metal1 track between the strips under the ratified geometry, or do
-  these cells need a different topology?
+  stack, and since #169 every break cell: the split nets join in Metal1 too).
+  It is the named next limit for `and2_1` and now for `nand4_1`, `a22oi_1`,
+  `nand3_1` and `o21ai_1` as well. Does the 3.36 um row leave room for more
+  Metal1 tracks between the strips under the ratified geometry — and the
+  stubs-over-track crossings more nets bring — or do these cells need a
+  different topology?
 - **Rows 10-12 benchmark** against the re-characterized baseline. Which
   combinational designs beyond `add8`? The spec leaves that to the benchmark issue.
 - **T1 items 6-7** (statistical evidence, post-layout verification; item 7
