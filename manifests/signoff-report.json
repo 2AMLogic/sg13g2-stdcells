@@ -9106,7 +9106,8 @@
   "t1_met_count": 16,
   "t1_not_applicable_count": 1,
   "unmet_reason_counts": {
-    "no_evidence": 4,
+    "check_failed": 1,
+    "no_evidence": 3,
     "supply_spec_incomplete": 1
   },
   "source_doc": "docs/design-evidence-tiers.md",
@@ -9137,13 +9138,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:c4b2668f1e64b0b9218cfe5e84492f6826e34a5fb6b50c016567e401142d1744",
+        "content_hash": "sha256:cf262b1581042b14490eb00c1df54681767f9a62e0faa02bc0740340d2be3973",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 1,
           "path": null,
-          "content_hash": "sha256:c4b2668f1e64b0b9218cfe5e84492f6826e34a5fb6b50c016567e401142d1744",
+          "content_hash": "sha256:cf262b1581042b14490eb00c1df54681767f9a62e0faa02bc0740340d2be3973",
           "input_verified": true,
           "members": [
             {
@@ -9151,7 +9152,7 @@
                 "path": "design/gen_netlists.py",
                 "scope": "repo"
               },
-              "content_hash": "sha256:2fcf40fa59c33608b502da0f1ede3ffd8a4efe4cc22665b0074b54498216fa08",
+              "content_hash": "sha256:ca3a7ca13f49f74e8dfb546deb5df37a450f8a51d18f1ea7dd121fa987664079",
               "status": "verified"
             },
             {
@@ -9175,7 +9176,7 @@
                 "path": "layout/lvs/netlists/sg13g2_inv_2.spice",
                 "scope": "repo"
               },
-              "content_hash": "sha256:da42c9d5d4790a03f7959d0416799651ad1425a770ce08e879fde32741851d9f",
+              "content_hash": "sha256:1eadd5b3f14c1a4742f9f13d508da3ee027bb557a8fe902e7ea4e95022fadc60",
               "status": "verified"
             },
             {
@@ -9183,7 +9184,7 @@
                 "path": "layout/lvs/netlists/sg13g2_inv_4.spice",
                 "scope": "repo"
               },
-              "content_hash": "sha256:f350f0e6257207c943ef822d4744a39bd50446f719c3ea96e871a7e40cfa894e",
+              "content_hash": "sha256:18fcc23dcf1c4200559c8babbfb1586443148467744ebdb92a5bc33362069ad8",
               "status": "verified"
             },
             {
@@ -9990,9 +9991,106 @@
         "A `klt pex` citation is only as good as the **device-body bias** of the netlist it ran on (#1983). A device body left on an anonymous, deck-synthesized net has no DC bias path at all, which makes a resimulation of that extracted netlist *physically wrong, not merely imprecise* (`docs/cli/extract.md` \u2192 \"Coverage\") \u2014 the run converges and reports numbers, and those numbers are not comparable to the schematic leg they are being diffed against. A `klt pex` report states the condition in its own `body_bias` block (`docs/cli/pex.md`), and `klt signoff` surfaces it verbatim on this item's citation (`citation.body_bias`). **It does not grade on it**: an item-7 citation whose `body_bias.status` is `\"unbiased\"` still renders `met`, because the condition is a deck-coverage property some PDKs produce on every layout they extract, not a defect this command can adjudicate. So a claim citing item 7 must read that field and state whether its post-layout numbers were measured on a properly-biased netlist \u2014 claimant-enforced, exactly like item 3's DRC-coverage disclosure. The same discipline applies upstream at item 4: `klt lvs`'s `body_verification` block says whether the compare verified the body ties at all, and `\"unchecked\"` (a pre-extracted netlist) is not `\"verified\"`."
       ],
       "status": "unmet",
-      "reason": "no_evidence",
+      "reason": "check_failed",
       "graded_by_build": true,
-      "citation": null
+      "citation": null,
+      "citations_graded": [
+        {
+          "citation": "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_1.pex.report.json",
+          "status": "unmet",
+          "reason": "check_failed",
+          "content_hash": "sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217",
+          "input_verified": true
+        },
+        {
+          "citation": "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_2.pex.report.json",
+          "status": "unmet",
+          "reason": "check_failed",
+          "content_hash": "sha256:73f8d732af84184311bd628d3c4645ba01a2c670f8c617dbbd35bcd6d3510b85",
+          "input_verified": true
+        },
+        {
+          "citation": "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_4.pex.report.json",
+          "status": "unmet",
+          "reason": "check_failed",
+          "content_hash": "sha256:9ef5817bbba510eab7091681449a5b6bf1e4df852a4d65a85f2265bdd03bd448",
+          "input_verified": true
+        },
+        {
+          "citation": "sim/item7/records/20261124-051500-67f6c15/sg13g2_nand2_1.pex.report.json",
+          "status": "unmet",
+          "reason": "check_failed",
+          "content_hash": "sha256:12f02067276b8d3c9d583ceaf18c7b76e1e459371aa28256cd85dd01796d5868",
+          "input_verified": true
+        }
+      ],
+      "detail": {
+        "cited_evidence": {
+          "file": "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_1.pex.report.json",
+          "command": null,
+          "kind": "pex",
+          "check_status": "fail",
+          "content_hash": "sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217",
+          "input_verified": true,
+          "exit_status": 0,
+          "pex_inputs": [
+            {
+              "role": "testbenches[0].request",
+              "path": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.timing.request.json",
+              "sha256": "sha256:c848eb0995e79715499c34495dbfae295715a62b8f798a37863ad47503cc1e68",
+              "status": "verified"
+            },
+            {
+              "role": "testbenches[0].netlist",
+              "path": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.timing.spice",
+              "sha256": "sha256:7cd5ee86c808aa59d80998cb2d5c33282520985e28033a78e3bb612adda84dcd",
+              "status": "verified"
+            },
+            {
+              "role": "testbenches[0].schematic_netlist",
+              "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+              "sha256": "sha256:65aa1e3c6e10bc76cea3cae6015b0c7b6f58161d896e8b6301fcf76a21d227e7",
+              "status": "verified"
+            },
+            {
+              "role": "testbenches[1].request",
+              "path": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.function.request.json",
+              "sha256": "sha256:4cccb208ee281548157f088849aa32beb61976df6da73a946bbb4aee23fd9bae",
+              "status": "verified"
+            },
+            {
+              "role": "testbenches[1].netlist",
+              "path": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.function.spice",
+              "sha256": "sha256:e5dabd89579fec5d7051270dff59fca60b91f016c1be3241a69aba4e16f5c25f",
+              "status": "verified"
+            },
+            {
+              "role": "testbenches[1].schematic_netlist",
+              "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+              "sha256": "sha256:65aa1e3c6e10bc76cea3cae6015b0c7b6f58161d896e8b6301fcf76a21d227e7",
+              "status": "verified"
+            },
+            {
+              "role": "reference_netlist",
+              "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+              "sha256": "sha256:65aa1e3c6e10bc76cea3cae6015b0c7b6f58161d896e8b6301fcf76a21d227e7",
+              "status": "verified"
+            }
+          ],
+          "body_bias": {
+            "status": "biased",
+            "unbiased_device_count": 0,
+            "unbiased_nets": []
+          }
+        },
+        "content_hash_pin": "verified",
+        "failed_citations": [
+          "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_1.pex.report.json",
+          "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_2.pex.report.json",
+          "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_4.pex.report.json",
+          "sim/item7/records/20261124-051500-67f6c15/sg13g2_nand2_1.pex.report.json"
+        ]
+      }
     },
     {
       "tier": "T1",
@@ -10066,7 +10164,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:f44afd0eb384c0099a75029a54cfa10e5803f8ce4943271dae1a3d591336fa0b",
+        "content_hash": "sha256:30956f0a6ba66e1d24be8e3c56cf686389413918a9ac6863a6d7860804b82974",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
@@ -10075,7 +10173,7 @@
             "path": "manifests/inventories/item9.analog.json",
             "scope": "repo"
           },
-          "content_hash": "sha256:f44afd0eb384c0099a75029a54cfa10e5803f8ce4943271dae1a3d591336fa0b",
+          "content_hash": "sha256:30956f0a6ba66e1d24be8e3c56cf686389413918a9ac6863a6d7860804b82974",
           "input_verified": true,
           "summary": "T1 item 9 (Testbenches shipped): 34/34 attestation checks passed (klt signoff --attest)",
           "source": "manifests/inventories/item9.analog.json",

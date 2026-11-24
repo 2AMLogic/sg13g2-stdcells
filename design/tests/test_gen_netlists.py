@@ -108,6 +108,40 @@ class TopologyTest(unittest.TestCase):
                 self.assertLessEqual(w / ng, cap)
                 self.assertEqual(w % ng, 0)
 
+    def test_gate_shared_devices_share_finger_count(self):
+        # a layout gate column crosses both pull networks, so every device on
+        # one gate net is drawn with the same finger count (the larger); the
+        # netlist must state that same decomposition, or resimulating it
+        # against the extracted layout compares a different device than the
+        # layout drew and folds the representation into the parasitic delta
+        cfg = copy.deepcopy(CFG)
+        cfg["cells"] = [c for c in CFG["cells"] if c["name"] == "demo_inv_2"]
+        _, devs = parse_netlist(gn.generate(cfg, CONFIG.name)["demo_inv_2.spice"])
+        per_gate = {}
+        for model, _, gate, _, prm in devs:
+            per_gate.setdefault(gate, set()).add(int(prm["ng"]))
+        self.assertEqual(per_gate, {"A": {2}})
+
+    def test_gate_shared_fold_keeps_total_width(self):
+        cfg = copy.deepcopy(CFG)
+        cfg["cells"] = [c for c in CFG["cells"] if c["name"] == "demo_inv_2"]
+        _, devs = parse_netlist(gn.generate(cfg, CONFIG.name)["demo_inv_2.spice"])
+        widths = {(m, int(p["w"][:-1])) for m, _, _, _, p in devs}
+        self.assertEqual(widths, {(PROC["nmos_model"], 2 * PROC["unit_n_nm"]),
+                                  (PROC["pmos_model"], 2 * PROC["unit_p_nm"])})
+
+    def test_gate_shared_unfoldable_width_rejected(self):
+        # 510 nm has no equal 2-finger split on the 10 nm grid, so a gate
+        # whose other device folds to 2 fingers is impossible to draw, not
+        # silently misstated
+        cfg = copy.deepcopy(CFG)
+        cfg["process"].update(unit_n_nm=510, unit_p_nm=1300)
+        cfg["cells"] = [{"name": "t", "family": "inv", "drive": 1,
+                         "inputs": ["A"], "outputs": {"Y": "!A"}}]
+        with self.assertRaises(ValueError) as cm:
+            gn.generate(cfg)
+        self.assertIn("2-finger", str(cm.exception))
+
     def test_config_injection_changes_output(self):
         cfg = copy.deepcopy(CFG)
         cfg["process"].update(nmos_model="other_n", nmos_prefix="MN")
