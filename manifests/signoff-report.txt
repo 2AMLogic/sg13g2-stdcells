@@ -82,9 +82,9 @@ T1: 16/22 items met, 1 not_applicable
 [UNMET] T1 #8 [digital] Characterization report
         reason: no_evidence
 [MET  ] T1 #9 [analog] Testbenches shipped
-        cite: manifests/envelopes/item9.analog.attest.json (kind=generic, status=pass, content_hash=sha256:30956f0a6ba66e1d24be8e3c56cf686389413918a9ac6863a6d7860804b82974, exit_status=0)
+        cite: manifests/envelopes/item9.analog.attest.json (kind=generic, status=pass, content_hash=sha256:6a5c363dfabf8da6e1f2d1fc44f1407be783ff7008e43a4a8ff9d4ffacca77a5, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
-        bound: T1 item #9 -> manifests/inventories/item9.analog.json (content_hash=sha256:30956f0a6ba66e1d24be8e3c56cf686389413918a9ac6863a6d7860804b82974)
+        bound: T1 item #9 -> manifests/inventories/item9.analog.json (content_hash=sha256:6a5c363dfabf8da6e1f2d1fc44f1407be783ff7008e43a4a8ff9d4ffacca77a5)
 [MET  ] T1 #9 [digital] Testbenches shipped
         cite: manifests/envelopes/item9.digital.attest.json (kind=generic, status=pass, content_hash=sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
@@ -877,4 +877,4 @@ spec rows (1):
         from: sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.timing.report.json (B_s0p4_l0p1_in_slew_fall)
 
 source: docs/design-evidence-tiers.md (content_hash=sha256:589f39656b16d78d72504caff9088eddeed49136e2513d074cae1bc95e53837c)
-build: klt 0.9.3.dev5326+g7a0e2ff48fab
+build: klt 0.9.3.dev5425+gfcb95f422140

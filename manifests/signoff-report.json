@@ -9113,13 +9113,13 @@
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:589f39656b16d78d72504caff9088eddeed49136e2513d074cae1bc95e53837c",
   "build": {
-    "version": "0.9.3.dev5326+g7a0e2ff48fab",
-    "package_version": "0.9.3.dev5326+g7a0e2ff48fab",
-    "git_commit": "7a0e2ff48fab49180e1f12c42b364dfcce053ac9",
+    "version": "0.9.3.dev5425+gfcb95f422140",
+    "package_version": "0.9.3.dev5425+gfcb95f422140",
+    "git_commit": "fcb95f4221408ffc5bb6ca3347b040c2b48cc0d5",
     "git_tag": null,
     "dirty": false,
     "is_release": false,
-    "grading_ruleset_id": "sha256:b6669a5ac6a817b1c87bf3ee61d2e221a62bb3cba90902bfd59306398220191a"
+    "grading_ruleset_id": "sha256:1db4e0b33b33172ff1e425342d09f23f36ddba1a861f97f73ff253f08536a369"
   },
   "items": [
     {
@@ -10164,7 +10164,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:30956f0a6ba66e1d24be8e3c56cf686389413918a9ac6863a6d7860804b82974",
+        "content_hash": "sha256:6a5c363dfabf8da6e1f2d1fc44f1407be783ff7008e43a4a8ff9d4ffacca77a5",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
@@ -10173,7 +10173,7 @@
             "path": "manifests/inventories/item9.analog.json",
             "scope": "repo"
           },
-          "content_hash": "sha256:30956f0a6ba66e1d24be8e3c56cf686389413918a9ac6863a6d7860804b82974",
+          "content_hash": "sha256:6a5c363dfabf8da6e1f2d1fc44f1407be783ff7008e43a4a8ff9d4ffacca77a5",
           "input_verified": true,
           "summary": "T1 item 9 (Testbenches shipped): 34/34 attestation checks passed (klt signoff --attest)",
           "source": "manifests/inventories/item9.analog.json",
