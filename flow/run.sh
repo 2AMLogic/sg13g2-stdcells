@@ -2,6 +2,7 @@
 # Baseline run of the klt digital flow on IHP SG13G2 / sg13g2_stdcell (issue #9):
 # synthesize -> place-and-route (target_stage route, with power) -> extract ->
 # LVS (gate-level-verilog) -> ERC supply read -> routed-GDS export + klt drc ->
+# standalone multi-corner STA + klt functional-verification (issue #175) ->
 # check-evidence.sh.
 # Single local runs only; no corner or Monte Carlo grids, no SPICE.
 #
@@ -36,6 +37,28 @@ fi
 # Non-clean DRC exits non-zero: keep the envelope, record as is (like lvs/erc).
 klt drc "$gds" --deck sg13g2 --top add8 "${PDK_ARGS[@]}" --format json > "$rec/drc.json" || true
 cp build/add8_synth.v "$rec/add8_synth.v"; cp "$vlog" "$rec/add8.routed.v"
+cp "$rec/place-and-route.json" build/par.out.json
 cp "$rec/lvs.json" build/lvs.out.json; cp "$rec/erc.json" build/erc.json
-./check-evidence.sh request-par.json "$rec/place-and-route.json" "$rec/lvs.json" "$rec/erc.json"
-echo "all three power gates hold; record: flow/$rec"
+# Standalone multi-corner STA on this run's routed DEF (issue #175): the P&R
+# envelope's own timing fields stay unconstrained (clk drives nothing and no
+# I/O delays are set there), so the same geometry is timed explicitly at the
+# three spec row 9 corners -- TT/1.20 V/25 C, FF/1.32 V/-40 C, SS/1.08 V/125 C
+# -- with 2.0 ns input/output delays against the same 10 ns clock.
+def="$(jq -r 'if (.def_path|type)=="object" then .def_path.path else .def_path end' "$rec/place-and-route.json")"
+case "$def" in /*) ;; *) def="$(cd .. && pwd)/$def";; esac
+# Time a copy committed with the record, not the .klt/ scratch original
+# (issue #235): flow/.klt/ is gitignored, so a def_path naming it can never
+# be re-hashed and klt signoff leaves the geometry at input_verified: null.
+# The copy lands next to add8.routed.gds/.v and, unlike the GDS, has no
+# hash-only mode: a hash without bytes cannot be re-hashed, which is the
+# whole point of the copy.
+cp "$def" "$rec/add8.routed.def"
+jq --arg d "$(pwd)/$rec/add8.routed.def" '.def=$d' request-sta.json > build/sta.json
+klt sta build/sta.json "${PDK_ARGS[@]}" --format json > "$rec/sta.json"
+# Exhaustive cocotb regression (verification/test_add8.py, 2^17 cases) through
+# the FV verb. klt exits 3 on failing tests: keep the envelope and gate on it
+# below, like lvs/erc. Paths in request-fv.json resolve from verification/.
+klt functional-verification ../verification/request-fv.json --format json > "$rec/functional-verification.json" || true
+cp "$rec/sta.json" build/sta.json; cp "$rec/functional-verification.json" build/fv.json
+./check-evidence.sh request-par.json "$rec/place-and-route.json" "$rec/lvs.json" "$rec/erc.json" "$rec/sta.json" "$rec/functional-verification.json"
+echo "power, timing and functional gates hold; record: flow/$rec"

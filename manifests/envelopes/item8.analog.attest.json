@@ -24,7 +24,7 @@
         "role": "evidence",
         "path": "manifests/envelopes/item9.analog.attest.json",
         "passed": true,
-        "content_hash": "sha256:449324c3a6ab3a96bfa44b029c24577a23b791c649f48389e7df10f0041d7da7"
+        "content_hash": "sha256:b5099a344cb2f7106288082604c833184021445000067cb02b8bd8f7ded64baa"
       },
       {
         "check": "envelope",
@@ -59,8 +59,8 @@
     "description": "Analog partition characterization report: the append-only klt characterize record behind the committed TT/1.20 V/25 C Liberty view, cited for spec row 9 (Liberty corners). The spec-row citation names the item 9 analog bench envelope (manifests/envelopes/item9.analog.attest.json, a generic evidence envelope klt recognizes) rather than the raw view and sidecar files: klayout-tools #7040 -- klt's citation recognition (#5688) accepts recognized envelopes only, and a Liberty view, a provenance sidecar and a markdown record are none, while the freshness command is where the artifacts' content is actually verified. The chain is still fully pinned: the cited envelope byte-pins the bench that measured the view (request builder, runner, freshness checker, harness modules, netlist generator, config) and carries the PDK revision pin, the report below pins the record's own bytes, and the envelope_checks command (python3 -m sim.characterize.check_library) re-derives what the view's provenance sidecar claims -- the library name and cell set the view declares, the corner it declares (the operating_conditions group name plus voltage and temperature, via the nom_* attributes and the group; the sidecar's process-corner entry is a name like mos_tt, not comparable with the view's numeric process factor, so process is not pinned), the SHA-256 of the config it was characterized from, the record it names, and the IHP-Open-PDK revision both the sidecar and the record pin -- so a config edit or a tampered view that changes any of those fails the attestation instead of being reported as current. The view's delay tables themselves are not pinned by the sidecar: it records no hash of the .lib (a klt characterize gap, filed upstream on the klayout-tools tracker). The check is deliberately not weakened to pass."
   },
   "provenance": {
-    "klt_version": "0.9.3.dev2575+g6bd18bbc8637",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.9.3.dev4954+g093d4f7a60a9",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": null,
     "input": {

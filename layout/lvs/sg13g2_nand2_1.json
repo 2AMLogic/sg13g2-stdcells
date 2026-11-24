@@ -61,10 +61,69 @@
     "reason": null,
     "device_classes": [],
     "device_count": 0,
+    "inspected_count": 4,
     "findings": [],
     "finding_count": 0
   },
-  "device_parameter_coverage": [],
+  "device_parameter_coverage": [
+    {
+      "class": "nfet",
+      "device_kind": "mos",
+      "layout_devices": 2,
+      "reference_devices": 2,
+      "compared": [
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "AS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "AD",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PD",
+          "reason": "secondary"
+        }
+      ]
+    },
+    {
+      "class": "pfet",
+      "device_kind": "mos",
+      "layout_devices": 2,
+      "reference_devices": 2,
+      "compared": [
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "AS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "AD",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PD",
+          "reason": "secondary"
+        }
+      ]
+    }
+  ],
+  "mismatches_omitted": false,
   "mismatch_count": 0,
   "error_count": 0,
   "category_counts": {},
@@ -86,6 +145,21 @@
       "matched": 5
     }
   },
+  "pin_set_difference": {
+    "deck_synthesized_layout_pins": [],
+    "layout_only_pins": [],
+    "layout_only_pins_count": 0,
+    "layout_only_pins_truncated": false,
+    "reference_only_pins": [],
+    "reference_only_pins_count": 0,
+    "reference_only_pins_truncated": false
+  },
+  "ignored_layers": [],
+  "warnings": [],
+  "sg13g2_passive_pairing": {
+    "status": "all_devices_paired",
+    "findings": []
+  },
   "device_classes": [
     "nfet",
     "pfet",
@@ -95,63 +169,76 @@
     "cap_cmomf",
     "resistor",
     "dantenna",
-    "dpantenna"
+    "dpantenna",
+    "inductor"
   ],
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.13",
     "netgen_binary": null,
-    "layout_sha256": "9bef3c012a6e531bb37e80305b9e740dbf4cee06c2febf71d81b419461c0f303",
+    "layout_sha256": "12f02067276b8d3c9d583ceaf18c7b76e1e459371aa28256cd85dd01796d5868",
     "reference_sha256": "1fc9770ab7c6d2a87ba9e0026f630a789f736b1e4cc4a17dbfd79755692ada59",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.9.2.dev1022+g2a9c52b27ce7",
-    "klt_git_commit": "2a9c52b27ce7986b4372ae5d73129dac4773e02c",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@2a9c52b27ce7986b4372ae5d73129dac4773e02c",
+    "klt_version": "0.9.3.dev4954+g093d4f7a60a9",
+    "klt_git_commit": "093d4f7a60a9387eb67ba6423571f0a4ebb4fe59",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@093d4f7a60a9387eb67ba6423571f0a4ebb4fe59",
     "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:cf6dfeadf75bd95bf89beb0a64e06ed43b65f6ff782df10ae200ea200a73d8e9",
+      "content_hash": "sha256:b2634caf6d96c00579ce3340e47a24b84d8671937d9886ff3aa92f7cdc539ea8",
       "released": false
     },
     "input": {
-      "content_hash": "sha256:9bef3c012a6e531bb37e80305b9e740dbf4cee06c2febf71d81b419461c0f303",
+      "content_hash": "sha256:12f02067276b8d3c9d583ceaf18c7b76e1e459371aa28256cd85dd01796d5868",
       "role": "layout"
     },
-    "klayout_version_mismatch": true
+    "klayout_version_mismatch": false
   },
   "mismatches": [],
   "net_correspondence": [
     {
       "layout": "A",
+      "layout_id": 2,
       "reference": "A",
+      "reference_id": 0,
       "pin": true
     },
     {
       "layout": "B",
+      "layout_id": 3,
       "reference": "B",
+      "reference_id": 1,
       "pin": true
     },
     {
       "layout": "\\$2",
+      "layout_id": 1,
       "reference": "N1",
+      "reference_id": 5,
       "pin": false
     },
     {
       "layout": "VDD",
+      "layout_id": 4,
       "reference": "VDD",
+      "reference_id": 3,
       "pin": true
     },
     {
       "layout": "VSS",
+      "layout_id": 5,
       "reference": "VSS",
+      "reference_id": 4,
       "pin": true
     },
     {
       "layout": "Y",
+      "layout_id": 0,
       "reference": "Y",
+      "reference_id": 2,
       "pin": true
     }
   ]

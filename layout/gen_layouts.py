@@ -21,8 +21,9 @@ Placement model (deliberately small; anything outside it is a named failure):
     column per finger, diffusion shared between neighbouring devices; a device
     of F fingers is F adjacent columns alternating source/drain, joined by a
     poly bridge below the NMOS diffusion and given one gate contact. The NMOS
-    and PMOS device on one gate net are drawn with the same finger count (the
-    larger; a device with fewer netlist fingers is folded, same total width);
+    and PMOS device on one gate net carry the same finger count, already
+    reconciled by the netlist generator (the larger, same total width), so
+    the layout consumes the netlist's fingering as-is;
   * a strip may hold devices of different drawn finger widths: it is one merged
     polygon whose outer edge is fixed (the NMOS strip grows up, the PMOS strip
     grows down) and whose channel-facing edge steps at the device boundary. A
@@ -32,9 +33,18 @@ Placement model (deliberately small; anything outside it is a named failure):
     merge (opening <= 0) or the opening clears that layer's space minimum, so
     a valley that falls into some layer's forbidden band is a named failure
     rather than a drawn shape;
-  * the strips are ordered so each is a single chain of devices sharing a
+  * the strips are ordered so each is one or more chains of devices sharing a
     source/drain net, and both orderings have the same gate-net sequence, so
-    each poly column crosses both strips;
+    each poly column crosses both strips. Neighbouring chains are separated by
+    a diffusion break: a gap whose width comes from the config's activ and
+    PMOS-implant space rules plus the enclosures that overhang it. Both strips
+    widen at the union of their break positions (a poly column must cross both
+    strips at one x), so a strip whose chain continues through the other
+    strip's break bridges the gap with its own diffusion while the strip that
+    breaks parts there; the n-well always bridges (one well, one tap per
+    cell). A net the break splits is re-joined in Metal1 on a channel track.
+    Fewest breaks first, so a cell that places as single chains keeps its
+    ordering and its committed GDS;
   * Metal1 only: VSS/VDD rails on the row edges, vertical stubs from diffusion
     contacts, at most `channel_tracks` horizontal tracks between the strips
     for nets that need joining, one gate contact pad per input. A gate whose
@@ -114,59 +124,172 @@ def end_net(l, r, fingers):
     return r if fingers % 2 else l
 
 
-def _chains(devs):
-    """All orderings of devs (index, kind, d, g, s, w, fingers) as one chain where
-    neighbours share a diffusion net. A device of F fingers is F columns that
-    alternate source/drain, so it ends on its right net only for odd F; for even F
-    it ends back on its left net. Yields lists of (dev, left_net, right_net)."""
-    n = len(devs)
+def _step_options(devs, i, tail):
+    """The orientations device i can take given the previous chain's `tail`
+    net (None before the first device): (left, right, starts_new_chain)."""
+    d = devs[i]
+    if tail is None:
+        return [(d[2], d[4], False), (d[4], d[2], False)]
     out = []
-
-    def extend(order, used):
-        if len(order) == n:
-            out.append(list(order))
-            return
-        i0, l0, r0 = order[-1]
-        tail = end_net(l0, r0, devs[i0][6])
-        for i in range(n):
-            if i in used:
-                continue
-            d = devs[i]
-            for l, r in ((d[2], d[4]), (d[4], d[2])):
-                if l == tail:
-                    order.append((i, l, r))
-                    used.add(i)
-                    extend(order, used)
-                    used.discard(i)
-                    order.pop()
-
-    for i in range(n):
-        d = devs[i]
-        for l, r in ((d[2], d[4]), (d[4], d[2])):
-            extend([(i, l, r)], {i})
+    if tail in (d[2], d[4]):
+        l, r = (d[2], d[4]) if tail == d[2] else (d[4], d[2])
+        out.append((l, r, False))
+    for l, r in ((d[2], d[4]), (d[4], d[2])):
+        if l != tail:
+            out.append((l, r, True))
     return out
 
 
+def _tail(order, devs):
+    """The net the last placed device ends on (where a continuation shares)."""
+    i, l, r = order[-1]
+    return end_net(l, r, devs[i][6])
+
+
+def _pairings(ndevs, pdevs, budget, cap):
+    """Every pairing of the two strips as
+    (n_order, n_breaks, p_order, p_breaks) whose gate-net sequence matches
+    position by position and whose union of break positions (a break in
+    either strip shifts the columns of both, so the union is what costs
+    width) has at most `budget` entries. Returns None if `cap` search steps
+    are exhausted first: a bounded miss is a quality loss (a wider pairing
+    still exists), never a correctness one, so the caller may fall back to
+    the greedy pairing. At budget 0 the result set is exactly the single-chain
+    model's, and the caller's key keeps that model's pick."""
+    n = len(ndevs)
+    gates = {}
+    for i, d in enumerate(ndevs):
+        gates.setdefault(d[3], ([], []))[0].append(i)
+    for i, d in enumerate(pdevs):
+        gates.setdefault(d[3], ([], []))[1].append(i)
+    out = []
+    steps = [0]
+
+    def extend(k, nord, pord, used_n, used_p, nbrk, pbrk, uset):
+        steps[0] += 1
+        if steps[0] > cap:
+            raise _SearchExhausted
+        if k == n:
+            out.append((list(nord), tuple(nbrk), list(pord), tuple(pbrk)))
+            return
+        ntail = _tail(nord, ndevs) if nord else None
+        ptail = _tail(pord, pdevs) if pord else None
+        for g in sorted(gates):
+            nis, pis = gates[g]
+            for i in nis:
+                if i in used_n:
+                    continue
+                for nopt in _step_options(ndevs, i, ntail):
+                    for j in pis:
+                        if j in used_p:
+                            continue
+                        for popt in _step_options(pdevs, j, ptail):
+                            if nopt[2] or popt[2]:
+                                if len(uset) + (k not in uset) > budget:
+                                    continue
+                                nuset = uset | {k}
+                            else:
+                                nuset = uset
+                            nord.append((i, nopt[0], nopt[1]))
+                            pord.append((j, popt[0], popt[1]))
+                            used_n.add(i)
+                            used_p.add(j)
+                            extend(k + 1, nord, pord, used_n, used_p,
+                                   nbrk + (k,) if nopt[2] else nbrk,
+                                   pbrk + (k,) if popt[2] else pbrk, nuset)
+                            used_p.discard(j)
+                            used_n.discard(i)
+                            pord.pop()
+                            nord.pop()
+
+    try:
+        extend(0, [], [], set(), set(), (), (), frozenset())
+    except _SearchExhausted:
+        return None
+    return out
+
+
+class _SearchExhausted(Exception):
+    pass
+
+
+def _greedy_pairing(ndevs, pdevs):
+    """A deterministic first-fit pairing for strips too large to search: at
+    each position the lowest gate net and device indices win, and each strip
+    continues its chain where an orientation allows it, breaking otherwise.
+    The caller has checked the two strips share one gate-net multiset, so
+    each round both strips find the same lowest gate with an unused device
+    and can pick from it independently: one first-fit choice per strip."""
+    gates = {}
+    for i, d in enumerate(ndevs):
+        gates.setdefault(d[3], ([], []))[0].append(i)
+    for i, d in enumerate(pdevs):
+        gates.setdefault(d[3], ([], []))[1].append(i)
+
+    def first_fit(devs, side, tail, used):
+        """The lowest unused device of the lowest gate that has one, in the
+        first orientation that continues the chain, or in the first
+        orientation at all when only breaking ones remain."""
+        for g in sorted(gates):
+            live = [i for i in gates[g][side] if i not in used]
+            if not live:
+                continue
+            breaking = None
+            for i in live:
+                for opt in _step_options(devs, i, tail):
+                    if not opt[2]:
+                        return i, opt[0], opt[1], False
+                    if breaking is None:
+                        breaking = (i, opt[0], opt[1])
+            return (*breaking, True)
+
+    nord, pord, nbrk, pbrk = [], [], (), ()
+    used_n, used_p = set(), set()
+    for k in range(len(ndevs)):
+        i, nl, nr, nnew = first_fit(ndevs, 0, _tail(nord, ndevs) if nord else None, used_n)
+        j, pl, pr, pnew = first_fit(pdevs, 1, _tail(pord, pdevs) if pord else None, used_p)
+        nord.append((i, nl, nr))
+        pord.append((j, pl, pr))
+        used_n.add(i)
+        used_p.add(j)
+        nbrk = nbrk + (k,) if nnew else nbrk
+        pbrk = pbrk + (k,) if pnew else pbrk
+    return nord, nbrk, pord, pbrk
+
+
 def order_strips(ndevs, pdevs):
-    """Pick (n_order, p_order) with equal gate-net sequences, deterministically."""
+    """Pick (n_order, n_breaks, p_order, p_breaks) with equal gate-net
+    sequences and the fewest diffusion breaks, deterministically.
+
+    A break in either strip shifts the columns after it in both -- every poly
+    column crosses the two strips -- so what is minimized is the union of the
+    two break sets, and the search deepens on exactly that union, one shared
+    budget over both strips. With no breaks this is exactly the single-chain
+    model, so a cell that places without breaks keeps the ordering (and the
+    bytes) it already had: the zero-break candidates compare on the same
+    (device indices, left nets) the single-chain picker used. Strips too
+    large to search exhaustively (the step cap fires) fall back to a greedy
+    first-fit pairing: a wider but still rule-legal ordering, never a silent
+    refusal."""
     if len(ndevs) != len(pdevs):
         raise PlaceError(f"{len(ndevs)} NMOS vs {len(pdevs)} PMOS devices: gate columns cannot pair up")
-    nch, pch = _chains(ndevs), _chains(pdevs)
-    if not nch:
-        raise PlaceError("NMOS devices do not form a single diffusion chain (needs a diffusion break)")
-    if not pch:
-        raise PlaceError("PMOS devices do not form a single diffusion chain (needs a diffusion break)")
-    best = None
-    for a in nch:
-        ga = [ndevs[i][3] for i, _, _ in a]
-        for b in pch:
-            if [pdevs[i][3] for i, _, _ in b] == ga:
-                key = (tuple(i for i, _, _ in a), tuple(i for i, _, _ in b), tuple(l for _, l, _ in a), tuple(l for _, l, _ in b))
-                if best is None or key < best[0]:
-                    best = (key, a, b)
-    if best is None:
+    if sorted(d[3] for d in ndevs) != sorted(d[3] for d in pdevs):
         raise PlaceError("no NMOS/PMOS strip orderings share one gate-net sequence (gate nets cannot align in columns)")
-    return best[1], best[2]
+    best = None
+    for budget in range(min(len(ndevs), 9)):
+        cand = _pairings(ndevs, pdevs, budget, cap=300_000)
+        if cand is None:
+            break
+        for a, abrk, b, bbrk in cand:
+            key = (len(set(abrk) | set(bbrk)), len(abrk) + len(bbrk),
+                   tuple(i for i, _, _ in a), tuple(i for i, _, _ in b),
+                   tuple(l for _, l, _ in a), tuple(l for _, l, _ in b),
+                   abrk, bbrk)
+            if best is None or key < best[0]:
+                best = (key, a, abrk, b, bbrk)
+        if best is not None:
+            return best[1], best[2], best[3], best[4]
+    return _greedy_pairing(ndevs, pdevs)
 
 
 # ---------------------------------------------------------------- geometry
@@ -189,14 +312,13 @@ def _dev_at(order, devs_, cols_, c):
 
 
 def _dev_desc(d):
-    """A folded device's netlist geometry and its drawn geometry, both named.
+    """A device's fingered geometry, for failure messages.
 
-    The fold step can divide a width that is uniform in the netlist into fingers
-    that appear nowhere in it (a 500 nm 1-finger device folded to 2 fingers is
-    drawn as 2 x 250 nm), so a message quoting only one of the two sends the
-    reader looking for a number the netlist does not contain."""
-    return (f"{d[1].upper()}MOS on gate {d[3]} (netlist {d[5]} nm / {d[7]} "
-            f"finger{'' if d[7] == 1 else 's'} -> drawn {d[6]} x {d[5] // d[6]} nm)")
+    The netlist generator has already folded devices on a gate net to the
+    gate's shared finger count (design/gen_netlists.py), so the drawn
+    fingering is the netlist's own: one geometry, named once."""
+    return (f"{d[1].upper()}MOS on gate {d[3]} ({d[6]} finger{'' if d[6] == 1 else 's'} "
+            f"of {d[5] // d[6]} nm)")
 
 
 def _strip_profile(order, devs_, cols_):
@@ -204,18 +326,20 @@ def _strip_profile(order, devs_, cols_):
     return [d[5] // d[6] for d in (_dev_at(order, devs_, cols_, c) for c in range(len(cols_)))]
 
 
-def _runs(prof):
-    """Maximal spans of equal-height columns as [first column, last column, height]."""
+def _runs(prof, brk=()):
+    """Maximal spans of equal-height columns as [first column, last column,
+    height], also cut at the column boundaries in `brk`: the drawing emits one
+    rectangle per span, and a break boundary always ends one."""
     out = []
     for c, h in enumerate(prof):
-        if out and out[-1][2] == h:
+        if out and out[-1][2] == h and out[-1][1] == c - 1 and c not in brk:
             out[-1][1] = c
         else:
             out.append([c, c, h])
     return out
 
 
-def _notch_violation(prof, pitch, layers):
+def _notch_violation(prof, pitch, layers, brk=(), edge=None, bridging=frozenset()):
     """The first rule a valley of `prof` would break, or None.
 
     `layers` maps a drawn layer name to its (hang_nm, threshold_nm): each of
@@ -229,17 +353,32 @@ def _notch_violation(prof, pitch, layers):
     the layers drawn there that have a space-or-notch rule: activ on both
     strips, psd and the n-well on the PMOS strip only (the sg13g2 deck models
     no nsd space rule, so the NMOS strip's implant has nothing to violate).
+
+    `brk` names this strip's own diffusion-break boundaries. A layer that
+    parts at a break is spaced by the break's own rule-derived width, so a
+    valley whose span holds a break is legal by construction for it and is
+    skipped; a layer in `bridging` (the n-well: the drawing merges it across
+    the break) is still measured, with `edge` -- the caller's x-position
+    function of (boundary, hang, right-edge?, layer) -- supplying the real
+    gap geometry in place of the k * pitch term. Without `brk` (a strip that
+    does not break) the verdict is the original contiguous one.
     Returns (layer, opening, threshold, (first column, last column)) for the
     first valley and layer in the forbidden band, else None."""
-    runs = _runs(prof)
+    runs = _runs(prof, brk)
     for i, (c0, c1, h) in enumerate(runs):
         left = [r for r in runs[:i] if r[2] > h]
         right = [r for r in runs[i + 1:] if r[2] > h]
         if not left or not right:
             continue  # monotone terrain or a peak: a single concave corner, no notch
-        k = right[0][0] - left[-1][1] - 1
+        spans_break = any(left[-1][1] < b <= right[0][0] for b in brk)
         for layer, (hang, thr) in layers.items():
-            opening = k * pitch - 2 * hang
+            if spans_break and layer not in bridging:
+                continue
+            if edge is None:
+                opening = (right[0][0] - left[-1][1] - 1) * pitch - 2 * hang
+            else:
+                opening = (edge(right[0][0], hang, False, layer)
+                           - edge(left[-1][1] + 1, hang, True, layer))
             if 0 < opening < thr:
                 return layer, opening, thr, (c0, c1)
     return None
@@ -250,25 +389,16 @@ def layout_cell(cell, proc, lay):
     R, P = lay["rules"], lay["gate_pitch_nm"]
     H = lay["row_height_nm"]
     c = gn.build(cell, proc)
+    # Finger counts come folded from the netlist generator: a poly column
+    # crosses both strips, so gn.build has already reconciled the NMOS and
+    # PMOS device on one gate net to the gate's shared count (same total
+    # width; a width with no equal split on the grid is refused there, naming
+    # the gate -- the one divisibility error).
+    grid = gn.grid_nm(proc)
     devs = [(i,) + d for i, d in enumerate(c.devices)]  # (i, kind, drain, gate, source, w, ng)
     ndevs = [(i, k, d, g, s, w, ng) for (i, k, d, g, s, w, ng) in devs if k == "n"]
     pdevs = [(i, k, d, g, s, w, ng) for (i, k, d, g, s, w, ng) in devs if k == "p"]
-    # Fingers per gate net: a poly column crosses both strips, so the NMOS and
-    # PMOS device on one gate net are drawn with the same finger count, the larger
-    # of the two. A device with fewer netlist fingers is folded (same total W).
-    grid = gn.grid_nm(proc)
-    fingers = {}
-    for d in devs:
-        fingers[d[3]] = max(fingers.get(d[3], 1), d[6])
-
-    def fold(d):
-        k = fingers[d[3]]
-        if d[5] % (k * grid):
-            raise PlaceError(f"{d[1]}MOS device of {d[5]} nm on gate {d[3]} cannot be drawn as {k} fingers on the {grid} nm grid")
-        return d[:6] + (k, d[6])  # drawn finger count, then the netlist one (for messages)
-
-    ndevs, pdevs = [fold(d) for d in ndevs], [fold(d) for d in pdevs]
-    nord, pord = order_strips(ndevs, pdevs)
+    nord, nbrk, pord, pbrk = order_strips(ndevs, pdevs)
     cols = [(j, k) for j, (i, _, _) in enumerate(nord) for k in range(ndevs[i][6])]  # column -> (position in order, finger)
     pcols = [(j, k) for j, (i, _, _) in enumerate(pord) for k in range(pdevs[i][6])]
     N = len(cols)
@@ -286,25 +416,76 @@ def layout_cell(cell, proc, lay):
     half_c = R["cont_nm"] // 2
     act_hang = half_c + R["activ_enc_cont_nm"]  # diffusion extent beyond a node-centre
     sd = R["sd_enc_activ_nm"]
+    # Diffusion breaks: the column boundaries where a strip's chain ends. Both
+    # strips shift by one gap at the union of the two sets (a poly column
+    # crosses both strips, so its x must be the same in each). The gap width is
+    # rule-derived: activ and the PMOS implant must clear their space minimums
+    # across it, with the hang each layer reaches past its node columns. The
+    # n-well needs no width from its own rule: the drawing bridges the gap with
+    # it (one well, one tap), instead of parting it into wells that would each
+    # need a tie. Rounded up to a whole number of gate pitches: node columns are
+    # the routing grid (issue #225), so every column after a break must stay on
+    # it -- a break cell's post-break pins would otherwise leave the row-4 grid.
+    def brk_cols(brk, order, devs_):
+        out, j = set(), 0
+        for k, (i, _, _) in enumerate(order):
+            if k in brk:
+                out.add(j)
+            j += devs_[i][6]
+        return out
+
+    nbrk_c, pbrk_c = brk_cols(nbrk, nord, ndevs), brk_cols(pbrk, pord, pdevs)
+    ubrk = sorted(nbrk_c | pbrk_c)
+    uset = set(ubrk)
+    brk_w = max(R["activ_space_nm"] + 2 * act_hang,
+                R["psd_space_nm"] + 2 * (act_hang + sd))
+    brk_w = -(-brk_w // P) * P
+    # Phase (issue #225): diffusion nodes sit on the routing grid (x = (j + 1) * P,
+    # plus one gap per break to the left) and the gates a half pitch between them,
+    # so every Metal1 stub on a node, and the rail taps, is on a grid column.
+    bx = [P]  # x of node column boundary j; a gap is inserted after a break
+    for j in range(N):
+        bx.append(bx[j] + P + (brk_w if j in uset else 0))
+    W = bx[N] + P
+    rail = R["rail_width_nm"]
+    vdd, vss = proc["vdd_net"], proc["vss_net"]
+    gate_x = [bx[c] + (brk_w if c in uset else 0) + P // 2 for c in range(N)]
+
+    def strip_edges(brkc):
+        """Layer-rectangle x edges at column boundaries for one strip: a layer
+        rectangle reaches `hang` past its run's node column. At this strip's
+        own break each side hangs off its own node (activ and the implants
+        part there, by the gap width); at a break of the *other* strip -- a
+        phantom break, this strip's chain continues -- both sides reach to the
+        gap's midpoint so the rectangles still merge across it. The n-well
+        bridges even this strip's own break, keeping one well per cell."""
+        def edge(b, hang, right, layer=False):
+            bridge = layer == "nwell"
+            if b in brkc and not bridge:
+                pos = bx[b] + (0 if right else brk_w)
+            elif b in uset:
+                pos = bx[b] + brk_w // 2
+            else:
+                pos = bx[b]
+            return pos + hang if right else pos - hang
+        return edge
+
     notch_layers = {
         "n": {"activ": (act_hang, R["activ_space_nm"])},
         "p": {"activ": (act_hang, R["activ_space_nm"]),
               "psd": (act_hang + sd, R["psd_space_nm"]),
               "nwell": (act_hang + R["nwell_enc_pactiv_nm"], R["nwell_space_nm"])},
     }
-    for kind, order, devs_, cols_, prof in (("N", nord, ndevs, cols, nprof), ("P", pord, pdevs, pcols, pprof)):
-        hit = _notch_violation(prof, P, notch_layers[kind.lower()])
+    for kind, order, devs_, cols_, prof, brkc in (
+            ("N", nord, ndevs, cols, nprof, nbrk_c), ("P", pord, pdevs, pcols, pprof, pbrk_c)):
+        hit = _notch_violation(prof, P, notch_layers[kind.lower()], brk=brkc,
+                               edge=strip_edges(brkc), bridging=frozenset(("nwell",)))
         if hit:
             layer, opening, thr, (c0, c1) = hit
             raise PlaceError(
                 f"{kind}MOS strip height profile {prof} nm notches over columns {c0}..{c1}, leaving an "
                 f"opening of {opening} nm in {layer} between the taller runs, under the {thr} nm {layer}.space "
                 f"minimum (space-or-notch rule); the short device is {_dev_desc(_dev_at(order, devs_, cols_, c0))}")
-    W = (N + 1) * P
-    rail = R["rail_width_nm"]
-    vdd, vss = proc["vdd_net"], proc["vss_net"]
-    node_x = [P // 2 + j * P for j in range(N + 1)]
-    gate_x = [(j + 1) * P for j in range(N)]
     n_y0 = lay["n_diff_y0_nm"]
     p_y1 = H - lay["p_diff_top_margin_nm"]
     # Each strip's outer edge is fixed; the channel-facing one steps. Every
@@ -318,14 +499,32 @@ def layout_cell(cell, proc, lay):
         raise PlaceError("gate pitch too small for a contact between two gates")
     S = Shapes()
 
-    # Node nets for each strip: node j sits between device j-1 and j.
-    def nodes(order, devs_):
-        nets = [order[0][1]]
-        for i, l, r in order:  # F fingers alternate l, r, l, ...; the next device starts on the last node
-            nets += [r if f % 2 == 0 else l for f in range(devs_[i][6])]
-        return nets
+    # Each strip's diffusion nodes as (net, x, chain, boundary, side): the
+    # boundary is the node's column boundary, and side is 'L' or 'R' on the two
+    # nodes a this-strip break leaves where one shared node used to be (the
+    # column across the gap belongs to the other chain); None elsewhere. A
+    # device's F fingers append F boundaries after the head one, alternating
+    # l, r, l, ...; a chain shares its boundary nodes, so only a break appends
+    # the next chain's head node.
+    def strip_nodes(order, devs_, brk):
+        brkc = brk_cols(brk, order, devs_)
+        out = []
+        chain = 0
+        jc = 0  # boundary index at the current device's left
+        out.append((order[0][1], bx[0], chain, 0, None))
+        for k, (i, l, r) in enumerate(order):
+            F = devs_[i][6]
+            if k in brk:
+                chain += 1
+                out.append((l, bx[jc] + brk_w, chain, jc, "R"))
+            for f in range(1, F + 1):
+                b = jc + f
+                out.append((l if f % 2 == 0 else r, bx[b], chain, b, "L" if b in brkc else None))
+            jc += F
+        return out
 
-    nn, pn = nodes(nord, ndevs), nodes(pord, pdevs)
+    nnodes, pnodes = strip_nodes(nord, ndevs, nbrk), strip_nodes(pord, pdevs, pbrk)
+    node_xs = sorted({x for nodes_ in (nnodes, pnodes) for (_, x, _, _, _) in nodes_})
 
     # Poly extents, needed before the well box because the well tap sits poly-clear
     # above the PMOS strip and the n-well has to enclose it.
@@ -365,24 +564,29 @@ def layout_cell(cell, proc, lay):
                          f"(substrate {sub_y0}..{sub_y1} nm, well {well_y0}..{well_y1} nm); "
                          "the tap implant cannot abut the device implant")
 
-    # Diffusion, implants, well: one rectangle per run of equal-height columns.
-    # Neighbouring runs each reach `act_hang` past the node column they share, so
-    # they overlap there and merge into one stepped polygon. The implants and the
-    # n-well follow the same step; one rectangle over the tallest run would
-    # over-enclose the short ones and can break the implant space rule against a
-    # neighbouring cell.
-    ax0, ax1 = node_x[0] - act_hang, node_x[-1] + act_hang
+    # Diffusion, implants, well: one rectangle per run of equal-height columns,
+    # cut at this strip's own breaks. Neighbouring runs each reach `act_hang`
+    # past the node column they share, so they overlap there and merge into one
+    # stepped polygon; the implants and the n-well follow the same step with
+    # their own overhang, so one rectangle over the tallest run would
+    # over-enclose the short ones and can break the implant space rule against
+    # a neighbouring cell. Across a break the activ and implant rectangles part
+    # by the gap width (each hanging off its own node); across a phantom break
+    # -- the other strip's break, this strip's chain continues -- and for the
+    # n-well at any break, they reach to the gap's midpoint and merge.
+    ax0, ax1 = bx[0] - act_hang, bx[N] + act_hang
     nwe = R["nwell_enc_pactiv_nm"]
-    for strip, prof in (("n", nprof), ("p", pprof)):
-        for c0, c1, h in _runs(prof):
-            x0, x1 = node_x[c0] - act_hang, node_x[c1 + 1] + act_hang
+    for strip, prof, brkc in (("n", nprof, nbrk_c), ("p", pprof, pbrk_c)):
+        edge = strip_edges(brkc)
+        for c0, c1, h in _runs(prof, brkc):
             if strip == "n":
-                S.box("activ", x0, n_y0, x1, n_y0 + h)
-                S.box("nsd", x0 - sd, n_y0 - sd, x1 + sd, n_y0 + h + sd)
+                S.box("activ", edge(c0, act_hang, False), n_y0, edge(c1 + 1, act_hang, True), n_y0 + h)
+                S.box("nsd", edge(c0, act_hang + sd, False), n_y0 - sd, edge(c1 + 1, act_hang + sd, True), n_y0 + h + sd)
             else:
-                S.box("activ", x0, p_y1 - h, x1, p_y1)
-                S.box("psd", x0 - sd, p_y1 - h - sd, x1 + sd, p_y1 + sd)
-                S.box("nwell", x0 - nwe, p_y1 - h - nwe, x1 + nwe, well_y1 + R["nwell_enc_nactiv_nm"])
+                S.box("activ", edge(c0, act_hang, False), p_y1 - h, edge(c1 + 1, act_hang, True), p_y1)
+                S.box("psd", edge(c0, act_hang + sd, False), p_y1 - h - sd, edge(c1 + 1, act_hang + sd, True), p_y1 + sd)
+                S.box("nwell", edge(c0, act_hang + nwe, False, "nwell"), p_y1 - h - nwe,
+                      edge(c1 + 1, act_hang + nwe, True, "nwell"), well_y1 + R["nwell_enc_nactiv_nm"])
 
     # Poly columns: one stripe per gate, crossing both strips.
     for c in range(N):
@@ -402,7 +606,7 @@ def layout_cell(cell, proc, lay):
         S.box("activ", ax0, ty0, ax1, ty1)
         S.box(implant, ax0 - sd, imp_y0, ax1 + sd, imp_y1)
         cy = (ty0 + ty1) // 2 - half_c
-        for x in node_x:
+        for x in node_xs:
             S.box("cont", x - half_c, cy, x + half_c, cy + R["cont_nm"])
         taps.append((net, cy, cy + R["cont_nm"]))
         # The band was derived from the extreme edges of the device shapes; check
@@ -427,21 +631,22 @@ def layout_cell(cell, proc, lay):
         base = (y0 + y1) // 2 - span // 2 - half_c
         return [base + t * pitch_c for t in range(k)]
 
-    net_m1 = {}  # net -> list of (rect, side)
-    for strip, nets, order, devs_, cols_, prof, side in (
-            ("n", nn, nord, ndevs, cols, nprof, "below"),
-            ("p", pn, pord, pdevs, pcols, pprof, "above")):
-        for j, net in enumerate(nets):
-            # Node j sits between columns j-1 and j, and its contact stack has to
-            # fit inside both, so the contact floor is a per-device limit: a
-            # device folded short cannot hold a contact even where its taller
-            # neighbour could. Sizing from the shorter column also names that
-            # device in the failure.
-            c = min((cc for cc in (j - 1, j) if 0 <= cc < N), key=lambda cc: prof[cc])
+    net_m1 = {}  # net -> list of (rect, side): one per diffusion node
+    for strip, nodes_, order, devs_, cols_, prof, side in (
+            ("n", nnodes, nord, ndevs, cols, nprof, "below"),
+            ("p", pnodes, pord, pdevs, pcols, pprof, "above")):
+        for net, x, chain, b, bside in nodes_:
+            # The node's contact stack has to fit inside every neighbouring
+            # column of its own chain, so the contact floor is a per-device
+            # limit: a device folded short cannot hold a contact even where its
+            # taller neighbour could. Sizing from the shorter column also names
+            # that device in the failure.
+            cs = [cc for cc in (b - 1 if bside != "R" else -1, b if bside != "L" else N)
+                  if 0 <= cc < N]
+            c = min(cs, key=lambda cc: prof[cc])
             h = prof[c]
             y0, y1 = (n_y0, n_y0 + h) if strip == "n" else (p_y1 - h, p_y1)
             cys = contact_ys(y0, y1, _dev_desc(_dev_at(order, devs_, cols_, c)))
-            x = node_x[j]
             for cy in cys:
                 S.box("cont", x - half_c, cy, x + half_c, cy + R["cont_nm"])
             lo, hi = cys[0], cys[-1] + R["cont_nm"]
@@ -470,10 +675,15 @@ def layout_cell(cell, proc, lay):
     # internal net, e.g. buf's Y_i) must land on that net's route: a labelled
     # island instead is read by extraction as a split net (issue #201).
     driven = {g for g in gates if g in net_m1}
-    # Horizontal tracks for signal nets with more than one attachment. A net
-    # that needs a gate-pad riser takes the topmost track: the riser runs from
-    # the track up to the channel-top pad and must not cross another net's
-    # track, so every riser net sits above every non-riser net.
+    # Horizontal tracks for signal nets with more than one attachment: every
+    # diffusion node is its own island (the channels separate them, so the
+    # merged strip polygon does not tie a net's repeated nodes), and each
+    # strip is separate diffusion anyway -- so a net attached more than once
+    # needs its Metal1 join on a channel track. That includes a net the break
+    # splits across chains; the channel-track budget is the named limit it is.
+    # A net that needs a gate-pad riser takes the topmost track: the riser runs
+    # from the track up to the channel-top pad and must not cross another
+    # net's track, so every riser net sits above every non-riser net.
     tracks = {}
     need = [n for n, att in net_m1.items() if n not in (vss, vdd) and len(att) > 1]
     need.sort(key=lambda net: (net in driven, net))
@@ -516,32 +726,66 @@ def layout_cell(cell, proc, lay):
     # gate's Metal1 is a riser from its net's track up to the pad plus the track
     # grown out to meet it, so the pad is a terminal of its net's route
     # (issue #201); an input gate keeps the standalone pad.
-    for pos, g in enumerate(gates):
+    ch_lo, ch_hi = n_y1, p_y0
+    grid_ys = sorted((y for y in range((ch_lo // P + 1) * P, ch_hi, P)),
+                     key=lambda y: abs(y - (gate_pad_y + half_c)))
+    # Driven gates first: their riser has the least freedom, and an input pad's
+    # bar must not take the column it needs.
+    for pos, g in sorted(enumerate(gates), key=lambda t: (t[1] not in driven, t[0])):
         mine = dev_cols[pos]
         placed = None
         for j in mine:
             for sgn in (-1, 1):
                 cx = gate_x[j] + sgn * (R["poly_enc_cont_nm"] + half_c)
+                gx_node = gate_x[j] + sgn * (P // 2)  # the node column beside the pad: on the grid
                 others = [r for n2, r in m1 if n2 != g]
                 if cx - half_c - R["poly_enc_cont_nm"] < 0 or cx + half_c + R["poly_enc_cont_nm"] > W:
                     continue
                 ppad = (min(cx - half_c - R["poly_enc_cont_nm"], gate_x[j] - pw // 2), gate_pad_y - R["poly_enc_cont_nm"],
                         max(cx + half_c + R["poly_enc_cont_nm"], gate_x[j] + pw // 2), gate_pad_y - R["poly_enc_cont_nm"] + pad_h)
-                others_poly = [(gate_x[k] - pw // 2, ppad[1], gate_x[k] + pw // 2, ppad[3]) for k in range(N) if k not in mine] + poly_pads
+                # The pad merges with its own column's stripe, but the space
+                # rule is blind to nets, so every *other* stripe -- including
+                # the other fingers of the same gate, which the pad only sits
+                # 55 nm from at the shipped pitch -- must be poly_space clear.
+                others_poly = [(gate_x[k] - pw // 2, ppad[1], gate_x[k] + pw // 2, ppad[3])
+                               for k in range(N) if k != j] + poly_pads
                 if any(_overlap_or_close(ppad, r, R["poly_space_nm"]) for r in others_poly):
                     continue
+                pad_rect = (cx - mw // 2, gate_pad_y, cx + mw // 2, gate_pad_y + R["cont_nm"])
+                # An input pin's label sits on a grid point (node column x, a grid
+                # y in the channel) that the pad's Metal1 reaches by a vertical
+                # bar on the node column, just long enough. A driven gate's
+                # riser runs from its net's track up to the pad, so the pad
+                # stays a terminal of the net's route (issue #201).
                 if g in driven:
-                    # The riser contains the pad rectangle, so its clearance
-                    # check covers the pad's; the track reaches out to cx so the
-                    # riser overlaps it and the two are one conductor.
+                    # An internal net's gate label is not a pin: its riser stays
+                    # on the pad's own column and the label on the pad centre.
+                    # pad_rect is kept alongside the riser on purpose: when the
+                    # track lands above the pad (ty0 > gate_pad_y) the riser box
+                    # is y-inverted and does not cover it; otherwise the riser
+                    # contains pad_rect exactly and the box is a harmless duplicate.
                     ty0, ty1 = tracks[g]
                     xs = [(r[0] + r[2]) // 2 for r, _ in net_m1[g]]
-                    pieces = [(cx - mw // 2, ty0, cx + mw // 2, gate_pad_y + R["cont_nm"]),
-                              (min(xs + [cx]) - mw // 2, ty0, max(xs + [cx]) + mw // 2, ty1)]
+                    cands = [(None, [pad_rect,
+                                     (cx - mw // 2, ty0, cx + mw // 2, gate_pad_y + R["cont_nm"]),
+                                     (min(xs + [cx]) - mw // 2, ty0, max(xs + [cx]) + mw // 2, ty1)])]
                 else:
-                    pieces = [(cx - mw // 2, gate_pad_y, cx + mw // 2, gate_pad_y + R["cont_nm"])]
-                if all(not _overlap_or_close(piece, r, R["m1_space_nm"]) for piece in pieces for r in others):
-                    placed = (j, cx, pieces, ppad)
+                    # The bar overshoots the grid y by `e`, as much as the
+                    # neighbouring Metal1 allows (down to the grid y itself).
+                    bridge = (min(cx, gx_node) - mw // 2, gate_pad_y, max(cx, gx_node) + mw // 2, gate_pad_y + R["cont_nm"])
+                    cands = [(gy, [bridge,
+                                   (gx_node - mw // 2, min(gate_pad_y, gy - e),
+                                    gx_node + mw // 2, max(gate_pad_y + R["cont_nm"], gy + e))])
+                             for gy in grid_ys for e in range(mw // 2, -1, -grid)]
+                    # Crowded channel (a cell outside the shipped set): the
+                    # compact pad, labelled at its centre and so off the grid.
+                    # The row-4 test names any shipped cell that lands here.
+                    cands.append((None, [pad_rect]))
+                for gy, pieces in cands:
+                    if all(not _overlap_or_close(piece, r, R["m1_space_nm"]) for piece in pieces for r in others):
+                        placed = (j, cx, pieces, ppad, gx_node, gy)
+                        break
+                if placed:
                     break
             if placed:
                 break
@@ -549,15 +793,17 @@ def layout_cell(cell, proc, lay):
             if g in driven:
                 raise PlaceError(f"no Metal1-clean riser from the track of internal net {g} up to its gate pad "
                                  "(neighbouring stubs/tracks in the way)")
-            raise PlaceError(f"no Metal1-clean spot for the gate contact of {g} (neighbouring stubs/tracks in the way)")
-        j, cx, pieces, ppad = placed
+            raise PlaceError(f"no Metal1-clean spot for the gate contact of {g} on a grid point (neighbouring stubs/tracks in the way)")
+        j, cx, pieces, ppad, lx, ly = placed
+        if ly is None:
+            lx, ly = cx, gate_pad_y + half_c
         poly_pads.append(ppad)
         S.box("gatpoly", *ppad)
         S.box("cont", cx - half_c, gate_pad_y, cx + half_c, gate_pad_y + R["cont_nm"])
         for piece in pieces:
             S.box("metal1", *piece)
             m1.append((g, piece))
-        S.labels.append(("metal1_label", cx, gate_pad_y + half_c, g))
+        S.labels.append(("metal1_label", lx, ly, g))
 
     # Rails and output/rail labels.
     S.box("metal1", 0, -rail // 2, W, rail // 2)
@@ -567,19 +813,27 @@ def layout_cell(cell, proc, lay):
     for net, cy0, cy1 in taps:
         ry0, ry1 = (-rail // 2, rail // 2) if net == vss else (H - rail // 2, H + rail // 2)
         hang = max(mw // 2, half_c)  # cover the contacts even if M1 is narrower
-        patch = (node_x[0] - hang, min(cy0, ry0), node_x[-1] + hang, max(cy1, ry1))
+        patch = (node_xs[0] - hang, min(cy0, ry0), node_xs[-1] + hang, max(cy1, ry1))
         for n2, r in m1:
             if n2 != net and _overlap_or_close(patch, r, R["m1_space_nm"]):
                 raise PlaceError(f"{net} tap Metal1 is not {R['m1_space_nm']} nm clear of {n2}")
         S.box("metal1", *patch)
         m1.append((net, patch))
-    S.labels.append(("metal1_label", W // 2, 0, vss))
-    S.labels.append(("metal1_label", W // 2, H, vdd))
+    S.labels.append(("metal1_label", bx[0], 0, vss))
+    S.labels.append(("metal1_label", bx[0], H, vdd))
     for pin in sorted(cell["outputs"]):
         if pin not in net_m1:
             raise PlaceError(f"output {pin} has no diffusion node")
-        rect = net_m1[pin][0][0]
-        S.labels.append(("metal1_label", (rect[0] + rect[2]) // 2, (rect[1] + rect[3]) // 2, pin))
+        # A grid point of the output's final Metal1 (stubs grown to the track
+        # included): its node column is on the grid in x, so only y needs one.
+        pts = [(x, y, min(x - r[0], r[2] - x, y - r[1], r[3] - y))
+               for n2, r in m1 if n2 == pin
+               for x in range(-(-r[0] // P) * P, r[2] + 1, P) for y in range(-(-r[1] // P) * P, r[3] + 1, P)
+               if r[0] <= x <= r[2] and r[1] <= y <= r[3]]
+        if not pts:
+            raise PlaceError(f"output {pin} has no grid point on its Metal1")
+        x, y, _ = max(pts, key=lambda t: (t[2], -t[1], -t[0]))
+        S.labels.append(("metal1_label", x, y, pin))
     for net_a, ra in m1:
         for net_b, rb in m1:
             if net_a != net_b and (ra[0] < rb[2] and rb[0] < ra[2] and ra[1] < rb[3] and rb[1] < ra[3]):

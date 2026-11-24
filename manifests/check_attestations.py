@@ -34,8 +34,13 @@ pins the provenance.input.content_hash of the envelope it names -- the
 single-file digest for the path shape, the input-set aggregate for the paths
 shape (exactly the field the per-file walk above skips). For item 6's
 not_applicable form, the spec and statement pins each hash the raw bytes
-of the named document. Bare path strings and lists of them record locations
-without a pin and are skipped. The default run walks the envelope directory
+of the named document. Bare path strings record locations without a pin
+and are skipped. A list entry is handled element by element (#220): bare
+strings are skipped as locations, and {file, content_hash, ...} elements
+are envelope pins compared exactly like a top-level object pin -- item 5's
+analog citations are klt sim reports whose provenance.input.content_hash
+names the netlist the run consumed, and each is checked and counted on
+its own. The default run walks the envelope directory
 and checks the envelopes against the tree. Issue #116's defect was a
 re-minted envelope whose manifest pin was never re-pointed, so the committed
 signoff count disagreed with what the grader computed, and no CI stage could
@@ -337,6 +342,40 @@ def _document_pin_mismatch(entry, manifest_name, where, repo_root):
     return None
 
 
+def _envelope_pin_mismatch(entry, manifest_name, where, repo_root):
+    """Compare a {file, content_hash} pin against the envelope it names.
+
+    The envelope's provenance.input.content_hash is the single-file digest
+    for the path shape, the input-set aggregate for the paths shape -- the
+    field the pin names. Returns a failure string on disagreement, None on
+    a match; raises EnvelopeError on a structural problem (malformed pin,
+    missing or unparseable envelope).
+    """
+    rel, pin = _parse_file_pin(entry, manifest_name, where)
+    env_path = repo_root / rel
+    if not env_path.is_file():
+        raise EnvelopeError(
+            f"{manifest_name}: {where}: envelope {rel} does not exist"
+        )
+    try:
+        envelope = json.loads(env_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise EnvelopeError(
+            f"{manifest_name}: {where}: envelope {rel} is not valid JSON ({exc})"
+        ) from exc
+    try:
+        aggregate = envelope_input_hash(envelope, rel)
+    except EnvelopeError as exc:
+        raise EnvelopeError(f"{manifest_name}: {where}: {exc}") from exc
+    if pin != aggregate:
+        return (
+            f"{manifest_name}: {where} pins sha256:{pin} but envelope {rel} "
+            f"carries provenance.input.content_hash sha256:{aggregate}; "
+            f"{MANIFEST_FIX_HINT}"
+        )
+    return None
+
+
 def manifest_pin_findings(manifest, manifest_name, repo_root):
     """Return (checked, errors, failures) for the manifest's evidence pins.
 
@@ -356,14 +395,56 @@ def manifest_pin_findings(manifest, manifest_name, repo_root):
         return checked, errors, failures
     for key, entry in evidence.items():
         where = f'evidence["{key}"]'
-        if isinstance(entry, str) or isinstance(entry, list):
-            # A bare evidence path, or a list of them: a location recorded
-            # without a pin, nothing to compare.
+        if isinstance(entry, str):
+            # A bare evidence path: a location recorded without a pin,
+            # nothing to compare.
+            continue
+        if isinstance(entry, list):
+            # A list mixes shapes element by element (#220): bare strings
+            # are locations without a pin and are skipped, while {file,
+            # content_hash, ...} objects are envelope pins compared exactly
+            # like the top-level object branch below -- item 5's analog
+            # citations are klt sim reports whose provenance.input
+            # .content_hash is the pin. A string-only list still pins
+            # nothing.
+            # A nested list is a cited group (item 11's analog groups pair
+            # an ERC and an LVS record per cell); its elements are walked
+            # the same way, one level deep.
+            flat = []
+            for i, element in enumerate(entry):
+                if isinstance(element, list):
+                    flat.extend(
+                        (f"{where}[{i}][{j}]", sub)
+                        for j, sub in enumerate(element)
+                    )
+                else:
+                    flat.append((f"{where}[{i}]", element))
+            for location, element in flat:
+                if isinstance(element, str):
+                    continue
+                if not isinstance(element, dict):
+                    errors.append(
+                        f"{manifest_name}: {location}: expected a path string "
+                        f"or a {{file, content_hash}} object, got "
+                        f"{type(element).__name__}"
+                    )
+                    continue
+                try:
+                    mismatch = _envelope_pin_mismatch(
+                        element, manifest_name, location, repo_root
+                    )
+                except EnvelopeError as exc:
+                    errors.append(str(exc))
+                    continue
+                checked += 1
+                if mismatch:
+                    failures.append(mismatch)
             continue
         if not isinstance(entry, dict):
             errors.append(
                 f"{manifest_name}: {where}: expected a path string, a list of "
-                f"paths, or a {{file, content_hash}} object, got {type(entry).__name__}"
+                f"paths or pinned objects, or a {{file, content_hash}} object, "
+                f"got {type(entry).__name__}"
             )
             continue
         if key in ("6", "6.digital") and "not_applicable" in entry:
@@ -387,35 +468,15 @@ def manifest_pin_findings(manifest, manifest_name, repo_root):
                     failures.append(mismatch)
             continue
         try:
-            rel, pin = _parse_file_pin(entry, manifest_name, where)
+            mismatch = _envelope_pin_mismatch(
+                entry, manifest_name, where, repo_root
+            )
         except EnvelopeError as exc:
             errors.append(str(exc))
             continue
-        env_path = repo_root / rel
-        if not env_path.is_file():
-            errors.append(
-                f"{manifest_name}: {where}: envelope {rel} does not exist"
-            )
-            continue
-        try:
-            envelope = json.loads(env_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as exc:
-            errors.append(
-                f"{manifest_name}: {where}: envelope {rel} is not valid JSON ({exc})"
-            )
-            continue
-        try:
-            aggregate = envelope_input_hash(envelope, rel)
-        except EnvelopeError as exc:
-            errors.append(f"{manifest_name}: {where}: {exc}")
-            continue
         checked += 1
-        if pin != aggregate:
-            failures.append(
-                f"{manifest_name}: {where} pins sha256:{pin} but envelope {rel} "
-                f"carries provenance.input.content_hash sha256:{aggregate}; "
-                f"{MANIFEST_FIX_HINT}"
-            )
+        if mismatch:
+            failures.append(mismatch)
     return checked, errors, failures
 
 

@@ -37,13 +37,14 @@ class Table(unittest.TestCase):
 
     def test_generated_streams_carry_the_naming_rule(self):
         """The naming rule the README never stated: the config cell name is
-        the stream's GDS structure name (`notch_<strip>_p<pitch>`), with
+        the stream's GDS structure name (`notch_<strip>_p<pitch>` for a
+        profile forcing, `break_<strip>_p<pitch>` for a break forcing), with
         `_lib` appended for the library name."""
         for row in gc.TABLE:
             with self.subTest(control=row["stem"]):
-                strip, _profile = row["force"]
                 pitch = row["layout"].get("gate_pitch_nm", CFG["layout"]["gate_pitch_nm"])
-                cell_name = f"notch_{strip}_p{pitch}"
+                stem = f"break_{row['breaks'][0]}" if "breaks" in row else f"notch_{row['force'][0]}"
+                cell_name = f"{stem}_p{pitch}"
                 data = gc.regenerate(row, CFG)[f"{row['stem']}.gds"]
                 self.assertIn(cell_name.encode(), data)
                 self.assertIn((cell_name + "_lib").encode(), data)
@@ -51,7 +52,7 @@ class Table(unittest.TestCase):
 
 class Regeneration(unittest.TestCase):
     def test_each_control_matches_its_committed_stream_and_pinned_hash(self):
-        prof0, hit0 = gl._strip_profile, gl._notch_violation
+        prof0, hit0, order0 = gl._strip_profile, gl._notch_violation, gl.order_strips
         files = gc.generate_controls(CFG)
         self.assertEqual(set(files), {f"{r['stem']}.gds" for r in gc.TABLE})
         for stem, data in files.items():
@@ -65,6 +66,7 @@ class Regeneration(unittest.TestCase):
                 )
         self.assertIs(gl._strip_profile, prof0)
         self.assertIs(gl._notch_violation, hit0)
+        self.assertIs(gl.order_strips, order0)
 
 
 class CheckMode(unittest.TestCase):
@@ -113,25 +115,80 @@ class WriteMode(unittest.TestCase):
                 self.assertEqual((out / p.name).read_bytes(), p.read_bytes())
 
 
+class OutputIsolation(unittest.TestCase):
+    """`--out` alone is a single-output scratch run: it must not touch the
+    tracked ERC controls, and coincident output directories are rejected
+    before anything is written or pruned."""
+
+    ERC = LAYOUT / "erc" / "controls"
+
+    def _erc_snapshot(self):
+        return {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in self.ERC.glob("*.gds")}
+
+    def test_out_only_leaves_tracked_erc_controls_alone(self):
+        before = self._erc_snapshot()
+        self.assertTrue(before)
+        with tempfile.TemporaryDirectory() as d:
+            cfg = json.loads(CONFIG.read_text())
+            cfg["process"]["vdd_net"] = "VDD_TEST"
+            cfgp = pathlib.Path(d) / "other.json"
+            cfgp.write_text(json.dumps(cfg))
+            out = pathlib.Path(d) / "drc"
+            r = run("--config", str(cfgp), "--out", str(out))
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual({p.name for p in out.glob("*.gds")}, {p.name for p in CONTROLS.glob("*.gds")})
+        self.assertEqual(self._erc_snapshot(), before)
+
+    def test_coincident_out_dirs_rejected_before_writing(self):
+        with tempfile.TemporaryDirectory() as d:
+            marker = pathlib.Path(d) / "keep.gds"
+            marker.write_bytes(b"x")
+            r = run("--out", d, "--erc-out", d)
+            self.assertEqual(r.returncode, 2, r.stderr)
+            self.assertIn("same directory", r.stderr)
+            self.assertEqual(marker.read_bytes(), b"x")
+            self.assertEqual([p.name for p in pathlib.Path(d).glob("*.gds")], ["keep.gds"])
+
+    def test_distinct_out_dirs_write_both_sets(self):
+        with tempfile.TemporaryDirectory() as d:
+            a, b = pathlib.Path(d) / "a", pathlib.Path(d) / "b"
+            r = run("--out", str(a), "--erc-out", str(b))
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual({p.name for p in a.glob("*.gds")}, {p.name for p in CONTROLS.glob("*.gds")})
+            self.assertEqual({p.name for p in b.glob("*.gds")}, set(self._erc_snapshot()))
+
+
 class PatchRestoration(unittest.TestCase):
     def test_attributes_restored_after_a_failed_row(self):
         """The p420 forcing with the notch check left live is exactly the
         refusal the recorded row stubbed off -- a failed row must not leave
         the generator patched for the next one."""
-        prof0, hit0 = gl._strip_profile, gl._notch_violation
+        prof0, hit0, order0 = gl._strip_profile, gl._notch_violation, gl.order_strips
         row = dict(gc.TABLE[0], notch_off=False)
         with self.assertRaises(gl.PlaceError):
             gc.regenerate(row, CFG)
         self.assertIs(gl._strip_profile, prof0)
         self.assertIs(gl._notch_violation, hit0)
+        self.assertIs(gl.order_strips, order0)
+
+    def test_failed_break_row_restores_order_strips(self):
+        """A break row that fails to place inside `forced_break` must not
+        leave `order_strips` patched for the next one."""
+        order0 = gl.order_strips
+        row = next(r for r in gc.TABLE if "breaks" in r)
+        broken = dict(row, layout=dict(row["layout"], row_height_nm=1))
+        with self.assertRaises(gl.PlaceError):
+            gc.regenerate(broken, CFG)
+        self.assertIs(gl.order_strips, order0)
 
     def test_generate_controls_restores_attributes_when_a_row_fails(self):
-        prof0, hit0 = gl._strip_profile, gl._notch_violation
+        prof0, hit0, order0 = gl._strip_profile, gl._notch_violation, gl.order_strips
         broken = dict(gc.TABLE[1], layout=dict(gc.TABLE[1]["layout"], row_height_nm=1))
         with self.assertRaises(gl.PlaceError):
             gc.generate_controls(CFG, [gc.TABLE[0], broken, gc.TABLE[2]])
         self.assertIs(gl._strip_profile, prof0)
         self.assertIs(gl._notch_violation, hit0)
+        self.assertIs(gl.order_strips, order0)
 
 
 if __name__ == "__main__":

@@ -406,6 +406,202 @@ def test_manifest_bare_path_entries_are_skipped_not_errors(tmp_path, capsys):
     assert capsys.readouterr().err == ""
 
 
+def netlist_report_envelope(netlist_rel: str, content: bytes) -> dict:
+    # The klt sim report shape item 5's analog citations name: a JSON
+    # envelope whose provenance.input.content_hash pins the netlist the
+    # run consumed (role: netlist).
+    return {
+        "schema_version": 3,
+        "status": "pass",
+        "provenance": {
+            "input": {
+                "content_hash": sha(content),
+                "role": "netlist",
+                "path": {"path": netlist_rel, "scope": "repo"},
+            }
+        },
+    }
+
+
+def write_report(root: Path, rel: str, envelope: dict) -> None:
+    p = root / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(envelope, indent=1) + "\n")
+
+
+@pytest.fixture
+def item5_reports(tmp_path):
+    root, _ = make_repo(
+        tmp_path,
+        {"sim/records/a.spice": b"a netlist", "sim/records/b.spice": b"b netlist"},
+        {},
+    )
+    for name, content in (("a", b"a netlist"), ("b", b"b netlist")):
+        write_report(
+            root,
+            f"sim/records/{name}.report.json",
+            netlist_report_envelope(f"sim/records/{name}.spice", content),
+        )
+    return root
+
+
+def run_item5_manifest(root, pins):
+    manifest = {"block": "fake", "evidence": {"5.analog": pins}}
+    return run_manifest(root, write_manifest(root, manifest))
+
+
+def test_manifest_list_of_pinned_objects_checked_and_counted(item5_reports, capsys):
+    # #220: item-5 analog evidence is a list of {file, content_hash, rows}
+    # citations. Each element pins the provenance.input.content_hash of the
+    # report envelope it names -- the same comparison a top-level object
+    # pin gets -- and each must be checked and counted instead of the whole
+    # list being skipped.
+    assert run_item5_manifest(
+        item5_reports,
+        [
+            {"file": "sim/records/a.report.json",
+             "content_hash": sha(b"a netlist"), "rows": ["9"]},
+            {"file": "sim/records/b.report.json",
+             "content_hash": sha(b"b netlist"), "rows": ["9"]},
+        ],
+    ) == 0
+    assert "2 evidence pins" in capsys.readouterr().out
+
+
+def test_manifest_list_of_pinned_objects_wrong_pin_fails(item5_reports, capsys):
+    assert run_item5_manifest(
+        item5_reports,
+        [
+            {"file": "sim/records/a.report.json",
+             "content_hash": sha(b"a netlist")},
+            {"file": "sim/records/b.report.json",
+             "content_hash": sha(b"tampered")},
+        ],
+    ) == 1
+    err = capsys.readouterr().err
+    assert 'evidence["5.analog"][1]' in err
+    assert "sim/records/b.report.json" in err
+    assert sha(b"tampered") in err
+    assert sha(b"b netlist") in err
+
+
+def test_manifest_list_pinned_object_naming_missing_report_fails(
+    tmp_path, capsys
+):
+    root, _ = make_repo(tmp_path, {}, {})
+    manifest = write_manifest(
+        root,
+        {
+            "block": "fake",
+            "evidence": {
+                "5.analog": [
+                    {"file": "sim/records/gone.report.json",
+                     "content_hash": sha(b"x")}
+                ]
+            },
+        },
+    )
+    assert run_manifest(root, manifest) == 2
+    err = capsys.readouterr().err
+    assert 'evidence["5.analog"][0]' in err
+    assert "does not exist" in err
+
+
+def test_manifest_list_pinned_object_naming_non_json_report_fails(
+    tmp_path, capsys
+):
+    root, _ = make_repo(tmp_path, {"sim/records/plain.report.json": b"not json"}, {})
+    manifest = write_manifest(
+        root,
+        {
+            "block": "fake",
+            "evidence": {
+                "5.analog": [
+                    {"file": "sim/records/plain.report.json",
+                     "content_hash": sha(b"x")}
+                ]
+            },
+        },
+    )
+    assert run_manifest(root, manifest) == 2
+    err = capsys.readouterr().err
+    assert 'evidence["5.analog"][0]' in err
+    assert "not valid JSON" in err
+
+
+def test_manifest_mixed_list_strings_and_pinned_objects(item5_reports, capsys):
+    # A list may mix bare path strings with pinned objects: element by
+    # element, strings are skipped as locations without a pin, objects are
+    # checked (#220).
+    assert run_item5_manifest(
+        item5_reports,
+        [
+            "sim/records/old-run/a.report.json",
+            {"file": "sim/records/a.report.json",
+             "content_hash": sha(b"a netlist")},
+        ],
+    ) == 0
+    assert "1 evidence pins" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "element",
+    [
+        {"file": "sim/records/a.report.json"},
+        {"file": "sim/records/a.report.json", "content_hash": "deadbeef"},
+        42,
+        None,
+        [["too deep"]],
+    ],
+)
+def test_manifest_list_malformed_element_exits_2_not_traceback(
+    item5_reports, capsys, element
+):
+    # A malformed list element -- an object missing its pin fields, a bad
+    # hash format, or a non-string/non-object element -- is a structural
+    # error (exit 2) naming the key and the element index, never a
+    # traceback.
+    assert run_item5_manifest(item5_reports, [element]) == 2
+    assert 'evidence["5.analog"][0]' in capsys.readouterr().err
+
+
+def test_manifest_nested_group_pins_checked_and_counted(item5_reports, capsys):
+    # Item 11's analog evidence is a list of cited groups, each a list of a
+    # pinned record plus bare paths. A group's pinned object is checked and
+    # counted; its bare strings are locations without a pin.
+    group = [
+        {"file": "sim/records/a.report.json", "content_hash": sha(b"a netlist")},
+        "sim/records/b.report.json",
+    ]
+    assert run_item5_manifest(item5_reports, [group]) == 0
+    assert "1 evidence pins" in capsys.readouterr().out
+
+
+def test_manifest_nested_group_wrong_pin_fails_naming_group(item5_reports, capsys):
+    group = [{"file": "sim/records/a.report.json", "content_hash": sha(b"x")}]
+    assert run_item5_manifest(item5_reports, [group]) == 1
+    assert 'evidence["5.analog"][0][0]' in capsys.readouterr().err
+
+
+def test_manifest_empty_or_string_only_list_still_pins_nothing(tmp_path, capsys):
+    # Edge cases (#220 test plan): an empty list and a string-only list pin
+    # nothing -- skipped element by element -- so a manifest with no other
+    # pins still hits the zero-pin error (#129).
+    root, _ = make_repo(tmp_path, {}, {})
+    manifest = write_manifest(
+        root,
+        {
+            "block": "fake",
+            "evidence": {
+                "5.analog": [],
+                "11.digital": ["flow/records/r/erc.json"],
+            },
+        },
+    )
+    assert run_manifest(root, manifest) == 2
+    assert "no evidence pins" in capsys.readouterr().err
+
+
 def test_manifest_with_zero_pins_fails_not_vacuously(tmp_path, capsys):
     # Negative control (#129): a manifest whose evidence carries only bare
     # path strings and lists pins nothing, so the run verifies nothing -- the

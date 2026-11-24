@@ -16,6 +16,7 @@ python3 layout/gen_layouts.py --config layout/example_config.json           # wr
 python3 layout/gen_layouts.py --config layout/example_config.json --check   # freshness
 python3 -m unittest discover -s layout/tests                                # tests
 python3 layout/run_lvs.py --config layout/example_config.json               # LVS -> layout/lvs/
+python3 layout/run_erc.py --config layout/example_config.json               # ERC -> layout/erc/
 klt drc layout/gds/sg13g2_inv_1.gds --deck sg13g2                           # DRC
 ```
 
@@ -33,7 +34,7 @@ The `process` and `cells` objects are exactly `design/README.md`'s contract. The
 ```jsonc
 "layout": {
   "row_height_nm": 3360,       // cell height; rails are centred on y=0 and y=row height
-  "gate_pitch_nm": 420,        // even; poly pitch = node pitch; cell width = (columns+1) * pitch
+  "gate_pitch_nm": 420,        // even; poly pitch = node pitch; cell width = (columns+2) * pitch
   "channel_tracks": 1,         // max Metal1 tracks between the strips (more -> exit 3)
   "n_diff_y0_nm": 400,         // bottom of the NMOS diffusion
   "p_diff_top_margin_nm": 400, // PMOS diffusion top sits this far below the row top
@@ -87,11 +88,17 @@ One NMOS and one PMOS diffusion strip, Metal1 only. A device of F fingers (the
 alternating source and drain; the columns of one device are joined by a poly bridge
 below the NMOS diffusion (`poly_width_nm` tall, `poly_to_activ_nm` clear of it) and
 share one gate contact. A poly column crosses both strips, so the NMOS and PMOS
-device on one gate net get the same finger count, the larger of the two; the other
-is folded into that many fingers (same total width, which must divide evenly on
-`process.grid_nm`, default 10, else exit `3`). Cell width is `(columns + 1) *
-gate_pitch_nm`, counting fingers. Each strip must be a single chain of devices
-sharing source/drain nets, and both chains must have the same gate-net sequence.
+device on one gate net get the same finger count, the larger of the two --
+already reconciled by `design/gen_netlists.py` (`build` folds every device on a
+gate net to that gate's count, same total width, refusing a width with no equal
+split on `process.grid_nm`, default 10, else exit `3`), so the layout consumes
+the netlist's fingering as-is. Cell width is `(columns + 2) *
+gate_pitch_nm` plus one rule-derived gap per diffusion break, counting fingers.
+Each gap is rounded up to a whole number of gate pitches, so node columns after
+a break stay on the routing grid and a break cell's pins stay on the row-4 grid.
+A strip is one or more **chains** of devices sharing source/drain nets
+(issue #169); both strips share one gate-net sequence, so every poly column
+still crosses both.
 
 A gate whose net is also driven from diffusion (a multi-stage cell's internal
 net, e.g. `buf`'s `Y_i`) is routed as a terminal of that net (issue #201):
@@ -165,14 +172,73 @@ Two limits the step brings with it:
   when the strip's tallest run is far above it, because the contact has to fit
   inside that device's own run.
 
+### Diffusion breaks (issue #169)
+
+A strip orders as chains separated by a **diffusion break** where no ordering
+chains everything -- which is the common case once the fold makes devices
+even-fingered, because F alternating columns end on the net they started on for
+even F, so a continuation needs the next device to start on that same left net.
+The pairing search (`order_strips`) deepens on the **union** of the two strips'
+break position sets: a break in either strip shifts the columns after it in
+both (a poly column must cross both strips at one x), so the union is what
+costs width, and a cell that places as single chains keeps the exact ordering
+-- and the exact bytes -- the single-chain model picked. Strips too large to
+search exhaustively (a step cap fires; the 15-device-per-strip mux4 census row
+is the current example) fall back to a deterministic greedy first-fit pairing:
+a wider but still rule-legal ordering, never a silent refusal.
+
+The break itself is one gap of
+`max(activ_space_nm + 2 * hang, psd_space_nm + 2 * (hang + sd_enc_activ_nm))`
+rounded up to a whole number of gate pitches, where `hang` is
+`cont_nm / 2 + activ_enc_cont_nm` -- every value from `layout.rules`, no new
+key. The quantum is the routing grid: node columns are the grid (issue #225),
+so a gap that was not a multiple of `gate_pitch_nm` would shift every column
+after the break off it and take that cell's pins off spec row 4's grid
+(970 nm needed at the shipped rules, 1260 nm drawn at the 420 nm pitch; the
+cost is up to one pitch of width per break, and
+`DiffusionBreaks.test_break_cell_pins_stay_on_the_row4_grid` holds it). `nwell_space_nm` does not widen it
+because the n-well does not part: it bridges the gap (each side reaches past
+the gap's midpoint, so the pieces merge into one well) and the cell keeps its
+one well and one tap. Likewise a strip whose chain continues through the
+*other* strip's break (a phantom break -- the gap is in the column lattice, not
+in this strip's diffusion) bridges it: its activ and implant rectangles reach
+to the midpoint and merge, so an unbroken strip stays one diffusion island per
+chain. A strip that does break parts its activ and implant by the gap, which
+clears `activ_space_nm` on both strips and `psd_space_nm` on the PMOS strip by
+construction; the notch predicate skips a valley that spans one of its own
+breaks (legal by construction) and measures the n-well's with the bridged
+geometry. The taps span the gap: their activ and tie implant are drawn over the
+full column range including it, with one contact at every node position on
+either side of it.
+
+The break splits whatever net its two sides carried, and every diffusion node
+is its own island anyway (the channels separate them), so each net with more
+than one attachment needs its Metal1 join on a channel track as before. That
+is the named next limit for some of the census cells that used to fail with
+`needs a diffusion break` (the others hit the contact floor or the n-well
+notch, per the table below): `nand4_1` reports `nets ['Y', 'n1', 'n2', 'n3'] need
+4 channel tracks, config allows 1`. The channel-routing gap is tracked
+separately from this issue.
+
+The capability is measured, not just asserted:
+`layout/drc/controls/break-pmos-p420.gds` is the shipped `nand2_1` with one
+break forced into its PMOS pairing (the same forcing
+`test_gen_layouts.py::DiffusionBreaks` exercises, via `layout/gen_controls.py`),
+and its `klt drc --deck sg13g2` report and `klt lvs` match against the
+committed `nand2_1` reference netlist sit next to it -- the DRC report with
+`activ.space.1`, `psd.space.1` and `nwell.space.1` all in `rules_checked`, the
+LVS report showing the split VDD node re-joined by its rail stubs and the body
+verification passing on the one bridged well. Recorded on klt
+`0.9.3.dev4263+g473bcdb00d05` / klayout `0.30.12`.
+
 Outside that model the generator exits `3` naming the cell and the reason:
-* a diffusion break is needed (XOR, mux) -- including any series stack of
-  even-finger devices: F alternating columns end on the net they started on for even
-  F, so the next device in the chain cannot share that diffusion (`nand4_1`);
-* a gate net driving the columns of two different devices;
-* more nets to join than `channel_tracks` -- every extra finger boundary re-attaches
-  its net, so a series stack that is folded (`nand2_2`: `Y` and `n1`) needs two
-  tracks where the config allows one;
+* a gate net driving the columns of two different devices (XOR, mux: the
+  inverter and the driven device share the input net);
+* more nets to join than `channel_tracks` -- every extra finger boundary
+  re-attaches its net, so a series stack that is folded (`nand2_2`: `Y` and
+  `n1`) needs two tracks where the config allows one (a second track does not
+  rescue it; the measured limits are in the issue #171 section below), and a
+  cell that breaks adds its split nets to that count (`nand4_1`: four);
 * a strip whose height profile is tall-short-tall, or a device drawn too short
   for a contact (both above);
 * a channel narrower than the two implant enclosures (`2 * sd_enc_activ_nm`),
@@ -183,32 +249,156 @@ Outside that model the generator exits `3` naming the cell and the reason:
   would otherwise be drawn is exactly the split net the riser exists to
   avoid, so the refusal is the only other outcome).
 
-A failure message names the **netlist** finger width and the **drawn**
-(post-fold) one separately, because the fold divides a width that can be uniform
-in the netlist: `nor2_1`'s netlist is a uniform 500 nm and it is drawn as
-`2 x 250 nm`, so a message quoting only the drawn number sends the reader
-hunting for a width the netlist does not contain.
+A failure message names the device's fingered geometry once (`2 fingers of
+250 nm`): the netlist generator states the fold itself, so the netlist and the
+drawing cannot disagree on fingering -- there is no separate netlist width for
+the message to quote against the drawn one.
 
 #### What still blocks the AND/OR and AOI/OAI families
 
-Lifting the one-height-per-strip limit does not by itself add a cell: each of
-the four cells issue #74 originally named is blocked by a *further* limit, and
-three of them by one this generator has never had. Measured on `2546575` by
-building a one-cell config per cell and reading the reported failure:
+Neither lifting the one-height-per-strip limit (#74) nor the diffusion break
+(#169) adds a cell on its own: each of the cells issue #74 originally named is
+still blocked by a *further* limit, now measured past the break. Measured on
+this branch by building a one-cell config per cell and reading the reported
+failure:
 
 | cell | drawn NMOS / PMOS finger widths | next limit |
 |---|---|---|
 | `and2_1` | `[1000, 1000, 500]` / `[800]` | needs 2 channel tracks (`X`, `X_i`), config allows 1 |
-| `or2_1` | `[250, 500]` / `[800]` | PMOS needs a diffusion break |
-| `a21oi_1` | `[250, 500]` / `[800]` | NMOS needs a diffusion break |
-| `o21ai_1` | `[500, 1000]` / `[800]` | no shared gate-net sequence (gate nets cannot align in columns) |
-| `xor2_1` | `[250, 500]` / `[400, 800]` | NMOS needs a diffusion break |
+| `or2_1` | `[250, 500]` / `[800]` | 250 nm fingers are too short for a contact |
+| `a21oi_1` | `[250, 500]` / `[800]` | 250 nm fingers are too short for a contact |
+| `o21ai_1` | `[500, 1000]` / `[800]` | needs 3 channel tracks (`Y`, `n1`, `n2`), config allows 1 |
+| `xor2_1` | `[250, 500]` / `[400, 800]` | 250 nm fingers are too short for a contact |
+| `a22oi_1` | `[500]` / `[800]` | needs 4 channel tracks (`X`, `n1`, `n2`, `n3`), config allows 1 |
+| `nand4_1` | `[500]` / `[400]` | needs 4 channel tracks (`Y`, `n1`, `n2`, `n3`), config allows 1 |
+| `mux2_1` | `[500]` / `[400, 800]` | PMOS height profile notches over columns 8..9, a 550 nm `nwell` opening under the 620 nm minimum |
 
-So the capability is exercised in `test_gen_layouts.py::MixedFingerWidths` on
-synthetic configs, the way `FakeProcess` exercises a second process -- `and2_1`
-places with a stepped NMOS strip once the synthetic row gives it two channel
-tracks and a wider pitch. The committed config's `channel_tracks` and `rules`
-are unchanged.
+No cell fails with `needs a diffusion break` any more: the break model moved
+every one of them to its next named limit, dominated by the one-track channel
+(`channel_tracks: 1`) and the 300 nm contact floor. The same holds for the
+13-cell demo census of `design/example_config.json` under the committed
+layout/process blocks (`test_gen_layouts.py::DiffusionBreaks` asserts it) and
+for the 40-cell `2AMLogic/sg13cmos5l-stdcells` census (`d91a3a3`): there 3 of
+40 place (the three inverters, unchanged), and of the 21 former break rows 12
+now name their channel-track count, 5 the contact floor (`and4_1`, `mux4_1`,
+`nand4_1`, `nor4_1`, `or4_1`), 1 an n-well notch (`mux2_1`) and 3 the
+repeated-gate limit (`mux2_2`, `xnor2_1`, `xor2_1`). The break geometry itself places and measures clean on the
+recorded `break-pmos-p420` control above.
+
+So the capability is exercised in `test_gen_layouts.py::MixedFingerWidths` and
+`::DiffusionBreaks` on synthetic and forced configurations, the way
+`FakeProcess` exercises a second process -- `and2_1` places with a stepped NMOS
+strip once the synthetic row gives it two channel tracks and a wider pitch. The
+committed config's `channel_tracks` and `rules` are unchanged.
+
+#### What blocks buf, folded nand2 and folded nor2 on a 3360 nm row (issue #171)
+
+Measured on `bed801e` with one-cell configs. The seven consumer shapes are the
+committed fixture `layout/tests/fixtures/t1_row3360.json` (3360 nm row, 420 nm
+pitch, margins 350/330, 740/1120 nm unit widths, 1000/1200 nm finger maxima, 5
+nm grid, 440 nm rails); `test_gen_layouts.py::T1Fixture` pins each outcome.
+`demo_buf_2` and `demo_and2_1` from `design/example_config.json` fail the same
+way at `channel_tracks` 1. **None of the nine places, and nothing here changes
+what the generator draws**; `--check` is unchanged for the four committed GDS.
+
+| cell (fixture) | `channel_tracks` 1 | 2 and 3 | limiting constraint |
+|---|---|---|---|
+| `buf_1`, `buf_2`, `buf_4` | `X`, `X_i` need 2 tracks | `channel too short for track 2 of net X_i` | gate-pad clearance, below |
+| `nand2_1`, `nand2_2` | `Y`, `n1` need 2 tracks | `Metal1 of Y overlaps n1` | planarity of a folded series stack, below |
+| `nor2_1`, `nor2_2` | `Y`, `n1` need 2 tracks | `no Metal1-clean spot for the gate contact of A` | planarity of a folded series stack, below |
+
+Findings, in the order the issue asked for:
+
+* **Tracks per net over the full width is not the binding limit.** A prototype
+  that allocated each net's track over the span it occupies, packed nets with
+  disjoint spans into one row, replaced a net with one stub per strip on the
+  same node column by a single vertical bar (no track), and retried every
+  strip ordering placed none of the nine cells; it was not kept. The two
+  nets of a buffer (`X`, `X_i`) are both vertical bars, so the track count was
+  never what stopped it.
+* **Buffer: the input pad of the output stage cannot be drawn.** The output
+  stage has two fingers (drive 2 and 4, and drive 1 because the NMOS folds to
+  match), so its output node `X` sits *between* the two gate columns and is a
+  vertical bar across the channel; the chain forces this, since the two
+  fingers must end on the rail (`VSS X VSS`). The gate `X_i` has to land a pad
+  on one of those two columns. A pad on the column's outer side needs a
+  300 nm wide poly pad (`cont_nm + 2 * poly_enc_cont_nm`) inside the 290 nm
+  (`pitch - poly_width_nm`) gap to the neighbouring stripe, 55 nm from it
+  where the rule is `poly_space_nm` 180; a pad on the inner side or beside the
+  bar is 50 nm (`pitch / 2 - 2 * m1_width / 2`) from `X`'s bar where the rule
+  is `m1_space_nm` 180; and the pad on the far side would have to join the
+  stage-1 output across `X`'s bar, which blocks the channel from the NMOS to
+  the PMOS stub (the bands above and below the stubs are 130 nm, under
+  `m1_width_nm`). The same holds for `demo_and2_1`, whose `X` node is adjacent
+  to the `X_i` gate column.
+* **Folded nand2/nor2: `n1` encloses `Y`.** Two fingers per series device put
+  `n1` on three nodes of one strip with the output `Y` (or a rail) between
+  them: `n1 Y n1 VSS n1`. Joining the `n1` nodes in Metal1 takes a track over
+  `Y`'s node, and `Y` must still climb from that node to the other strip
+  through the same span, so `Y` crosses `n1`'s track on any row order. The
+  fingers of the two series devices cannot be interleaved in this model (a
+  device's fingers are adjacent columns), and an interleaved order leaves `n1` as
+  two diffusion islands that only Metal1 can join, so it meets the same
+  crossing (not measured with `klt lvs`).
+  The `n1`-skip the issue suggested needs adjacent fingers to share the
+  diffusion, which only a one-finger-per-device stack does.
+  **Re-measured 2026-11-24 (issue #257), after the diffusion break (#169)
+  merged: the break does not lift these rows.** The binding arrangement is
+  not the three-nodes-on-one-strip count but the fold itself: a folded
+  series device alternates its two terminals on successive boundaries
+  (`l r l ...`), so `n1` and `Y` interleave *inside the series device's own
+  columns*, and a break lands between devices, where neither net is. Break
+  pairings do drop `n1` to two islands -- and still cross: whichever net
+  takes the upper channel track, the other's far-side stubs cross its band
+  inside that span. Measured by exhausting the model's own pairing search
+  (`_pairings`: every ordering, orientation and break position) crossed with
+  both track assignments (the second reached by renaming `n1` ahead of `Y`;
+  neither net is a gate, so the alphabetical track order is the only
+  difference), with `layout_cell` as the oracle.
+  `test_gen_layouts.py::FoldedSeriesInterleave` checks 32 pairings per track
+  order at the fixture geometry (420 nm pitch, 3360 nm row). With either
+  `channel_tracks` setting (2 or 3), all 64 candidates per cell fail placement
+  (exit 3). For each nand2, 8 report `Metal1 of Y overlaps n1` in the
+  original order and 8 report `Metal1 of An overlaps Y` in the reversed
+  order. The other 24 pairings in each order fail at the gate contact, as
+  do all 32 per order for each nor2. At a synthetic 1260 nm pitch the
+  300 nm gate pads fit beside the stripes, and all 32 pairings in each
+  order reach the Metal1 crossing for all four cells. Taller rows
+  (4200 and 4620 nm) also leave all four cells unplaced.
+* **What would place them** (each is a change to the model, not a tuning):
+  interleaved fingers with a net-aware LVS reference, gate contacts outside
+  the channel (for the folded series stack, measured: at the 1260 nm pitch
+  above the pads fit and the crossing still fires, so this alone no longer
+  places nand2/nor2), or a second routing layer (outside the ratified
+  Metal1-only rows; a spec decision record). The diffusion break (#169,
+  merged) is measured off this list for nand2/nor2: it cannot land inside a
+  device. Follow-up issues: #256 (buffer input pad), #257 (the
+  re-measurement above).
+
+### Pin placement on the routing grid (issue #225)
+
+Spec row 4 wants every pin on a grid point of `gate_pitch_nm`, origin at the
+cell origin. The diffusion nodes sit on the grid columns (`x = (j + 1) * pitch`)
+and the gates a half pitch between them, which is why a cell is `(columns + 2)`
+pitches wide: with the nodes at half pitch, no Metal1 that reaches a grid column
+can stay `m1_space_nm` clear of the output riser. Rail labels sit on the first
+node column; an output label is the grid point deepest inside its net's Metal1;
+an input gate's pad is joined by a bridge to a vertical bar on the node column
+beside it, long enough to hold a grid y of the channel. Input pads that find no
+Metal1-clean bar, and internal-net (driven) gate pads, keep the compact pad with
+its label at the centre, off the grid; `PinOnGrid` fails if a shipped cell
+does. A `(columns + 1)`-wide cell from before this change cannot be reproduced.
+
+**Re-recorded 2026-11-23 (issue #225)**, superseding the earlier records of the
+same files because the layouts are different GDS: the four `layout/gds/*.gds`,
+their `layout/drc/*.json` (still `clean`, 0 violations) and `layout/lvs/*.json`
+(still `match`), the four notch controls in `layout/drc/controls/` (regenerated
+and re-run; each keeps its outcome: the two admits `clean`, the two refusals
+one violation each), `manifests/envelopes/item2.analog.attest.json` (re-attested)
+and its manifest pin and `manifests/signoff-report.*`. The reports were
+recorded on klt `0.9.3.dev4174+g85b21713e8c0` (KLayout 0.30.12), newer than the
+previous set's `0.9.2.dev1022+g2a9c52b27ce7`, so their provenance and the
+deck's `content_hash` differ for that reason as well as for the new GDS.
 
 ### Well and substrate taps
 
@@ -289,13 +479,14 @@ Multi-input cells with fingers (`nand2_2`, `buf_2`, ...) are not in the config: 
 `channel_tracks: 1` they exit `3` (see above), so the second multi-finger cell
 is the 4-finger inverter, not a multi-input cell.
 
-### Recorded notch controls (issue #86)
+### Recorded notch and break controls (issues #86, #169)
 
 `layout/drc/controls/` holds the measured counterpart of the height-profile
-predicate: four stub-forced layouts covering the predicate's arms (the
-`opening >= threshold` admit, the `opening <= 0` merged admit, and the
-refusal), each with its `klt drc --deck sg13g2 --format json` report next to
-it (and `klt drc --check` passing against the committed GDS):
+predicate and of the diffusion break: four stub-forced layouts covering the
+predicate's arms (the `opening >= threshold` admit, the `opening <= 0` merged
+admit, and the refusal), plus one break-forced layout, each with its
+`klt drc --deck sg13g2 --format json` report next to it (and `klt drc --check`
+passing against the committed GDS):
 
 * `notch-nmos-p840-admitted` -- an `and2`-shaped row at `gate_pitch_nm` 840
   whose NMOS strip is forced from `[1000, 1000, 500]` to `[1000, 500, 1000]`.
@@ -323,6 +514,24 @@ it (and `klt drc --check` passing against the committed GDS):
   shipped-cell geometry at a placeable pitch, so no control covers it. The
   deck agrees the merged rows are clean: `clean`, 0 violations, with all
   three space-or-notch rules in `rules_checked`.
+* `break-pmos-p420` -- the shipped `nand2_1` with one diffusion break forced
+  into the PMOS pairing `order_strips` picks (issue #169; the forcing
+  `layout/tests/test_gen_layouts.py::DiffusionBreaks` exercises). The PMOS
+  activ parts across a 960 nm gap (`1260 - 2 * 150 >= activ_space_nm`; the
+  gap is the 970 nm rule need rounded up to three 420 nm pitches), its psd by
+  more than `psd_space_nm`, the n-well bridges into one region, the NMOS
+  strip bridges the phantom break, and the split VDD node is re-joined by its
+  rail stubs. The deck agrees: `clean`, 0 violations, with `activ.space.1`,
+  `psd.space.1` and `nwell.space.1` in `rules_checked`; the `.lvs.json` next
+  to the DRC report records `klt lvs` matching the committed `nand2_1`
+  reference netlist (nets 6/6, devices 4/4, body verification `verified`),
+  recorded on klt `0.9.3.dev4263+g473bcdb00d05` / klayout `0.30.12`.
+  This row supersedes the record made on the half-pitch phase with a 970 nm
+  gap (GDS sha256 `46f490b8...`, klt `0.9.3.dev3062`): main moved the cell onto
+  the routing-grid phase (issue #225, `(columns + 2)` pitches wide) and the
+  break gap was quantized to whole gate pitches, so the geometry changed and
+  the old report no longer described the committed GDS. New GDS sha256
+  `6601c09b...`.
 
 The controls are regenerable the way the shipped GDS is:
 `python3 layout/gen_controls.py --check` rebuilds every stream in memory and
@@ -330,16 +539,18 @@ fails on any drift (`check-ci.sh layouts` runs it on every PR); without
 `--check` it rewrites the `.gds` files (the `.json` reports are recorded
 evidence and are never touched). The script holds the control table -- per
 control the base cell, the `layout` overrides, the forced strip profile and
-whether `_notch_violation` was stubbed off -- and drives the generator's own
-drawing engine with `_strip_profile` patched, the same forcing
-`layout/tests/test_gen_layouts.py::ForcedNotch` exercises. Two inputs the
-per-control notes above do not spell out: the config cell is renamed to
-`notch_<strip>_p<pitch>` -- it is the stream's GDS structure name, with
-`_lib` appended for the library name (`notch_n_p420_lib` / `notch_n_p420`)
--- and the two 840-pitch rows need `row_height_nm` 4200 and
-`channel_tracks` 2 alongside the `gate_pitch_nm` 840 bump; the table is the
-source of truth for both. The committed GDS is deterministic, and each
-report's `provenance.input.content_hash` pins the exact stream it graded. Recorded on klt `0.9.2.dev1029+g76f47afa48f1` /
+whether `_notch_violation` was stubbed off, or the `(strip, position)` pair
+forcing a diffusion break -- and drives the generator's own drawing engine
+with `_strip_profile` or `order_strips` patched, the same forcing
+`layout/tests/test_gen_layouts.py::ForcedNotch` and `::DiffusionBreaks`
+exercise. Two inputs the per-control notes above do not spell out: the config
+cell is renamed to `notch_<strip>_p<pitch>` (or `break_<strip>_p<pitch>`) --
+it is the stream's GDS structure name, with `_lib` appended for the library
+name (`notch_n_p420_lib` / `notch_n_p420`) -- and the two 840-pitch rows need
+`row_height_nm` 4200 and `channel_tracks` 2 alongside the `gate_pitch_nm` 840
+bump; the table is the source of truth for both. The committed GDS is
+deterministic, and each report's `provenance.input.content_hash` pins the
+exact stream it graded. Recorded on klt `0.9.2.dev1029+g76f47afa48f1` /
 klayout `0.30.13`, deck `sg13g2` -- except `notch-pmos-p600-merged`, recorded
 on klt `0.9.3.dev3+gd5d57daf9a14` (klayout `0.30.13`). The deck's
 `content_hash` is byte-identical across the two klt versions
@@ -534,8 +745,9 @@ reference netlists under `layout/lvs/netlists/` are byte-unchanged --
 freshness commands still pass on the same bytes.
 
 `manifests/signoff-report.*` were then regenerated with `klt signoff
---manifest` (write them with a shell redirect; `-o` applies only to
-`--attest`). **T1 is now 8/22 met, up from 7/22, with `T1 #4 [analog] LVS
+--manifest` (written with a shell redirect at the time; `-o` with `--manifest` shipped
+later, klayout-tools #5867, and is the current form, see the re-mint sequence
+below). **T1 is now 8/22 met, up from 7/22, with `T1 #4 [analog] LVS
 clean` MET** on the strength of the reports above; item 3 `[analog]` still
 cites only `layout/drc/sg13g2_inv_1.json`, so widening that citation to all
 four DRC reports remains open. `klt signoff --manifest --check
@@ -593,6 +805,56 @@ the gate. The envelope hash check is deliberately *not* delegated to
 constraint; the `klt` check stays the deeper local verification (it also
 re-runs each inventory's commands).
 
+**What `pins.tools.klt` means, and the item 9 analog re-mint sequence
+(issue #243).** `manifests/inventories/item9.analog.json` is the only
+inventory that pins a `klt` build (`pins.tools.klt`). Per `klt signoff`'s own
+documentation that pin is *the exact build you intend to run*, compared
+literally against the **running** `klt --version` on both `--attest 9` and
+`--attest 9 --check`. It is **not** measurement provenance: which `klt` built
+a measurement is recorded append-only in
+`views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`,
+`sim/characterize/records/` and `sim/item5/records/`, and those are untouched
+by a pin bump. Fleet workers' `klt` rolls forward to a new local dev build
+(`+g…` label, not installable from PyPI) several times a day, so bumping the
+pin to the running build is routine bookkeeping in any item 9 analog re-mint,
+not a request for a host carrying the old build. A `pin klt <committed>
+(running <current>)` failure exits `3` and leaves `-o` unwritten. If the
+running version contains `+unknown`, the pin check passes with
+`"unverifiable": true` instead, so a mismatch is survivable only then.
+
+When a PR edits any of the `testbenches` entries listed in
+`manifests/inventories/item9.analog.json` (explicit paths, mostly under
+`sim/characterize/`, `sim/item5/` and `sim/harness/`, plus
+`design/gen_netlists.py` and `layout/example_config.json`; other files in
+those directories, such as `README.md`, `__init__.py` and `records/`, are not
+attested), on its final tree:
+
+1. Set `pins.tools.klt` in `manifests/inventories/item9.analog.json` to the
+   running `klt --version`, without the leading `klt ` prefix (so it equals
+   `provenance.klt_version`).
+2. `klt signoff --attest 9 --inventory manifests/inventories/item9.analog.json
+   -o manifests/envelopes/item9.analog.attest.json`.
+3. `klt signoff --attest 8 --inventory manifests/inventories/item8.analog.json
+   -o manifests/envelopes/item8.analog.attest.json` — item 8's envelope
+   byte-pins `item9.analog.attest.json` as its spec-row-9 citation, so
+   re-minting item 9 stales item 8 until it is re-minted too.
+4. Update `evidence["9.analog"].content_hash` in
+   `manifests/sg13g2-stdcells.json` to the new `provenance.input.content_hash`
+   of `item9.analog.attest.json` (and `evidence["8.analog"].content_hash`
+   likewise from the item 8 envelope).
+5. Regenerate `manifests/signoff-report.{json,txt}` with `klt signoff
+   --manifest manifests/sg13g2-stdcells.json`. Write the JSON with `-o
+   manifests/signoff-report.json` (with `--manifest`, `-o` writes the
+   rendered report's JSON envelope after a successful render, exit `0` or
+   `3`, and only if the bytes changed; a stdout redirect truncates first and
+   would zero the committed record on a failed run). The `.txt` half still
+   needs a stdout redirect, because `-o` always receives JSON whatever
+   `--format` says.
+6. Run `./check-ci.sh` (`attestations`, `manifest-pins`, unit tests).
+
+This file itself is not hash-pinned by any envelope, so editing this
+paragraph needs no re-mint.
+
 ### Characterization records and their supersession chain (issues #82, #134)
 
 `T1 #8 [analog] Characterization report` is **not** cited, and stays
@@ -622,7 +884,7 @@ rejected — narrowing makes a claim about what provenance must cover (that a
 digest over `process` + `cells` is adequate), which belongs in a `spec/`
 decision record of its own, deferred until the coarse pin goes stale again;
 this regeneration is the first data point on what that recurrence costs. The
-regeneration (`python3 -m sim.characterize --library --pdk-dir
+regeneration (`python3 -m sim.characterize --pdk-dir
 /home/ubuntu/share/pdk/ihp-sg13g2`) ran on a clean worktree and appended
 record `sim/characterize/records/20261114-222806-f1cf294.md`; the superseded
 record `20261107-222836-6ee1577.md` is kept, append-only. It re-measured under
@@ -652,7 +914,7 @@ main's PR #104 added three more `layout.rules` keys (`psd_space_nm`,
 on any merge of this branch — the second recurrence lap in eight days, and the
 reason the narrowing option (a `spec/` decision record) is deferred no longer
 lightly: it is filed structurally as #110/#116. Regenerated again exactly as
-above — `python3 -m sim.characterize --library --pdk-dir
+above — `python3 -m sim.characterize --pdk-dir
 /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged tree (`921b1a8`) before
 any bookkeeping edit, single corner TT/1.20 V/25 C, local backend — appending
 record `sim/characterize/records/20261115-105337-921b1a8.md`, keeping both
@@ -689,7 +951,7 @@ pre-capture fix exists to close. Seven files conflicted; the only code hunk
 was `runner.py`'s `render()` Notes line, where both halves are load-bearing and
 both are kept: main's simulator key and this branch's doubled-`klt `-prefix
 strip. Regenerated exactly as every lap above — `python3 -m sim.characterize
---library --pdk-dir /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged
+--pdk-dir /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged
 tree (`13dc481`) before any bookkeeping edit, single corner TT/1.20 V/25 C,
 local backend — appending record
 `sim/characterize/records/20261115-220740-13dc481.md`, keeping all four
@@ -748,3 +1010,151 @@ on main's bytes unchanged. The command's own claim (module docstring,
 `--help` description, success line) names the stamp check now, per the #122
 narrowing discipline. No characterization was re-run and no envelope was
 re-minted: none of the edited files is envelope-pinned.
+
+### Recorded ERC evidence (issue #179)
+
+`layout/run_erc.py` runs `klt erc` — the supply and well/substrate-tie checks
+T1 item 11 (analog, power delivery, structural) grades — on every cell in the
+config, with the shared supply spec `layout/erc-spec.json` and the curated
+`sg13g2` deck (`klt lvs` extracts inline with the same deck). It writes
+`layout/erc/<cell>.json` and, for the negative controls,
+`layout/erc/controls/<stem>.json`.
+
+```
+python3 layout/run_erc.py --config layout/example_config.json           # run, write reports
+python3 layout/run_erc.py --config layout/example_config.json --check   # klt erc --check per report
+```
+
+Run from the repo root (klt gets cwd-relative paths). The runner first checks
+`klt --help` against `layout/toolchain.json` (`layout/toolchain_pin.py`; the
+pin's `klt_required_commands` grew to `[drc, erc, extract, lvs]` for it). Exit
+codes: `0` every cell clean and every control failing as designed; `1`
+tooling error or `--check` drift; `2` invalid config / spec (the spec must
+declare exactly the config's `vdd_net`/`vss_net` as supplies and tie both);
+`4` reports written but a verdict is wrong.
+
+**Install.** The shared pin's commit (`klt_install`, left unchanged by #179)
+advertises `erc` but predates the `well_complement_of` tie schema
+`erc-spec.json` uses: it exits 1 with `ties[1].well_boxes` required for the null
+`well_layer`. The ERC reports were produced by klt `db1e2f17146d` (KLayout 0.30.13), so install
+that build for this runner (a throwaway env, never the host tool):
+
+```
+uvx --from "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@db1e2f17146dc834ec4aab351ef9ffd8c716d36c" klt --help
+uv tool install --force git+https://github.com/2AMLogic/klayout-tools@db1e2f17146dc834ec4aab351ef9ffd8c716d36c   # on a machine you own
+```
+
+The runner prints this command when `klt` lacks `erc` and, on a `well_boxes`
+failure, names the schema requirement. `--check` is not just `klt erc --check`:
+it also requires each report to name and hash the requested GDS and spec (a
+report copied over another cell's fails), re-grades every ordinary cell report
+(clean, exactly the configured VDD/VSS with one island each, both ties checked),
+and rejects stray control reports.
+
+The spec declares exactly what the cells draw (the config's
+`layout.layers` map): a two-level stackup GatPoly (5/0, role `gate`,
+`active_layer` activ 1/0) and Metal1 (8/0 with its 8/25 label layer) bridged
+by Cont (6/0) — Metal1-only routing, per spec row 3 — with `VDD` and `VSS`
+(the config's `process.vdd_net`/`vss_net` names, drawn as the row-edge
+Metal1 rails) declared `"kind": "supply"`, and the two tap bands
+`layout/gen_layouts.py` draws per cell (issue #73) as `ties[]`:
+
+- `nwell_tap` — the drawn n-well (31/0) with tap `activ ∩ nsd` wired to
+  Metal1 and net VDD;
+- `substrate_tap` — a native p-substrate with no drawn tub layer: the region
+  is the n-well complement (`well_layer: null` + `well_complement_of
+  ["31/0"]`), tap `activ ∩ psd`, wired to Metal1 and net VSS.
+
+Both ties carry the implant boolean in `tap_requires`, which is not cosmetic:
+a bare `activ` `tap_layer` matches every device source/drain diffusion in the
+same region and `klt erc` records the tie as `degenerate_tap_declaration`
+(skipped work, `erc_status clean_partial`) — which `klt signoff` refuses to
+grade item 11 on. The substrate tie's region is graded
+`checked_by_well_assertion` (the complement is a caller assertion the same
+way `well_boxes` is; `klt erc` records it in `erc_coverage` and the signoff
+report's item 11 citation carries it in `ties_checked_by_well_assertion`).
+
+**Result (2026-11-21): all four cells are `erc_status: clean`, zero
+findings, VDD and VSS each resolving to exactly one island, both ties
+checked with none skipped.**
+
+| cell | erc_status | findings | VDD islands | VSS islands |
+| --- | --- | --- | --- | --- |
+| `sg13g2_inv_1` | clean | 0 | 1 | 1 |
+| `sg13g2_inv_2` | clean | 0 | 1 | 1 |
+| `sg13g2_inv_4` | clean | 0 | 1 | 1 |
+| `sg13g2_nand2_1` | clean | 0 | 1 | 1 |
+
+Reports were produced by klt 0.9.3.dev5253+gdb1e2f17146d on klayout 0.30.13
+(each report's `provenance`). An earlier run of the same cells (klt
+0.9.3.dev2575+g6bd18bbc8637, klayout 0.30.12) was superseded by this one when
+the reports were re-run on the current GDS (0c14073); it is kept here as history. One `klt erc` friction is recorded here without
+an upstream filing: the first run, without `--deck`, disclosed the
+substrate-continuity check as `substrate_isolation_undecidable` and
+`klt signoff` correctly refused to grade item 11 on it — the report's own
+`missing` list names `--deck` as the resolution, and adding the deck (whose
+`nBuLay` declaration makes isolation decidable; the cells draw no nBuLay, so
+the substrate is shared and the check is *evaluated*, finding nothing) is the
+documented path, not a workaround.
+
+The negative controls are the two streams under `layout/erc/controls/`
+(issues #179 and #232): `layout/gen_controls.py`'s ERC table (same script,
+second output directory — `layout/erc/controls/` beside
+`layout/drc/controls/`) draws `sg13g2_inv_1` with the shipped engine and
+filters out one tap band's activ/implant/contact boxes — identified by
+y-position alone (the well band is the only `nsd`-polarity activ above
+`row_height − p_diff_top_margin`, the substrate band the only
+`psd`-polarity activ below `n_diff_y0`), with no generator internals
+patched — and `layout/run_erc.py` runs each against the same spec and
+**requires** its report to show `erc.missing_tie` (both do:
+`well/tub region has no 'nwell_tap' tap contact drawn inside it`, net VDD,
+and `well/tub region has no 'substrate_tap' tap contact drawn inside it`,
+net VSS). That is the falsifiable half: a spec that cannot fail proves
+nothing. The substrate control (issue #232) closes the gap the signoff
+grader singles out: `substrate_tap`'s region is the n-well complement, a
+caller assertion graded `checked_by_well_assertion` — the one tie whose
+clean verdict otherwise rested on the caller's word — and the measured
+control shows the assertion is falsifiable anyway (`klt erc` distinguishes
+the removed tap from the NMOS source/drain diffusion that remains in the
+asserted region, connected to the same VSS net: one `erc.missing_tie`
+finding, `erc_status: violations`, no other rule fired). The issue's
+suspected risk — that the leftover p-implant diffusion might satisfy the
+tie — is thereby refuted by measurement, not assumption.
+`gen_controls.py --check` (CI's `layouts` stage) rebuilds both streams.
+
+Manifest: `evidence["11.analog"]` in `manifests/sg13g2-stdcells.json` cites
+one group per cell — that cell's ERC report plus its item-4 LVS report
+(`net_correspondence` pairs VDD and VSS since #73) — and
+`manifests/signoff-report.*` are regenerated: **T1 13/22 at `5c444be`** (15/22 at `3d76ce2`, 16/22 at `b507f4f`; see below), with
+`T1 #11 [analog]` `[MET]`, groups 4/4; `klt signoff --manifest
+manifests/sg13g2-stdcells.json --check manifests/signoff-report.json` reads
+`status: match`. The digital half of item 11 (`flow/erc-spec.json`, declares
+no `ties[]`) is separate work, unchanged here.
+
+Regenerated after merging `main` with the signoff build the PR report records
+(klt `0.9.3.dev2843+g1a0d5954284b`). The T1 count stays 13/22, but only
+because two grades traded places: `T1 #11 [analog]` is newly `[MET]`, and
+`T1 #9 [analog]` reads `[UNMET]` `stale_evidence` — its inventory pins
+`design/gen_netlists.py`, which changed on `main` after the item 9 envelope was
+minted. That regression is not this PR's change (the file is byte-identical to
+`main`); re-minting the item 9 envelope is separate work.
+
+Superseded at the `3d76ce2` merge of `main`: `main`'s re-minted item 9
+envelope landed in that merge, so at `3d76ce2` `T1 #9 [analog]` reads `[MET]`
+again and `manifests/signoff-report.txt` records **T1 15/22 items met** (klt
+`0.9.3.dev4116+ga9885c2c7fa3`). Item 11 analog newly `[MET]` is this PR's
+contribution; the item 9 recovery is not. The paragraph above is kept as the
+observation at `5c444be`.
+
+Superseded again at the `b507f4f` merge of `main`: the regenerated report
+records **T1 16/22 items met** (klt `0.9.3.dev4224+gcc049d4d9637`), with
+`T1 #9 [analog]` still `[MET]` and `T1 #11 [analog]` `[MET]`, `groups: 4/4`.
+
+Re-rendered at the `e037d3a` head merge of `main` (2026-11-24):
+`manifests/signoff-report.json` and `manifests/signoff-report.txt` were both
+produced in one pass by a single klt build (`0.9.3.dev5326+g7a0e2ff48fab`), so
+the pair carries one provenance stamp. The report still records **T1 16/22
+items met**, with `T1 #9 [analog]` `[MET]` and `T1 #11 [analog]` `[MET]`,
+`groups: 4/4`; `klt signoff --check` reports `status: match`. This supersedes
+the build named in the `b507f4f` paragraph above, which stays as the record of
+that merge.

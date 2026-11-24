@@ -31,7 +31,12 @@ Sizing rule (numbers injected):
     first stage of a non-inverting cell it is max(1, drive // 2); input
     inverters for inverted literals are unit size;
   * the width is the TOTAL device width, split into `ng` equal fingers, each
-    at most finger_max_n / finger_max_p.
+    at most finger_max_n / finger_max_p;
+  * devices on one gate net are then folded to that gate's largest `ng` (same
+    total width): a layout gate column crosses both pull networks, so the
+    drawn fingers are shared, and the netlist must state the drawn
+    decomposition or a resimulation folds the representation difference into
+    the parasitic delta.
 """
 import argparse
 import difflib
@@ -183,6 +188,31 @@ class Cell:
                 raise ValueError(f"no finger split of {w_nm} nm fits finger cap {cap} nm on the {grid} nm grid")
         self.devices.append((kind, d, g, s, w_nm, ng))
 
+    def reconcile_gate_fingers(self):
+        """Fold every device to the largest ng on its gate net.
+
+        A layout gate column crosses both pull networks, so the layout draws
+        all devices on one gate net with the same finger count (the larger;
+        layout/gen_layouts.py draws exactly this fold). The netlist must
+        state the same decomposition -- same total width, more fingers -- or
+        resimulating it against the extracted layout compares a different
+        device than the layout drew and folds the representation difference
+        (fingering, AS/AD) into the parasitic delta.
+        """
+        grid = grid_nm(self.proc)
+        top = {}
+        for d in self.devices:
+            top[d[2]] = max(top.get(d[2], 1), d[5])
+        folded = []
+        for kind, drn, gate, src, w_nm, ng in self.devices:
+            k = top[gate]
+            if w_nm % (k * grid):
+                raise ValueError(
+                    f"device of {w_nm} nm on gate {gate} cannot share the gate's "
+                    f"{k}-finger split on the {grid} nm grid")
+            folded.append((kind, drn, gate, src, w_nm, k))
+        self.devices = folded
+
     def network(self, tree, kind, top, bot, signal, unit, scale, outside=0):
         """Emit tree between top and bot. `kind` n: AND=series; p: AND=parallel."""
         if tree[0] == "lit":
@@ -234,6 +264,7 @@ def build(cell, proc):
             mid = f"{pin}_i"
             c.stage(g, mid, signal, max(1, drive // 2))
             c.inverter(mid, pin, drive)
+    c.reconcile_gate_fingers()
     return c
 
 

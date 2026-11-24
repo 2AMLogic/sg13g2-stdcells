@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "kind": "t1-attestation-inventory",
+  "t1_item": 8,
+  "description": "Digital partition characterization report: the add8 baseline (stock sg13g2_stdcell) area, critical-path delay/Fmax and default-activity power proxy per corner, aggregated in flow/records/20261123-item8-digital/REPORT.md from committed flow records. Spec rows 10-12 are owned by this partition and UNMEASURED (they are ratios against this library's own cells, which have not been benchmarked); they carry no citation on purpose and no baseline number is cited as their result. This inventory is not attestable until 2AMLogic/klayout-tools#5856 lands a field to declare owned-but-unmeasured rows; the rows are not dropped from spec_rows to get a green attest.",
+  "report": "flow/records/20261123-item8-digital/REPORT.md",
+  "spec_rows": [
+    "spec-row-10-benchmark-cell-area",
+    "spec-row-11-benchmark-energy",
+    "spec-row-12-benchmark-clock-period"
+  ],
+  "citations": {}
+}
