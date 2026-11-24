@@ -1,0 +1,114 @@
+* extracted by klt extract --deck sg13g2
+* parasitic model (--parasitics):
+* - capacitance: net-to-ground for every net's own (non-coupled) area/perimeter, plus net-to-net for the vertical-overlap coupling `coupling` describes below -- a coupled net pair gets a direct capacitor between their two hub nodes, not just capacitors to the deck's ground/substrate net
+* - coupling: vertical overlap (crossover) unconditionally -- where one net's conductor on an adjacent metal level sits directly over another *distinct* net's conductor, that overlap area is charged between the two nets instead of to ground (issue #760) -- plus lateral (same-layer, sidewall) coupling, but only for a net pair naming one of the caller's declared `--critical-net` nets (issue #976): facing-edge length within that layer's own minimum-spacing lookback is charged between the two nets, *additively* (not deducted from either net's substrate fringe term, unlike the vertical case -- a known simplification). Any same-layer pair with neither side named `--critical-net`, and fringe shielding in general, are still not modelled
+* - resistance: single lumped series resistance per net, distributed as a star across that net's device terminals (issue #592) -- not a per-segment, distributed RC ladder, *unless* `--distributed-rc` names this net via `--critical-net` (issue #977, Epic #709 Phase 2b): then the net's terminals are ordered along their approximate physical spread and its total R/C is broken into a chain of per-segment resistors (segment length proportional to inter-terminal distance) with a ground capacitor at each terminal node (proportional to its adjacent segment length/2), instead of one star hub -- still an approximation (terminal position is a device-placement proxy, not true per-segment routing geometry), but a strictly finer-grained one than the single-hub star
+* - frequency: quasi-static -- one frequency-independent R and C per net; no skin effect, no distributed transmission-line behavior
+* - substrate tie: 1e+12 ohm to ground -- the substrate is capacitively floating in transient analysis (DC reference only); see --substrate-tie-ohms
+.GLOBAL vsubs
+
+* cell sg13g2_inv_4
+* pin A
+* pin VDD
+* pin VSS
+* pin Y
+.SUBCKT sg13g2_inv_4 A Y VDD VSS
+* device instance $1 r0 *1 0.63,0.65 nfet
+X$1 Y__t6 A__t0 VSS__t0 VSS__t4 sg13_lv_nmos L=0.13U W=0.5U AS=0.1475P
++ AD=0.0725P PS=1.59U PD=0.79U
+* device instance $2 r0 *1 1.05,0.65 nfet
+X$2 VSS__t3 A__t1 Y__t7 VSS__t5 sg13_lv_nmos L=0.13U W=0.5U AS=0.0725P
++ AD=0.0725P PS=0.79U PD=0.79U
+* device instance $3 r0 *1 1.47,0.65 nfet
+X$3 Y__t4 A__t7 VSS__t2 VSS__t6 sg13_lv_nmos L=0.13U W=0.5U AS=0.0725P
++ AD=0.0725P PS=0.79U PD=0.79U
+* device instance $4 r0 *1 1.89,0.65 nfet
+X$4 VSS__t1 A__t2 Y__t5 VSS__t7 sg13_lv_nmos L=0.13U W=0.5U AS=0.0725P
++ AD=0.1475P PS=0.79U PD=1.59U
+* device instance $5 r0 *1 0.63,2.56 pfet
+X$5 Y__t2 A__t3 VDD__t0 VDD__t1 sg13_lv_pmos L=0.13U W=0.8U AS=0.236P AD=0.116P
++ PS=2.19U PD=1.09U
+* device instance $6 r0 *1 1.05,2.56 pfet
+X$6 VDD__t7 A__t4 Y__t3 VDD__t2 sg13_lv_pmos L=0.13U W=0.8U AS=0.116P AD=0.116P
++ PS=1.09U PD=1.09U
+* device instance $7 r0 *1 1.47,2.56 pfet
+X$7 Y__t0 A__t6 VDD__t6 VDD__t5 sg13_lv_pmos L=0.13U W=0.8U AS=0.116P AD=0.116P
++ PS=1.09U PD=1.09U
+* device instance $8 r0 *1 1.89,2.56 pfet
+X$8 VDD__t3 A__t5 Y__t1 VDD__t4 sg13_lv_pmos L=0.13U W=0.8U AS=0.116P AD=0.236P
++ PS=1.09U PD=2.19U
+* device instance A_t0 r0 *1 0,0 
+RA_t0 A__t0 A 0.0305849072743
+* device instance A_t1 r0 *1 0,0 
+RA_t1 A__t1 A 0.0261400927257
+* device instance A_t2 r0 *1 0,0 
+RA_t2 A__t2 A 0.0305849072743
+* device instance A_t3 r0 *1 0,0 
+RA_t3 A__t3 A 0.0305849072743
+* device instance A_t4 r0 *1 0,0 
+RA_t4 A__t4 A 0.0261400927257
+* device instance A_t5 r0 *1 0,0 
+RA_t5 A__t5 A 0.0305849072743
+* device instance A_t6 r0 *1 0,0 
+RA_t6 A__t6 A 0.0261400927257
+* device instance A_t7 r0 *1 0,0 
+RA_t7 A__t7 A 0.0261400927257
+* device instance A r0 *1 0,0 
+CA A vsubs 4.0642e-17
+* device instance VDD_t0 r0 *1 0,0 
+RVDD_t0 VDD__t0 VDD 0.69995625
+* device instance VDD_t1 r0 *1 0,0 
+RVDD_t1 VDD__t1 VDD 0.69995625
+* device instance VDD_t2 r0 *1 0,0 
+RVDD_t2 VDD__t2 VDD 0.23331875
+* device instance VDD_t3 r0 *1 0,0 
+RVDD_t3 VDD__t3 VDD 0.69995625
+* device instance VDD_t4 r0 *1 0,0 
+RVDD_t4 VDD__t4 VDD 0.69995625
+* device instance VDD_t5 r0 *1 0,0 
+RVDD_t5 VDD__t5 VDD 0.23331875
+* device instance VDD_t6 r0 *1 0,0 
+RVDD_t6 VDD__t6 VDD 0.23331875
+* device instance VDD_t7 r0 *1 0,0 
+RVDD_t7 VDD__t7 VDD 0.23331875
+* device instance VDD r0 *1 0,0 
+CVDD VDD vsubs 4.72981e-16
+* device instance VSS_t0 r0 *1 0,0 
+RVSS_t0 VSS__t0 VSS 0.55100625
+* device instance VSS_t1 r0 *1 0,0 
+RVSS_t1 VSS__t1 VSS 0.55100625
+* device instance VSS_t2 r0 *1 0,0 
+RVSS_t2 VSS__t2 VSS 0.18366875
+* device instance VSS_t3 r0 *1 0,0 
+RVSS_t3 VSS__t3 VSS 0.18366875
+* device instance VSS_t4 r0 *1 0,0 
+RVSS_t4 VSS__t4 VSS 0.55100625
+* device instance VSS_t5 r0 *1 0,0 
+RVSS_t5 VSS__t5 VSS 0.18366875
+* device instance VSS_t6 r0 *1 0,0 
+RVSS_t6 VSS__t6 VSS 0.18366875
+* device instance VSS_t7 r0 *1 0,0 
+RVSS_t7 VSS__t7 VSS 0.55100625
+* device instance VSS r0 *1 0,0 
+CVSS VSS vsubs 3.94472e-16
+* device instance Y_t0 r0 *1 0,0 
+RY_t0 Y__t0 Y 0.408690960531
+* device instance Y_t1 r0 *1 0,0 
+RY_t1 Y__t1 Y 0.478184039469
+* device instance Y_t2 r0 *1 0,0 
+RY_t2 Y__t2 Y 0.478184039469
+* device instance Y_t3 r0 *1 0,0 
+RY_t3 Y__t3 Y 0.408690960531
+* device instance Y_t4 r0 *1 0,0 
+RY_t4 Y__t4 Y 0.408690960531
+* device instance Y_t5 r0 *1 0,0 
+RY_t5 Y__t5 Y 0.478184039469
+* device instance Y_t6 r0 *1 0,0 
+RY_t6 Y__t6 Y 0.478184039469
+* device instance Y_t7 r0 *1 0,0 
+RY_t7 Y__t7 Y 0.408690960531
+* device instance Y r0 *1 0,0 
+CY Y vsubs 4.50093e-16
+* device instance vsubs_dctie r0 *1 0,0 
+Rvsubs_dctie vsubs 0 1e+12
+.ENDS sg13g2_inv_4

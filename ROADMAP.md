@@ -49,14 +49,23 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
 - **DRC (row 7).** `layout/drc/*.json`: 0 violations on all four cells under
   the curated `sg13g2` deck, whose coverage limits each report lists.
 - **LVS (row 8): met.** All four `layout/lvs/*.json` are `status: match` with
-  `error_count: 0`, closed by the well and substrate taps (#79). The rung
-  above is not reached: `environment.extracted_netlist` is `null` in all four
-  reports and T1 #7 is `[UNMET]` (no `7.analog` citation). `klt pex` was run
-  on all four cells with the item 5 benches
-  (`sim/item7/records/20261123-202000-5e308b6.md`): `sg13g2_inv_1/2/4` graded
-  with failing delta rows against the 2 % limits (25 / 50 / 81 of 152), bodies
-  all biased; `sg13g2_nand2_1` timing hit the 120 s cap, tracked as
-  2AMLogic/klayout-tools#7646. Recorded as findings, not cited.
+  `error_count: 0`, closed by the well and substrate taps (#79), re-run at
+  67f6c15 after the netlist generator learned the layout's per-gate finger
+  fold (the schematic states the drawn fingers now; `inv_1`/`nand2_1`
+  netlists are byte-identical to before). The rung above is reached: T1 #7
+  cites four graded `klt pex` reports
+  (`sim/item7/records/20261124-051500-67f6c15.md`) and stays
+  `[UNMET] reason: check_failed` -- `inv_1` 25 / `inv_2` 50 / `inv_4` 81 of
+  152 and `nand2_1` 29 of 304 rows leave the Liberty +/- 2 % window on the
+  extracted side, bodies all biased; `nand2_1` is graded now that `klt pex`
+  carries `--timeout-s` (klayout-tools#7669). The remaining causes are
+  measured, not tool gaps: the light-load parasitic floor (C_Y 0.2-0.45 fF
+  against 1-3 fF bench loads; `inv_1` is the control) and, on
+  `inv_2`/`inv_4`, a pre-layout disagreement with the committed Liberty
+  view, which was characterized from the pre-fold `ng` decomposition
+  (44/45 schematic-side rows miss the window with no parasitics at all).
+  Re-characterize the view or re-finger the cells -- a spec decision; the
+  tolerances are not widened.
 - **Liberty (row 9).** `views/sg13g2_stdcells_tt_1p20v_25c.lib` holds the four
   cells at TT / 1.20 V / 25 C, emitted by `klt characterize` (#40), with a
   provenance sidecar and the record `sim/characterize/records/20261115-220740-13dc481.md`.
@@ -190,11 +199,13 @@ each item's own done-criterion, not against whether its issue closed.
   different topology?
 - **Rows 10-12 benchmark** against the re-characterized baseline. Which
   combinational designs beyond `add8`? The spec leaves that to the benchmark issue.
-- **T1 items 6-7** (statistical evidence, post-layout verification; item 7
-  attempted in #181, see the LVS row above). What
-  does each accept as evidence for a cell library rather than a block?
-  Item 5 analog left this list: its row set is row 9, covered by the
-  `sim/item5/` envelopes (#180); item 5 digital is separate and still
+- **T1 items 6-7** (statistical evidence, post-layout verification). Item 7's
+  evidence question is answered for this library: four per-cell `klt pex`
+  reports, cited under `7.analog` (see the LVS row above) -- what remains is
+  a design question, not an evidence-shape one: the committed Liberty view
+  against the as-drawn cells, and the light-load parasitic floor. Item 6 is
+  tracked by #182. Item 5 analog left this list: its row set is row 9, covered
+  by the `sim/item5/` envelopes (#180); item 5 digital is separate and still
   `no_evidence` (tracked by #175).
 - **Stretch corners** (FF, SS) and **sequential cells** (stretch row 6); the
   latter waits on setup/hold support in `klt characterize`, per the spec.

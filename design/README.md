@@ -64,7 +64,12 @@ selects use literal-complement structure, with one shared unit inverter per
 inverted input. A `!g` output is one inverting stage; a non-inverting output is
 an inverting stage (drive `max(1, drive // 2)`) plus an output inverter (full
 drive). Device width = unit × stage scale × longest series path through that
-device, split into the fewest equal fingers within the finger cap.
+device, split into the fewest equal fingers within the finger cap. Devices on
+one gate net are then folded to that gate's largest finger count (same total
+width): a layout gate column crosses both pull networks, so the drawn fingers
+are shared, and the netlist must state the drawn decomposition or a
+resimulation against the extracted layout folds the representation difference
+into the parasitic delta.
 
 **Netlist shape.** `.subckt <name> <inputs> <sorted outputs> <vdd> <vss>`; one
 device line per transistor: `<prefix><i> d g s bulk model <device_params>`.

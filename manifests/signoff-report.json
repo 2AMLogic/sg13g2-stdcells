@@ -9106,19 +9106,20 @@
   "t1_met_count": 15,
   "t1_not_applicable_count": 1,
   "unmet_reason_counts": {
-    "no_evidence": 5,
+    "check_failed": 1,
+    "no_evidence": 4,
     "supply_spec_incomplete": 1
   },
   "source_doc": "docs/design-evidence-tiers.md",
-  "source_doc_content_hash": "sha256:2bc576233450be5e650805a4e5fda8567b7c6120dee5aff3fb8732d5f7a1b4f6",
+  "source_doc_content_hash": "sha256:2bcc48dde882d2310d5e5cc9a69acc4c1f942425a7e152f87640fc347b4b65a0",
   "build": {
-    "version": "0.9.3.dev4224+gcc049d4d9637",
-    "package_version": "0.9.3.dev4224+gcc049d4d9637",
-    "git_commit": "cc049d4d96377f8b23ab49789c96010ef208a467",
+    "version": "0.9.3.dev4954+g093d4f7a60a9",
+    "package_version": "0.9.3.dev4954+g093d4f7a60a9",
+    "git_commit": "093d4f7a60a9387eb67ba6423571f0a4ebb4fe59",
     "git_tag": null,
     "dirty": false,
     "is_release": false,
-    "grading_ruleset_id": "sha256:c46b648794ba47e3b2ccb03384ec70e95a327e47c2004b57b914a5396c386378"
+    "grading_ruleset_id": "sha256:8194be0a337f5a8f31683f44ec037a732557d67a2cadc107682de568f0f23c91"
   },
   "items": [
     {
@@ -9137,13 +9138,13 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:c4b2668f1e64b0b9218cfe5e84492f6826e34a5fb6b50c016567e401142d1744",
+        "content_hash": "sha256:cf262b1581042b14490eb00c1df54681767f9a62e0faa02bc0740340d2be3973",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
           "t1_item": 1,
           "path": null,
-          "content_hash": "sha256:c4b2668f1e64b0b9218cfe5e84492f6826e34a5fb6b50c016567e401142d1744",
+          "content_hash": "sha256:cf262b1581042b14490eb00c1df54681767f9a62e0faa02bc0740340d2be3973",
           "input_verified": true,
           "members": [
             {
@@ -9151,7 +9152,7 @@
                 "path": "design/gen_netlists.py",
                 "scope": "repo"
               },
-              "content_hash": "sha256:2fcf40fa59c33608b502da0f1ede3ffd8a4efe4cc22665b0074b54498216fa08",
+              "content_hash": "sha256:ca3a7ca13f49f74e8dfb546deb5df37a450f8a51d18f1ea7dd121fa987664079",
               "status": "verified"
             },
             {
@@ -9175,7 +9176,7 @@
                 "path": "layout/lvs/netlists/sg13g2_inv_2.spice",
                 "scope": "repo"
               },
-              "content_hash": "sha256:da42c9d5d4790a03f7959d0416799651ad1425a770ce08e879fde32741851d9f",
+              "content_hash": "sha256:1eadd5b3f14c1a4742f9f13d508da3ee027bb557a8fe902e7ea4e95022fadc60",
               "status": "verified"
             },
             {
@@ -9183,7 +9184,7 @@
                 "path": "layout/lvs/netlists/sg13g2_inv_4.spice",
                 "scope": "repo"
               },
-              "content_hash": "sha256:f350f0e6257207c943ef822d4744a39bd50446f719c3ea96e871a7e40cfa894e",
+              "content_hash": "sha256:18fcc23dcf1c4200559c8babbfb1586443148467744ebdb92a5bc33362069ad8",
               "status": "verified"
             },
             {
@@ -9530,22 +9531,30 @@
         {
           "citation": "layout/lvs/sg13g2_inv_1.json",
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217",
+          "input_verified": true
         },
         {
           "citation": "layout/lvs/sg13g2_inv_2.json",
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:73f8d732af84184311bd628d3c4645ba01a2c670f8c617dbbd35bcd6d3510b85",
+          "input_verified": true
         },
         {
           "citation": "layout/lvs/sg13g2_inv_4.json",
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:9ef5817bbba510eab7091681449a5b6bf1e4df852a4d65a85f2265bdd03bd448",
+          "input_verified": true
         },
         {
           "citation": "layout/lvs/sg13g2_nand2_1.json",
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:12f02067276b8d3c9d583ceaf18c7b76e1e459371aa28256cd85dd01796d5868",
+          "input_verified": true
         }
       ],
       "citations": [
@@ -9639,7 +9648,9 @@
             "9"
           ],
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:e5dabd89579fec5d7051270dff59fca60b91f016c1be3241a69aba4e16f5c25f",
+          "input_verified": true
         },
         {
           "citation": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.timing.report.json",
@@ -9647,7 +9658,9 @@
             "9"
           ],
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:7cd5ee86c808aa59d80998cb2d5c33282520985e28033a78e3bb612adda84dcd",
+          "input_verified": true
         },
         {
           "citation": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_2.function.report.json",
@@ -9655,7 +9668,9 @@
             "9"
           ],
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:e350fb15802f784aa7bd1dd12a3dadcbc65a4f01bc6474f86dfa1b440bceebf4",
+          "input_verified": true
         },
         {
           "citation": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_2.timing.report.json",
@@ -9663,7 +9678,9 @@
             "9"
           ],
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:8837656fd8f6b0db6efa438e938939fb98688740d246a045b69697a927bb7938",
+          "input_verified": true
         },
         {
           "citation": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_4.function.report.json",
@@ -9671,7 +9688,9 @@
             "9"
           ],
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:0c6f01f4be932b4a1ac351c1301a54bae1e4a485588295d7f598a203b349eae5",
+          "input_verified": true
         },
         {
           "citation": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_4.timing.report.json",
@@ -9679,7 +9698,9 @@
             "9"
           ],
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:309609365545204c322a605237bff8babeff07aeb1986b413deff1ec2e7ec096",
+          "input_verified": true
         },
         {
           "citation": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.function.report.json",
@@ -9687,7 +9708,9 @@
             "9"
           ],
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:2bb2223cbb10321d6bca5bf4db89edd6dd5114dae864af6121d0d69a30a22402",
+          "input_verified": true
         },
         {
           "citation": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.timing.report.json",
@@ -9695,7 +9718,9 @@
             "9"
           ],
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:811376c82a38897070195930fac885e7bd8961765595897d61072b535ce38fce",
+          "input_verified": true
         }
       ],
       "row_coverage": {
@@ -9808,12 +9833,16 @@
         {
           "citation": "flow/records/20261121-be3a384/sta.json",
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68",
+          "input_verified": null
         },
         {
           "citation": "flow/records/20261121-be3a384/functional-verification.json",
           "status": "met",
-          "reason": null
+          "reason": null,
+          "content_hash": "sha256:634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139",
+          "input_verified": null
         }
       ],
       "citations": [
@@ -9843,7 +9872,7 @@
       "title": "Statistical claims carry Monte Carlo evidence",
       "partition": "analog",
       "partition_boundary": "transistor-level cells (sg13g2_inv_1, sg13g2_inv_2, sg13g2_inv_4, sg13g2_nand2_1): SPICE characterization, klt sim corner evidence and layout DRC/LVS",
-      "text": "any accuracy, offset, or matching spec row is statistical; a corner matrix (or STA corner sweep) cannot validate it. This applies to whichever spec rows are actually statistical, regardless of block kind \u2014 most digital spec rows (functional correctness, Fmax, timing closure) are not, and a block whose spec has no statistical row must say so explicitly rather than omit the item. Where it does apply, MC runs need a recorded seed, sample count, a deterministic negative control, and results combined with (not instead of) process corners (#344). A `klt yield` JSON report \u2014 a yield estimate with its confidence interval, sample-size verdict, and Cpk/sigma-to-spec against the row's own limits \u2014 is the machine-checkable evidence for this item (`klt signoff`'s tier-verdict mode grades it the same way it grades the deterministic items above). **The campaign's own self-report is a grading input, not just a footnote** (issue #2467): a cited report whose `sample_size.verdict` is `insufficient` on any measurement renders `unmet` with `reason: \"undersized_sample\"`, and one whose declared negative control did not show the seeded degradation renders `unmet` with `reason: \"negative_control_not_detected\"` \u2014 the report's passing `status` answers only \"did every declared `target_yield` hold\", which a campaign declaring none can never fail. A campaign that declared **no** negative control at all is still `met`, but says so: `citation.yield_campaign.negative_control` reads `\"not_declared\"`, since `klt yield` itself treats that as a warning rather than a failure and whether it is acceptable for a given spec row is the claimant's call. See [`cli/signoff.md`](cli/signoff.md)'s \"Campaign discipline on item 6\". **This item's evidence verb needs the `yield` extra.** Unlike every other T1 item's evidence verb (`drc`, `lvs`, `extract`, `sim`, `pex`, `sta`, `functional-verification`, `erc`, `place-and-route`), `klt yield` requires the `klt_yield_native` Rust extension: install it with the `[yield]` extra (`pip install 'klayout-tools[yield]'`). As of 2026-11-06 the prebuilt `klt-yield-native` 0.1.0 wheel (Linux x86_64, macOS arm64) is on PyPI and the extra resolves for klayout-tools 0.9.1 and later. A bare `pip install klayout-tools` and the git-pinned form do not include it. A consumer on another platform (Linux aarch64, Windows, Intel macOS) needs a repo checkout with a Rust toolchain; see `docs/cli/yield.md`'s \"What the extra does and does not reach\" callout and `docs/releasing-native.md`. **When \"not applicable\" is legitimate** (issue #2865): a block whose ratified spec has *no* statistical row passes this item by a recorded \"not applicable\", not by a waiver at grant time and not by inventing a statistical claim. That holds only when the spec is ratified, a committed statement accounts for every spec row with the reason its row class is not statistical (for example \"timing rows are corner-bounded by STA at the PDK's characterised corners\"), and both are bound by content hash so editing either invalidates the claim. Any accuracy, offset, matching or yield row is statistical by definition: a spec carrying one \u2014 or a sigma, yield, Cpk or `3\u03c3`-style bound \u2014 cannot use the outcome and needs `klt yield` evidence for that row. The outcome is available to a digital partition only; an analog partition (including the analog half of a mixed-signal block) always requires Monte Carlo evidence. `klt signoff` reports it as `not_applicable`, never as `met`. **Analog partitions** (issue #4183, operator ruling 2026-10-28): this restriction is intentional. Analog performance is inherently statistical (offset, mismatch, bias spread), so an analog spec with no statistical row is a gap in the spec, not a block with no variation; the grader is not relaxed and there is no analog-keyed `not_applicable` form. A mixed-signal block's analog partition that uses `not_applicable` renders `unmet` with `reason: not_applicable_wrong_partition`, even when the statement covers every spec row. It discharges item 6 one of two ways:",
+      "text": "any accuracy, offset, or matching spec row is statistical; a corner matrix (or STA corner sweep) cannot validate it. This applies to whichever spec rows are actually statistical, regardless of block kind \u2014 most digital spec rows (functional correctness, Fmax, timing closure) are not, and a block whose spec has no statistical row must say so explicitly rather than omit the item. Where it does apply, MC runs need a recorded seed, sample count, a deterministic negative control, and results combined with (not instead of) process corners (#344). A `klt yield` JSON report \u2014 a yield estimate with its confidence interval, sample-size verdict, and Cpk/sigma-to-spec against the row's own limits \u2014 is the machine-checkable evidence for this item (`klt signoff`'s tier-verdict mode grades it the same way it grades the deterministic items above). **The campaign's own self-report is a grading input, not just a footnote** (issue #2467): a cited report whose `sample_size.verdict` is `insufficient` on any measurement renders `unmet` with `reason: \"undersized_sample\"`, and one whose declared negative control did not show the seeded degradation renders `unmet` with `reason: \"negative_control_not_detected\"` \u2014 the report's passing `status` answers only \"did every declared `target_yield` hold\", which a campaign declaring none can never fail. A campaign that declared **no** negative control at all is still `met`, but says so: `citation.yield_campaign.negative_control` reads `\"not_declared\"`, since `klt yield` itself treats that as a warning rather than a failure and whether it is acceptable for a given spec row is the claimant's call. See [`cli/signoff.md`](cli/signoff.md)'s \"Campaign discipline on item 6\". **This item's evidence verb needs the `yield` extra.** Unlike every other T1 item's evidence verb (`drc`, `lvs`, `extract`, `sim`, `pex`, `sta`, `functional-verification`, `erc`, `place-and-route`), `klt yield` requires the `klt_yield_native` Rust extension: install it with the `[yield]` extra (`pip install 'klayout-tools[yield]'`). As of 2026-11-06 the prebuilt `klt-yield-native` 0.1.0 wheel (Linux x86_64, macOS arm64) is on PyPI and the extra resolves for klayout-tools 0.9.1 and later. A bare `pip install klayout-tools` and the git-pinned form do not include it. A consumer on another platform (Linux aarch64, Windows, Intel macOS) needs a repo checkout with a Rust toolchain; see `docs/cli/yield.md`'s \"What the extra does and does not reach\" callout and `docs/releasing-native.md`. **When \"not applicable\" is legitimate** (issue #2865): a block whose ratified spec has *no* statistical row passes this item by a recorded \"not applicable\", not by a waiver at grant time and not by inventing a statistical claim. That holds only when the spec is ratified, a committed statement accounts for every spec row with the reason its row class is not statistical (for example \"timing rows are corner-bounded by STA at the PDK's characterised corners\"), and both are bound by content hash so editing either invalidates the claim. Any accuracy, offset, matching or yield row is statistical by definition: a spec carrying one \u2014 or a sigma, yield, Cpk or `3\u03c3`-style bound \u2014 cannot use the outcome and needs `klt yield` evidence for that row. The outcome is available to a digital partition only; an analog partition (including the analog half of a mixed-signal block) always requires Monte Carlo evidence. `klt signoff` reports it as `not_applicable`, never as `met`. For a mixed-signal block sharing one ratified spec, `spec_rows.\"6.digital\"` scopes this statement and scan to the digital rows. Every spec row must be assigned under `6.digital` or `6.analog`. A statistical row assigned to the digital partition still prevents this outcome. Analog rows are graded independently against their yield evidence. **Analog partitions** (issue #4183, operator ruling 2026-10-28): this restriction is intentional. Analog performance is inherently statistical (offset, mismatch, bias spread), so an analog spec with no statistical row is a gap in the spec, not a block with no variation; the grader is not relaxed and there is no analog-keyed `not_applicable` form. A mixed-signal block's analog partition that uses `not_applicable` renders `unmet` with `reason: not_applicable_wrong_partition`, even when the statement covers every spec row. It discharges item 6 one of two ways:",
       "notes": [
         "**Add the missing statistical row(s)** to the block's spec through a decision record the operator ratifies, then supply Monte Carlo evidence (`klt yield`) for them. Where the PDK has no mismatch models, assumed mismatch is acceptable, labelled as such in the evidence.",
         "**Declare item 6 a gap** for the analog partition. The digital partition of the same block may still use `not_applicable`. **Declared gaps keep blocking T1** (issue #5858, operator ruling 2026-11-17): a settled, hash-justified gap does *not* satisfy the roll-up, on any item or partition. `_T1_SATISFIED_STATUSES` is not widened and ruling #4183 above is untouched, so `tier: \"T1\"` still means every *applicable* row is evidenced. A gap is not a permanent state: a row that cannot be evidenced today is a statement about today's tools and inputs, and a request to build what is missing, either a klayout-tools feature or a new EDA project. A declared gap therefore names the open issue that would close it, and a gap with no such link is a signoff finding. A row that is unevidenceable for a reason no tool could ever fix is a different case, closer to `not_applicable`, and goes back to the operator rather than being declared a gap. The hash-justified declaration and the separate count and listing of declared gaps belong to #5599. **Several statistical rows, only some evidenced** (issue #2908): item 6 is a claim about *every* statistical row, so a manifest may declare the row set under `spec_rows.\"6\"` and cite one `klt yield` report per row set (`rows` on each citation). Item 6 grades `met` only when every declared row is covered by a passing citation against a ratified target. A row with no citation (`uncovered_rows`), a row declared a `gap` (`declared_gaps` \u2014 pending work that a named issue should close, never a permanent pass; issue #5599 adds a justified form carrying a hash-bound rationale artifact and the issue that would close the gap, and an operator ruling on #5858, 2026-11-17 settled that a gap keeps blocking T1), or a row declared `ratified: false` (`unratified_rows`, evidence against a proposed limit is provisional) grades `unmet` / `partial_coverage`, never `met`. Without a declaration the item grades as before; a `not_applicable` entry contradicts a declared row set and is `invalid_evidence`."
@@ -9859,7 +9888,7 @@
       "title": "Statistical claims carry Monte Carlo evidence",
       "partition": "digital",
       "partition_boundary": "add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline",
-      "text": "any accuracy, offset, or matching spec row is statistical; a corner matrix (or STA corner sweep) cannot validate it. This applies to whichever spec rows are actually statistical, regardless of block kind \u2014 most digital spec rows (functional correctness, Fmax, timing closure) are not, and a block whose spec has no statistical row must say so explicitly rather than omit the item. Where it does apply, MC runs need a recorded seed, sample count, a deterministic negative control, and results combined with (not instead of) process corners (#344). A `klt yield` JSON report \u2014 a yield estimate with its confidence interval, sample-size verdict, and Cpk/sigma-to-spec against the row's own limits \u2014 is the machine-checkable evidence for this item (`klt signoff`'s tier-verdict mode grades it the same way it grades the deterministic items above). **The campaign's own self-report is a grading input, not just a footnote** (issue #2467): a cited report whose `sample_size.verdict` is `insufficient` on any measurement renders `unmet` with `reason: \"undersized_sample\"`, and one whose declared negative control did not show the seeded degradation renders `unmet` with `reason: \"negative_control_not_detected\"` \u2014 the report's passing `status` answers only \"did every declared `target_yield` hold\", which a campaign declaring none can never fail. A campaign that declared **no** negative control at all is still `met`, but says so: `citation.yield_campaign.negative_control` reads `\"not_declared\"`, since `klt yield` itself treats that as a warning rather than a failure and whether it is acceptable for a given spec row is the claimant's call. See [`cli/signoff.md`](cli/signoff.md)'s \"Campaign discipline on item 6\". **This item's evidence verb needs the `yield` extra.** Unlike every other T1 item's evidence verb (`drc`, `lvs`, `extract`, `sim`, `pex`, `sta`, `functional-verification`, `erc`, `place-and-route`), `klt yield` requires the `klt_yield_native` Rust extension: install it with the `[yield]` extra (`pip install 'klayout-tools[yield]'`). As of 2026-11-06 the prebuilt `klt-yield-native` 0.1.0 wheel (Linux x86_64, macOS arm64) is on PyPI and the extra resolves for klayout-tools 0.9.1 and later. A bare `pip install klayout-tools` and the git-pinned form do not include it. A consumer on another platform (Linux aarch64, Windows, Intel macOS) needs a repo checkout with a Rust toolchain; see `docs/cli/yield.md`'s \"What the extra does and does not reach\" callout and `docs/releasing-native.md`. **When \"not applicable\" is legitimate** (issue #2865): a block whose ratified spec has *no* statistical row passes this item by a recorded \"not applicable\", not by a waiver at grant time and not by inventing a statistical claim. That holds only when the spec is ratified, a committed statement accounts for every spec row with the reason its row class is not statistical (for example \"timing rows are corner-bounded by STA at the PDK's characterised corners\"), and both are bound by content hash so editing either invalidates the claim. Any accuracy, offset, matching or yield row is statistical by definition: a spec carrying one \u2014 or a sigma, yield, Cpk or `3\u03c3`-style bound \u2014 cannot use the outcome and needs `klt yield` evidence for that row. The outcome is available to a digital partition only; an analog partition (including the analog half of a mixed-signal block) always requires Monte Carlo evidence. `klt signoff` reports it as `not_applicable`, never as `met`. **Analog partitions** (issue #4183, operator ruling 2026-10-28): this restriction is intentional. Analog performance is inherently statistical (offset, mismatch, bias spread), so an analog spec with no statistical row is a gap in the spec, not a block with no variation; the grader is not relaxed and there is no analog-keyed `not_applicable` form. A mixed-signal block's analog partition that uses `not_applicable` renders `unmet` with `reason: not_applicable_wrong_partition`, even when the statement covers every spec row. It discharges item 6 one of two ways:",
+      "text": "any accuracy, offset, or matching spec row is statistical; a corner matrix (or STA corner sweep) cannot validate it. This applies to whichever spec rows are actually statistical, regardless of block kind \u2014 most digital spec rows (functional correctness, Fmax, timing closure) are not, and a block whose spec has no statistical row must say so explicitly rather than omit the item. Where it does apply, MC runs need a recorded seed, sample count, a deterministic negative control, and results combined with (not instead of) process corners (#344). A `klt yield` JSON report \u2014 a yield estimate with its confidence interval, sample-size verdict, and Cpk/sigma-to-spec against the row's own limits \u2014 is the machine-checkable evidence for this item (`klt signoff`'s tier-verdict mode grades it the same way it grades the deterministic items above). **The campaign's own self-report is a grading input, not just a footnote** (issue #2467): a cited report whose `sample_size.verdict` is `insufficient` on any measurement renders `unmet` with `reason: \"undersized_sample\"`, and one whose declared negative control did not show the seeded degradation renders `unmet` with `reason: \"negative_control_not_detected\"` \u2014 the report's passing `status` answers only \"did every declared `target_yield` hold\", which a campaign declaring none can never fail. A campaign that declared **no** negative control at all is still `met`, but says so: `citation.yield_campaign.negative_control` reads `\"not_declared\"`, since `klt yield` itself treats that as a warning rather than a failure and whether it is acceptable for a given spec row is the claimant's call. See [`cli/signoff.md`](cli/signoff.md)'s \"Campaign discipline on item 6\". **This item's evidence verb needs the `yield` extra.** Unlike every other T1 item's evidence verb (`drc`, `lvs`, `extract`, `sim`, `pex`, `sta`, `functional-verification`, `erc`, `place-and-route`), `klt yield` requires the `klt_yield_native` Rust extension: install it with the `[yield]` extra (`pip install 'klayout-tools[yield]'`). As of 2026-11-06 the prebuilt `klt-yield-native` 0.1.0 wheel (Linux x86_64, macOS arm64) is on PyPI and the extra resolves for klayout-tools 0.9.1 and later. A bare `pip install klayout-tools` and the git-pinned form do not include it. A consumer on another platform (Linux aarch64, Windows, Intel macOS) needs a repo checkout with a Rust toolchain; see `docs/cli/yield.md`'s \"What the extra does and does not reach\" callout and `docs/releasing-native.md`. **When \"not applicable\" is legitimate** (issue #2865): a block whose ratified spec has *no* statistical row passes this item by a recorded \"not applicable\", not by a waiver at grant time and not by inventing a statistical claim. That holds only when the spec is ratified, a committed statement accounts for every spec row with the reason its row class is not statistical (for example \"timing rows are corner-bounded by STA at the PDK's characterised corners\"), and both are bound by content hash so editing either invalidates the claim. Any accuracy, offset, matching or yield row is statistical by definition: a spec carrying one \u2014 or a sigma, yield, Cpk or `3\u03c3`-style bound \u2014 cannot use the outcome and needs `klt yield` evidence for that row. The outcome is available to a digital partition only; an analog partition (including the analog half of a mixed-signal block) always requires Monte Carlo evidence. `klt signoff` reports it as `not_applicable`, never as `met`. For a mixed-signal block sharing one ratified spec, `spec_rows.\"6.digital\"` scopes this statement and scan to the digital rows. Every spec row must be assigned under `6.digital` or `6.analog`. A statistical row assigned to the digital partition still prevents this outcome. Analog rows are graded independently against their yield evidence. **Analog partitions** (issue #4183, operator ruling 2026-10-28): this restriction is intentional. Analog performance is inherently statistical (offset, mismatch, bias spread), so an analog spec with no statistical row is a gap in the spec, not a block with no variation; the grader is not relaxed and there is no analog-keyed `not_applicable` form. A mixed-signal block's analog partition that uses `not_applicable` renders `unmet` with `reason: not_applicable_wrong_partition`, even when the statement covers every spec row. It discharges item 6 one of two ways:",
       "notes": [
         "**Add the missing statistical row(s)** to the block's spec through a decision record the operator ratifies, then supply Monte Carlo evidence (`klt yield`) for them. Where the PDK has no mismatch models, assumed mismatch is acceptable, labelled as such in the evidence.",
         "**Declare item 6 a gap** for the analog partition. The digital partition of the same block may still use `not_applicable`. **Declared gaps keep blocking T1** (issue #5858, operator ruling 2026-11-17): a settled, hash-justified gap does *not* satisfy the roll-up, on any item or partition. `_T1_SATISFIED_STATUSES` is not widened and ruling #4183 above is untouched, so `tier: \"T1\"` still means every *applicable* row is evidenced. A gap is not a permanent state: a row that cannot be evidenced today is a statement about today's tools and inputs, and a request to build what is missing, either a klayout-tools feature or a new EDA project. A declared gap therefore names the open issue that would close it, and a gap with no such link is a signoff finding. A row that is unevidenceable for a reason no tool could ever fix is a different case, closer to `not_applicable`, and goes back to the operator rather than being declared a gap. The hash-justified declaration and the separate count and listing of declared gaps belong to #5599. **Several statistical rows, only some evidenced** (issue #2908): item 6 is a claim about *every* statistical row, so a manifest may declare the row set under `spec_rows.\"6\"` and cite one `klt yield` report per row set (`rows` on each citation). Item 6 grades `met` only when every declared row is covered by a passing citation against a ratified target. A row with no citation (`uncovered_rows`), a row declared a `gap` (`declared_gaps` \u2014 pending work that a named issue should close, never a permanent pass; issue #5599 adds a justified form carrying a hash-bound rationale artifact and the issue that would close the gap, and an operator ruling on #5858, 2026-11-17 settled that a gap keeps blocking T1), or a row declared `ratified: false` (`unratified_rows`, evidence against a proposed limit is provisional) grades `unmet` / `partial_coverage`, never `met`. Without a declaration the item grades as before; a `not_applicable` entry contradicts a declared row set and is `invalid_evidence`."
@@ -9956,9 +9985,106 @@
         "A `klt pex` citation is only as good as the **device-body bias** of the netlist it ran on (#1983). A device body left on an anonymous, deck-synthesized net has no DC bias path at all, which makes a resimulation of that extracted netlist *physically wrong, not merely imprecise* (`docs/cli/extract.md` \u2192 \"Coverage\") \u2014 the run converges and reports numbers, and those numbers are not comparable to the schematic leg they are being diffed against. A `klt pex` report states the condition in its own `body_bias` block (`docs/cli/pex.md`), and `klt signoff` surfaces it verbatim on this item's citation (`citation.body_bias`). **It does not grade on it**: an item-7 citation whose `body_bias.status` is `\"unbiased\"` still renders `met`, because the condition is a deck-coverage property some PDKs produce on every layout they extract, not a defect this command can adjudicate. So a claim citing item 7 must read that field and state whether its post-layout numbers were measured on a properly-biased netlist \u2014 claimant-enforced, exactly like item 3's DRC-coverage disclosure. The same discipline applies upstream at item 4: `klt lvs`'s `body_verification` block says whether the compare verified the body ties at all, and `\"unchecked\"` (a pre-extracted netlist) is not `\"verified\"`."
       ],
       "status": "unmet",
-      "reason": "no_evidence",
+      "reason": "check_failed",
       "graded_by_build": true,
-      "citation": null
+      "citation": null,
+      "citations_graded": [
+        {
+          "citation": "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_1.pex.report.json",
+          "status": "unmet",
+          "reason": "check_failed",
+          "content_hash": "sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217",
+          "input_verified": true
+        },
+        {
+          "citation": "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_2.pex.report.json",
+          "status": "unmet",
+          "reason": "check_failed",
+          "content_hash": "sha256:73f8d732af84184311bd628d3c4645ba01a2c670f8c617dbbd35bcd6d3510b85",
+          "input_verified": true
+        },
+        {
+          "citation": "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_4.pex.report.json",
+          "status": "unmet",
+          "reason": "check_failed",
+          "content_hash": "sha256:9ef5817bbba510eab7091681449a5b6bf1e4df852a4d65a85f2265bdd03bd448",
+          "input_verified": true
+        },
+        {
+          "citation": "sim/item7/records/20261124-051500-67f6c15/sg13g2_nand2_1.pex.report.json",
+          "status": "unmet",
+          "reason": "check_failed",
+          "content_hash": "sha256:12f02067276b8d3c9d583ceaf18c7b76e1e459371aa28256cd85dd01796d5868",
+          "input_verified": true
+        }
+      ],
+      "detail": {
+        "cited_evidence": {
+          "file": "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_1.pex.report.json",
+          "command": null,
+          "kind": "pex",
+          "check_status": "fail",
+          "content_hash": "sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217",
+          "input_verified": true,
+          "exit_status": 0,
+          "pex_inputs": [
+            {
+              "role": "testbenches[0].request",
+              "path": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.timing.request.json",
+              "sha256": "sha256:c848eb0995e79715499c34495dbfae295715a62b8f798a37863ad47503cc1e68",
+              "status": "verified"
+            },
+            {
+              "role": "testbenches[0].netlist",
+              "path": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.timing.spice",
+              "sha256": "sha256:7cd5ee86c808aa59d80998cb2d5c33282520985e28033a78e3bb612adda84dcd",
+              "status": "verified"
+            },
+            {
+              "role": "testbenches[0].schematic_netlist",
+              "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+              "sha256": "sha256:65aa1e3c6e10bc76cea3cae6015b0c7b6f58161d896e8b6301fcf76a21d227e7",
+              "status": "verified"
+            },
+            {
+              "role": "testbenches[1].request",
+              "path": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.function.request.json",
+              "sha256": "sha256:4cccb208ee281548157f088849aa32beb61976df6da73a946bbb4aee23fd9bae",
+              "status": "verified"
+            },
+            {
+              "role": "testbenches[1].netlist",
+              "path": "sim/item5/records/20261121-135717-f5cb68a/sg13g2_inv_1.function.spice",
+              "sha256": "sha256:e5dabd89579fec5d7051270dff59fca60b91f016c1be3241a69aba4e16f5c25f",
+              "status": "verified"
+            },
+            {
+              "role": "testbenches[1].schematic_netlist",
+              "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+              "sha256": "sha256:65aa1e3c6e10bc76cea3cae6015b0c7b6f58161d896e8b6301fcf76a21d227e7",
+              "status": "verified"
+            },
+            {
+              "role": "reference_netlist",
+              "path": "layout/lvs/netlists/sg13g2_inv_1.spice",
+              "sha256": "sha256:65aa1e3c6e10bc76cea3cae6015b0c7b6f58161d896e8b6301fcf76a21d227e7",
+              "status": "verified"
+            }
+          ],
+          "body_bias": {
+            "status": "biased",
+            "unbiased_device_count": 0,
+            "unbiased_nets": []
+          }
+        },
+        "content_hash_pin": "verified",
+        "failed_citations": [
+          "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_1.pex.report.json",
+          "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_2.pex.report.json",
+          "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_4.pex.report.json",
+          "sim/item7/records/20261124-051500-67f6c15/sg13g2_nand2_1.pex.report.json"
+        ]
+      }
     },
     {
       "tier": "T1",
@@ -10032,7 +10158,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:1a89872f56b9596661105b45ad834a37d8ae235a1cc68966e4a3b9389d32f81d",
+        "content_hash": "sha256:30956f0a6ba66e1d24be8e3c56cf686389413918a9ac6863a6d7860804b82974",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
@@ -10041,7 +10167,7 @@
             "path": "manifests/inventories/item9.analog.json",
             "scope": "repo"
           },
-          "content_hash": "sha256:1a89872f56b9596661105b45ad834a37d8ae235a1cc68966e4a3b9389d32f81d",
+          "content_hash": "sha256:30956f0a6ba66e1d24be8e3c56cf686389413918a9ac6863a6d7860804b82974",
           "input_verified": true,
           "summary": "T1 item 9 (Testbenches shipped): 34/34 attestation checks passed (klt signoff --attest)",
           "source": "manifests/inventories/item9.analog.json",
