@@ -3,7 +3,7 @@ partition boundary:
   analog: transistor-level cells (sg13g2_inv_1, sg13g2_inv_2, sg13g2_inv_4, sg13g2_nand2_1): SPICE characterization, klt sim corner evidence and layout DRC/LVS
   digital: add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline
 tier: none
-T1: 15/22 items met, 1 not_applicable
+T1: 16/22 items met, 1 not_applicable
 
 [MET  ] T1 #1 [analog] Design sources
         cite: manifests/envelopes/item1.analog.attest.json (kind=generic, status=pass, content_hash=sha256:cf262b1581042b14490eb00c1df54681767f9a62e0faa02bc0740340d2be3973, exit_status=0)
@@ -97,8 +97,13 @@ T1: 15/22 items met, 1 not_applicable
         cite: manifests/envelopes/item10.attest.json (kind=generic, status=pass, content_hash=sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
         bound: T1 item #10 -> manifests/inventories/item10.json (content_hash=sha256:b020ce76cc150d23a5c54d33bc25df18e66756c4ee714266edcda215fa67cf4e)
-[UNMET] T1 #11 [analog] Power delivery (structural)
-        reason: no_evidence
+[MET  ] T1 #11 [analog] Power delivery (structural)
+        groups: 4/4 cited groups graded met
+        cite: layout/erc/sg13g2_inv_1.json (kind=erc, status=not_checked, content_hash=sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217, exit_status=0)
+        input: re-hashed the artifact this envelope names -- matches
+        also: layout/lvs/sg13g2_inv_1.json (kind=lvs, status=match)
+        power delivery: supplies=VDD, VSS, pdn=no (no P&R cited), power_connectivity=unchecked
+        well side rested on the caller's word (asserted region, or a box-selected class): 1 (erc.missing_tie:["substrate_tap"])
 [UNMET] T1 #11 [digital] Power delivery (structural)
         reason: supply_spec_incomplete
 [UNMET] T2 #- T2 — signoff-validated
@@ -872,4 +877,4 @@ spec rows (1):
         from: sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.timing.report.json (B_s0p4_l0p1_in_slew_fall)
 
 source: docs/design-evidence-tiers.md (content_hash=sha256:589f39656b16d78d72504caff9088eddeed49136e2513d074cae1bc95e53837c)
-build: klt 0.9.3.dev5253+gdb1e2f17146d
+build: klt 0.9.3.dev5326+g7a0e2ff48fab

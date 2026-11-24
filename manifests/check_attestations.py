@@ -407,8 +407,19 @@ def manifest_pin_findings(manifest, manifest_name, repo_root):
             # citations are klt sim reports whose provenance.input
             # .content_hash is the pin. A string-only list still pins
             # nothing.
+            # A nested list is a cited group (item 11's analog groups pair
+            # an ERC and an LVS record per cell); its elements are walked
+            # the same way, one level deep.
+            flat = []
             for i, element in enumerate(entry):
-                location = f"{where}[{i}]"
+                if isinstance(element, list):
+                    flat.extend(
+                        (f"{where}[{i}][{j}]", sub)
+                        for j, sub in enumerate(element)
+                    )
+                else:
+                    flat.append((f"{where}[{i}]", element))
+            for location, element in flat:
                 if isinstance(element, str):
                     continue
                 if not isinstance(element, dict):

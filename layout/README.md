@@ -16,6 +16,7 @@ python3 layout/gen_layouts.py --config layout/example_config.json           # wr
 python3 layout/gen_layouts.py --config layout/example_config.json --check   # freshness
 python3 -m unittest discover -s layout/tests                                # tests
 python3 layout/run_lvs.py --config layout/example_config.json               # LVS -> layout/lvs/
+python3 layout/run_erc.py --config layout/example_config.json               # ERC -> layout/erc/
 klt drc layout/gds/sg13g2_inv_1.gds --deck sg13g2                           # DRC
 ```
 
@@ -1009,3 +1010,138 @@ on main's bytes unchanged. The command's own claim (module docstring,
 `--help` description, success line) names the stamp check now, per the #122
 narrowing discipline. No characterization was re-run and no envelope was
 re-minted: none of the edited files is envelope-pinned.
+
+### Recorded ERC evidence (issue #179)
+
+`layout/run_erc.py` runs `klt erc` — the supply and well/substrate-tie checks
+T1 item 11 (analog, power delivery, structural) grades — on every cell in the
+config, with the shared supply spec `layout/erc-spec.json` and the curated
+`sg13g2` deck (`klt lvs` extracts inline with the same deck). It writes
+`layout/erc/<cell>.json` and, for the negative control,
+`layout/erc/controls/<stem>.json`.
+
+```
+python3 layout/run_erc.py --config layout/example_config.json           # run, write reports
+python3 layout/run_erc.py --config layout/example_config.json --check   # klt erc --check per report
+```
+
+Run from the repo root (klt gets cwd-relative paths). The runner first checks
+`klt --help` against `layout/toolchain.json` (`layout/toolchain_pin.py`; the
+pin's `klt_required_commands` grew to `[drc, erc, extract, lvs]` for it). Exit
+codes: `0` every cell clean and every control failing as designed; `1`
+tooling error or `--check` drift; `2` invalid config / spec (the spec must
+declare exactly the config's `vdd_net`/`vss_net` as supplies and tie both);
+`4` reports written but a verdict is wrong.
+
+**Install.** The shared pin's commit (`klt_install`, left unchanged by #179)
+advertises `erc` but predates the `well_complement_of` tie schema
+`erc-spec.json` uses: it exits 1 with `ties[1].well_boxes` required for the null
+`well_layer`. The ERC reports were produced by klt `db1e2f17146d` (KLayout 0.30.13), so install
+that build for this runner (a throwaway env, never the host tool):
+
+```
+uvx --from "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@db1e2f17146dc834ec4aab351ef9ffd8c716d36c" klt --help
+uv tool install --force git+https://github.com/2AMLogic/klayout-tools@db1e2f17146dc834ec4aab351ef9ffd8c716d36c   # on a machine you own
+```
+
+The runner prints this command when `klt` lacks `erc` and, on a `well_boxes`
+failure, names the schema requirement. `--check` is not just `klt erc --check`:
+it also requires each report to name and hash the requested GDS and spec (a
+report copied over another cell's fails), re-grades every ordinary cell report
+(clean, exactly the configured VDD/VSS with one island each, both ties checked),
+and rejects stray control reports.
+
+The spec declares exactly what the cells draw (the config's
+`layout.layers` map): a two-level stackup GatPoly (5/0, role `gate`,
+`active_layer` activ 1/0) and Metal1 (8/0 with its 8/25 label layer) bridged
+by Cont (6/0) — Metal1-only routing, per spec row 3 — with `VDD` and `VSS`
+(the config's `process.vdd_net`/`vss_net` names, drawn as the row-edge
+Metal1 rails) declared `"kind": "supply"`, and the two tap bands
+`layout/gen_layouts.py` draws per cell (issue #73) as `ties[]`:
+
+- `nwell_tap` — the drawn n-well (31/0) with tap `activ ∩ nsd` wired to
+  Metal1 and net VDD;
+- `substrate_tap` — a native p-substrate with no drawn tub layer: the region
+  is the n-well complement (`well_layer: null` + `well_complement_of
+  ["31/0"]`), tap `activ ∩ psd`, wired to Metal1 and net VSS.
+
+Both ties carry the implant boolean in `tap_requires`, which is not cosmetic:
+a bare `activ` `tap_layer` matches every device source/drain diffusion in the
+same region and `klt erc` records the tie as `degenerate_tap_declaration`
+(skipped work, `erc_status clean_partial`) — which `klt signoff` refuses to
+grade item 11 on. The substrate tie's region is graded
+`checked_by_well_assertion` (the complement is a caller assertion the same
+way `well_boxes` is; `klt erc` records it in `erc_coverage` and the signoff
+report's item 11 citation carries it in `ties_checked_by_well_assertion`).
+
+**Result (2026-11-21): all four cells are `erc_status: clean`, zero
+findings, VDD and VSS each resolving to exactly one island, both ties
+checked with none skipped.**
+
+| cell | erc_status | findings | VDD islands | VSS islands |
+| --- | --- | --- | --- | --- |
+| `sg13g2_inv_1` | clean | 0 | 1 | 1 |
+| `sg13g2_inv_2` | clean | 0 | 1 | 1 |
+| `sg13g2_inv_4` | clean | 0 | 1 | 1 |
+| `sg13g2_nand2_1` | clean | 0 | 1 | 1 |
+
+Reports were produced by klt 0.9.3.dev5253+gdb1e2f17146d on klayout 0.30.13
+(each report's `provenance`). An earlier run of the same cells (klt
+0.9.3.dev2575+g6bd18bbc8637, klayout 0.30.12) was superseded by this one when
+the reports were re-run on the current GDS (0c14073); it is kept here as history. One `klt erc` friction is recorded here without
+an upstream filing: the first run, without `--deck`, disclosed the
+substrate-continuity check as `substrate_isolation_undecidable` and
+`klt signoff` correctly refused to grade item 11 on it — the report's own
+`missing` list names `--deck` as the resolution, and adding the deck (whose
+`nBuLay` declaration makes isolation decidable; the cells draw no nBuLay, so
+the substrate is shared and the check is *evaluated*, finding nothing) is the
+documented path, not a workaround.
+
+The negative control is `layout/erc/controls/missing-tie-nwell-inv1.gds`:
+`layout/gen_controls.py`'s ERC table (same script, second output directory —
+`layout/erc/controls/` beside `layout/drc/controls/`) draws `sg13g2_inv_1`
+with the shipped engine and filters out the well-tap band's
+activ/implant/contact boxes — identified by y-position alone (the band is the
+only `nsd`-polarity activ above `row_height − p_diff_top_margin`), with no
+generator internals patched — and `layout/run_erc.py` runs it against the
+same spec and **requires** its report to show `erc.missing_tie` (it does:
+`well/tub region has no 'nwell_tap' tap contact drawn inside it`, net VDD).
+That is the falsifiable half: a spec that cannot fail proves nothing.
+`gen_controls.py --check` (CI's `layouts` stage) rebuilds the stream.
+
+Manifest: `evidence["11.analog"]` in `manifests/sg13g2-stdcells.json` cites
+one group per cell — that cell's ERC report plus its item-4 LVS report
+(`net_correspondence` pairs VDD and VSS since #73) — and
+`manifests/signoff-report.*` are regenerated: **T1 13/22 at `5c444be`** (15/22 at `3d76ce2`, 16/22 at `b507f4f`; see below), with
+`T1 #11 [analog]` `[MET]`, groups 4/4; `klt signoff --manifest
+manifests/sg13g2-stdcells.json --check manifests/signoff-report.json` reads
+`status: match`. The digital half of item 11 (`flow/erc-spec.json`, declares
+no `ties[]`) is separate work, unchanged here.
+
+Regenerated after merging `main` with the signoff build the PR report records
+(klt `0.9.3.dev2843+g1a0d5954284b`). The T1 count stays 13/22, but only
+because two grades traded places: `T1 #11 [analog]` is newly `[MET]`, and
+`T1 #9 [analog]` reads `[UNMET]` `stale_evidence` — its inventory pins
+`design/gen_netlists.py`, which changed on `main` after the item 9 envelope was
+minted. That regression is not this PR's change (the file is byte-identical to
+`main`); re-minting the item 9 envelope is separate work.
+
+Superseded at the `3d76ce2` merge of `main`: `main`'s re-minted item 9
+envelope landed in that merge, so at `3d76ce2` `T1 #9 [analog]` reads `[MET]`
+again and `manifests/signoff-report.txt` records **T1 15/22 items met** (klt
+`0.9.3.dev4116+ga9885c2c7fa3`). Item 11 analog newly `[MET]` is this PR's
+contribution; the item 9 recovery is not. The paragraph above is kept as the
+observation at `5c444be`.
+
+Superseded again at the `b507f4f` merge of `main`: the regenerated report
+records **T1 16/22 items met** (klt `0.9.3.dev4224+gcc049d4d9637`), with
+`T1 #9 [analog]` still `[MET]` and `T1 #11 [analog]` `[MET]`, `groups: 4/4`.
+
+Re-rendered at the `e037d3a` head merge of `main` (2026-11-24):
+`manifests/signoff-report.json` and `manifests/signoff-report.txt` were both
+produced in one pass by a single klt build (`0.9.3.dev5326+g7a0e2ff48fab`), so
+the pair carries one provenance stamp. The report still records **T1 16/22
+items met**, with `T1 #9 [analog]` `[MET]` and `T1 #11 [analog]` `[MET]`,
+`groups: 4/4`; `klt signoff --check` reports `status: match`. This supersedes
+the build named in the `b507f4f` paragraph above, which stays as the record of
+that merge.

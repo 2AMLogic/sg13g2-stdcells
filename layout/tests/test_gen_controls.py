@@ -115,6 +115,49 @@ class WriteMode(unittest.TestCase):
                 self.assertEqual((out / p.name).read_bytes(), p.read_bytes())
 
 
+class OutputIsolation(unittest.TestCase):
+    """`--out` alone is a single-output scratch run: it must not touch the
+    tracked ERC controls, and coincident output directories are rejected
+    before anything is written or pruned."""
+
+    ERC = LAYOUT / "erc" / "controls"
+
+    def _erc_snapshot(self):
+        return {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in self.ERC.glob("*.gds")}
+
+    def test_out_only_leaves_tracked_erc_controls_alone(self):
+        before = self._erc_snapshot()
+        self.assertTrue(before)
+        with tempfile.TemporaryDirectory() as d:
+            cfg = json.loads(CONFIG.read_text())
+            cfg["process"]["vdd_net"] = "VDD_TEST"
+            cfgp = pathlib.Path(d) / "other.json"
+            cfgp.write_text(json.dumps(cfg))
+            out = pathlib.Path(d) / "drc"
+            r = run("--config", str(cfgp), "--out", str(out))
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual({p.name for p in out.glob("*.gds")}, {p.name for p in CONTROLS.glob("*.gds")})
+        self.assertEqual(self._erc_snapshot(), before)
+
+    def test_coincident_out_dirs_rejected_before_writing(self):
+        with tempfile.TemporaryDirectory() as d:
+            marker = pathlib.Path(d) / "keep.gds"
+            marker.write_bytes(b"x")
+            r = run("--out", d, "--erc-out", d)
+            self.assertEqual(r.returncode, 2, r.stderr)
+            self.assertIn("same directory", r.stderr)
+            self.assertEqual(marker.read_bytes(), b"x")
+            self.assertEqual([p.name for p in pathlib.Path(d).glob("*.gds")], ["keep.gds"])
+
+    def test_distinct_out_dirs_write_both_sets(self):
+        with tempfile.TemporaryDirectory() as d:
+            a, b = pathlib.Path(d) / "a", pathlib.Path(d) / "b"
+            r = run("--out", str(a), "--erc-out", str(b))
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual({p.name for p in a.glob("*.gds")}, {p.name for p in CONTROLS.glob("*.gds")})
+            self.assertEqual({p.name for p in b.glob("*.gds")}, set(self._erc_snapshot()))
+
+
 class PatchRestoration(unittest.TestCase):
     def test_attributes_restored_after_a_failed_row(self):
         """The p420 forcing with the notch check left live is exactly the
