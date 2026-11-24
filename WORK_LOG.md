@@ -2,6 +2,44 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-23
+
+- **PR #242**: feat(manifests): content-pin check-ci.sh in item 10 hygiene inventory
+- **Issue #233** (closed): Consider content-pinning check-ci.sh in the T1 item 10 hygiene inventory
+- **PR #236**: docs(roadmap): cite rows 1/2 tests by name, not stale line numbers
+- **Issue #229** (closed): ROADMAP rows 1/2 cite stale test line numbers (test_gen_layouts.py:113,127,129,133)
+- **PR #234**: ci: run attestation checks on the merge tree before merge
+- **Issue #228** (closed): Attestation content-hash gate can go red on main from two green PRs (semantic merge conflict)
+- **PR #227**: test: check every pin label against the routing grid and record the off-grid labels
+- **Issue #221** (closed): spec row 4 (pin access on the routing grid) has no check and no tracking issue
+- **PR #224**: docs(sim): correct the item 5 timing tolerance rationale
+- **Issue #222** (closed): sim/item5/request.py's 2 % tolerance rationale quotes a stale worst-case drift (~0.03 %, not the recorded 0.058 %)
+- **PR #219**: refactor(manifests): route item10 audit checks through check-ci.sh stages
+- **Issue #218** (closed): Route manifests/inventories/item10.json checks through check-ci.sh instead of duplicating CI commands
+- **Issue #213** (closed): fix: re-attest item9.analog.attest.json after PR #199 updated design/gen_netlists.py
+- **PR #197**: feat(sim): grade T1 item 5 analog met with klt sim row-9 corner evidence
+- **Issue #180** (closed): T1 item 5 analog: commit klt sim corner evidence for the four generated cells with a declared spec-row set
+- **PR #195**: refactor: share one forced_strip_profile context manager between gen_controls and ForcedNotch
+- **Issue #192** (closed): Share the notch profile override between DRC controls and layout tests
+- **PR #191**: docs: link roadmap evidence grade to the committed signoff report
+- **Issue #188** (closed): Link the roadmap evidence grade to the committed signoff report
+- **PR #186**: feat: add multi-corner STA and functional-verification evidence to the add8 flow (T1 item 5 digital)
+- **Issue #175** (closed): T1 item 5 digital: add klt sta and klt functional-verification to the add8 flow and cite both
+- **PR #212**: docs: give the signoff-manifest and characterization tails their own headings in layout/README.md
+- **Issue #208** (closed): layout/README.md: the LVS-evidence section's tail outlines signoff-manifest and characterization records as part of the #42/#73 LVS result
+- **PR #207**: docs: give the recorded LVS result its own heading in layout/README.md
+- **Issue #206** (closed): layout/README.md: the #198 re-verification subsection outlines the LVS signoff result under itself
+- **PR #203**: fix: route a diffusion-driven gate as a terminal of its net's Metal1 track
+- **Issue #201** (closed): layout: generated buffer leaves its internal gate disconnected from the Metal1 track
+- **PR #193**: feat: pin IHP-Open-PDK in characterization records and attest T1 item 9 analog
+
+### 2026-11-22
+
+- **PR #200**: docs(layout): document isolated re-verification of committed LVS reports
+- **Issue #198** (closed): Document how to reproduce the committed LVS checks and diagnose deck drift
+- **PR #199**: fix: compare generated netlists byte-for-byte and gate LVS --check on the generator
+- **Issue #196** (closed): Reuse the generator freshness check for LVS reference netlists
+
 ### 2026-11-21
 
 - **PR #185**: feat: verify document pins for digital item 6 signoff

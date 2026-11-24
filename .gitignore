@@ -7,6 +7,8 @@ __pycache__/
 
 # synthesis / P&R scratch
 flow/build/
+# functional-verification scratch (request-fv.json artifacts anchor here)
+verification/.klt/
 # local klt install, created by the setup script
 .venv/
 # >>> loom-managed (do not edit) >>>

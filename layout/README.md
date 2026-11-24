@@ -33,7 +33,7 @@ The `process` and `cells` objects are exactly `design/README.md`'s contract. The
 ```jsonc
 "layout": {
   "row_height_nm": 3360,       // cell height; rails are centred on y=0 and y=row height
-  "gate_pitch_nm": 420,        // even; poly pitch = node pitch; cell width = (columns+1) * pitch
+  "gate_pitch_nm": 420,        // even; poly pitch = node pitch; cell width = (columns+2) * pitch
   "channel_tracks": 1,         // max Metal1 tracks between the strips (more -> exit 3)
   "n_diff_y0_nm": 400,         // bottom of the NMOS diffusion
   "p_diff_top_margin_nm": 400, // PMOS diffusion top sits this far below the row top
@@ -89,7 +89,7 @@ below the NMOS diffusion (`poly_width_nm` tall, `poly_to_activ_nm` clear of it) 
 share one gate contact. A poly column crosses both strips, so the NMOS and PMOS
 device on one gate net get the same finger count, the larger of the two; the other
 is folded into that many fingers (same total width, which must divide evenly on
-`process.grid_nm`, default 10, else exit `3`). Cell width is `(columns + 1) *
+`process.grid_nm`, default 10, else exit `3`). Cell width is `(columns + 2) *
 gate_pitch_nm`, counting fingers. Each strip must be a single chain of devices
 sharing source/drain nets, and both chains must have the same gate-net sequence.
 
@@ -172,7 +172,8 @@ Outside that model the generator exits `3` naming the cell and the reason:
 * a gate net driving the columns of two different devices;
 * more nets to join than `channel_tracks` -- every extra finger boundary re-attaches
   its net, so a series stack that is folded (`nand2_2`: `Y` and `n1`) needs two
-  tracks where the config allows one;
+  tracks where the config allows one, and a second track does not rescue it
+  (the measured limits are in the issue #171 section below);
 * a strip whose height profile is tall-short-tall, or a device drawn too short
   for a contact (both above);
 * a channel narrower than the two implant enclosures (`2 * sd_enc_activ_nm`),
@@ -209,6 +210,87 @@ synthetic configs, the way `FakeProcess` exercises a second process -- `and2_1`
 places with a stepped NMOS strip once the synthetic row gives it two channel
 tracks and a wider pitch. The committed config's `channel_tracks` and `rules`
 are unchanged.
+
+#### What blocks buf, folded nand2 and folded nor2 on a 3360 nm row (issue #171)
+
+Measured on `bed801e` with one-cell configs. The seven consumer shapes are the
+committed fixture `layout/tests/fixtures/t1_row3360.json` (3360 nm row, 420 nm
+pitch, margins 350/330, 740/1120 nm unit widths, 1000/1200 nm finger maxima, 5
+nm grid, 440 nm rails); `test_gen_layouts.py::T1Fixture` pins each outcome.
+`demo_buf_2` and `demo_and2_1` from `design/example_config.json` fail the same
+way at `channel_tracks` 1. **None of the nine places, and nothing here changes
+what the generator draws**; `--check` is unchanged for the four committed GDS.
+
+| cell (fixture) | `channel_tracks` 1 | 2 and 3 | limiting constraint |
+|---|---|---|---|
+| `buf_1`, `buf_2`, `buf_4` | `X`, `X_i` need 2 tracks | `channel too short for track 2 of net X_i` | gate-pad clearance, below |
+| `nand2_1`, `nand2_2` | `Y`, `n1` need 2 tracks | `Metal1 of Y overlaps n1` | planarity of a folded series stack, below |
+| `nor2_1`, `nor2_2` | `Y`, `n1` need 2 tracks | `no Metal1-clean spot for the gate contact of A` | planarity of a folded series stack, below |
+
+Findings, in the order the issue asked for:
+
+* **Tracks per net over the full width is not the binding limit.** A prototype
+  that allocated each net's track over the span it occupies, packed nets with
+  disjoint spans into one row, replaced a net with one stub per strip on the
+  same node column by a single vertical bar (no track), and retried every
+  strip ordering placed none of the nine cells; it was not kept. The two
+  nets of a buffer (`X`, `X_i`) are both vertical bars, so the track count was
+  never what stopped it.
+* **Buffer: the input pad of the output stage cannot be drawn.** The output
+  stage has two fingers (drive 2 and 4, and drive 1 because the NMOS folds to
+  match), so its output node `X` sits *between* the two gate columns and is a
+  vertical bar across the channel; the chain forces this, since the two
+  fingers must end on the rail (`VSS X VSS`). The gate `X_i` has to land a pad
+  on one of those two columns. A pad on the column's outer side needs a
+  300 nm wide poly pad (`cont_nm + 2 * poly_enc_cont_nm`) inside the 290 nm
+  (`pitch - poly_width_nm`) gap to the neighbouring stripe, 55 nm from it
+  where the rule is `poly_space_nm` 180; a pad on the inner side or beside the
+  bar is 50 nm (`pitch / 2 - 2 * m1_width / 2`) from `X`'s bar where the rule
+  is `m1_space_nm` 180; and the pad on the far side would have to join the
+  stage-1 output across `X`'s bar, which blocks the channel from the NMOS to
+  the PMOS stub (the bands above and below the stubs are 130 nm, under
+  `m1_width_nm`). The same holds for `demo_and2_1`, whose `X` node is adjacent
+  to the `X_i` gate column.
+* **Folded nand2/nor2: `n1` encloses `Y`.** Two fingers per series device put
+  `n1` on three nodes of one strip with the output `Y` (or a rail) between
+  them: `n1 Y n1 VSS n1`. Joining the `n1` nodes in Metal1 takes a track over
+  `Y`'s node, and `Y` must still climb from that node to the other strip
+  through the same span, so `Y` crosses `n1`'s track on any row order. The
+  fingers of the two series devices cannot be interleaved in this model (a
+  device's fingers are adjacent columns), and an interleaved order leaves `n1` as
+  two diffusion islands that only Metal1 can join, so it meets the same
+  crossing (not measured with `klt lvs`).
+  The `n1`-skip the issue suggested needs adjacent fingers to share the
+  diffusion, which only a one-finger-per-device stack does.
+* **What would place them** (each is a change to the model, not a tuning):
+  interleaved fingers with a net-aware LVS reference, a diffusion break
+  (#169), gate contacts outside the channel, or a second routing layer.
+  Follow-up issues: #256 (buffer input pad), #257 (folded series stack).
+
+### Pin placement on the routing grid (issue #225)
+
+Spec row 4 wants every pin on a grid point of `gate_pitch_nm`, origin at the
+cell origin. The diffusion nodes sit on the grid columns (`x = (j + 1) * pitch`)
+and the gates a half pitch between them, which is why a cell is `(columns + 2)`
+pitches wide: with the nodes at half pitch, no Metal1 that reaches a grid column
+can stay `m1_space_nm` clear of the output riser. Rail labels sit on the first
+node column; an output label is the grid point deepest inside its net's Metal1;
+an input gate's pad is joined by a bridge to a vertical bar on the node column
+beside it, long enough to hold a grid y of the channel. Input pads that find no
+Metal1-clean bar, and internal-net (driven) gate pads, keep the compact pad with
+its label at the centre, off the grid; `PinOnGrid` fails if a shipped cell
+does. A `(columns + 1)`-wide cell from before this change cannot be reproduced.
+
+**Re-recorded 2026-11-23 (issue #225)**, superseding the earlier records of the
+same files because the layouts are different GDS: the four `layout/gds/*.gds`,
+their `layout/drc/*.json` (still `clean`, 0 violations) and `layout/lvs/*.json`
+(still `match`), the four notch controls in `layout/drc/controls/` (regenerated
+and re-run; each keeps its outcome: the two admits `clean`, the two refusals
+one violation each), `manifests/envelopes/item2.analog.attest.json` (re-attested)
+and its manifest pin and `manifests/signoff-report.*`. The reports were
+recorded on klt `0.9.3.dev4174+g85b21713e8c0` (KLayout 0.30.12), newer than the
+previous set's `0.9.2.dev1022+g2a9c52b27ce7`, so their provenance and the
+deck's `content_hash` differ for that reason as well as for the new GDS.
 
 ### Well and substrate taps
 
@@ -534,8 +616,9 @@ reference netlists under `layout/lvs/netlists/` are byte-unchanged --
 freshness commands still pass on the same bytes.
 
 `manifests/signoff-report.*` were then regenerated with `klt signoff
---manifest` (write them with a shell redirect; `-o` applies only to
-`--attest`). **T1 is now 8/22 met, up from 7/22, with `T1 #4 [analog] LVS
+--manifest` (written with a shell redirect at the time; `-o` with `--manifest` shipped
+later, klayout-tools #5867, and is the current form, see the re-mint sequence
+below). **T1 is now 8/22 met, up from 7/22, with `T1 #4 [analog] LVS
 clean` MET** on the strength of the reports above; item 3 `[analog]` still
 cites only `layout/drc/sg13g2_inv_1.json`, so widening that citation to all
 four DRC reports remains open. `klt signoff --manifest --check
@@ -593,6 +676,56 @@ the gate. The envelope hash check is deliberately *not* delegated to
 constraint; the `klt` check stays the deeper local verification (it also
 re-runs each inventory's commands).
 
+**What `pins.tools.klt` means, and the item 9 analog re-mint sequence
+(issue #243).** `manifests/inventories/item9.analog.json` is the only
+inventory that pins a `klt` build (`pins.tools.klt`). Per `klt signoff`'s own
+documentation that pin is *the exact build you intend to run*, compared
+literally against the **running** `klt --version` on both `--attest 9` and
+`--attest 9 --check`. It is **not** measurement provenance: which `klt` built
+a measurement is recorded append-only in
+`views/sg13g2_stdcells_tt_1p20v_25c.lib.provenance`,
+`sim/characterize/records/` and `sim/item5/records/`, and those are untouched
+by a pin bump. Fleet workers' `klt` rolls forward to a new local dev build
+(`+g…` label, not installable from PyPI) several times a day, so bumping the
+pin to the running build is routine bookkeeping in any item 9 analog re-mint,
+not a request for a host carrying the old build. A `pin klt <committed>
+(running <current>)` failure exits `3` and leaves `-o` unwritten. If the
+running version contains `+unknown`, the pin check passes with
+`"unverifiable": true` instead, so a mismatch is survivable only then.
+
+When a PR edits any of the `testbenches` entries listed in
+`manifests/inventories/item9.analog.json` (explicit paths, mostly under
+`sim/characterize/`, `sim/item5/` and `sim/harness/`, plus
+`design/gen_netlists.py` and `layout/example_config.json`; other files in
+those directories, such as `README.md`, `__init__.py` and `records/`, are not
+attested), on its final tree:
+
+1. Set `pins.tools.klt` in `manifests/inventories/item9.analog.json` to the
+   running `klt --version`, without the leading `klt ` prefix (so it equals
+   `provenance.klt_version`).
+2. `klt signoff --attest 9 --inventory manifests/inventories/item9.analog.json
+   -o manifests/envelopes/item9.analog.attest.json`.
+3. `klt signoff --attest 8 --inventory manifests/inventories/item8.analog.json
+   -o manifests/envelopes/item8.analog.attest.json` — item 8's envelope
+   byte-pins `item9.analog.attest.json` as its spec-row-9 citation, so
+   re-minting item 9 stales item 8 until it is re-minted too.
+4. Update `evidence["9.analog"].content_hash` in
+   `manifests/sg13g2-stdcells.json` to the new `provenance.input.content_hash`
+   of `item9.analog.attest.json` (and `evidence["8.analog"].content_hash`
+   likewise from the item 8 envelope).
+5. Regenerate `manifests/signoff-report.{json,txt}` with `klt signoff
+   --manifest manifests/sg13g2-stdcells.json`. Write the JSON with `-o
+   manifests/signoff-report.json` (with `--manifest`, `-o` writes the
+   rendered report's JSON envelope after a successful render, exit `0` or
+   `3`, and only if the bytes changed; a stdout redirect truncates first and
+   would zero the committed record on a failed run). The `.txt` half still
+   needs a stdout redirect, because `-o` always receives JSON whatever
+   `--format` says.
+6. Run `./check-ci.sh` (`attestations`, `manifest-pins`, unit tests).
+
+This file itself is not hash-pinned by any envelope, so editing this
+paragraph needs no re-mint.
+
 ### Characterization records and their supersession chain (issues #82, #134)
 
 `T1 #8 [analog] Characterization report` is **not** cited, and stays
@@ -622,7 +755,7 @@ rejected — narrowing makes a claim about what provenance must cover (that a
 digest over `process` + `cells` is adequate), which belongs in a `spec/`
 decision record of its own, deferred until the coarse pin goes stale again;
 this regeneration is the first data point on what that recurrence costs. The
-regeneration (`python3 -m sim.characterize --library --pdk-dir
+regeneration (`python3 -m sim.characterize --pdk-dir
 /home/ubuntu/share/pdk/ihp-sg13g2`) ran on a clean worktree and appended
 record `sim/characterize/records/20261114-222806-f1cf294.md`; the superseded
 record `20261107-222836-6ee1577.md` is kept, append-only. It re-measured under
@@ -652,7 +785,7 @@ main's PR #104 added three more `layout.rules` keys (`psd_space_nm`,
 on any merge of this branch — the second recurrence lap in eight days, and the
 reason the narrowing option (a `spec/` decision record) is deferred no longer
 lightly: it is filed structurally as #110/#116. Regenerated again exactly as
-above — `python3 -m sim.characterize --library --pdk-dir
+above — `python3 -m sim.characterize --pdk-dir
 /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged tree (`921b1a8`) before
 any bookkeeping edit, single corner TT/1.20 V/25 C, local backend — appending
 record `sim/characterize/records/20261115-105337-921b1a8.md`, keeping both
@@ -689,7 +822,7 @@ pre-capture fix exists to close. Seven files conflicted; the only code hunk
 was `runner.py`'s `render()` Notes line, where both halves are load-bearing and
 both are kept: main's simulator key and this branch's doubled-`klt `-prefix
 strip. Regenerated exactly as every lap above — `python3 -m sim.characterize
---library --pdk-dir /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged
+--pdk-dir /home/ubuntu/share/pdk/ihp-sg13g2` on the clean merged
 tree (`13dc481`) before any bookkeeping edit, single corner TT/1.20 V/25 C,
 local backend — appending record
 `sim/characterize/records/20261115-220740-13dc481.md`, keeping all four

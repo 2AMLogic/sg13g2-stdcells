@@ -14,7 +14,7 @@ NLDM Liberty at TT / 1.20 V / 25 C for the cells in `layout/example_config.json`
 (spec row 9), emitted by `klt characterize`. Do not edit it by hand; regenerate:
 
 ```
-python3 -m sim.characterize --library --pdk-dir <ihp-sg13g2 dir>
+python3 -m sim.characterize --pdk-dir <ihp-sg13g2 dir>
 ```
 
 The command regenerates each cell's SPICE with `design/gen_netlists.py` from the

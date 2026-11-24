@@ -21,25 +21,28 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   `Geometry.test_cell_width_follows_pitch` in
   `layout/tests/test_gen_layouts.py` asserts the emitted cell height
   (`H == 3360`).
-  Row 2's horizontal pitch (0.42 um) is **met** — widths and gate columns are
-  multiples of `gate_pitch_nm: 420`
-  (`Geometry.test_cell_width_follows_pitch` asserts `W == 3 * 420`, and
+  Row 2's horizontal pitch (0.42 um) is **met** — widths are multiples of
+  `gate_pitch_nm: 420` and neighbouring gate columns are 420 nm apart, at
+  half-pitch offsets from the cell edge
+  (`Geometry.test_cell_width_follows_pitch` asserts `W == 4 * 420`, and
   `MultiFinger.test_width_grows_with_finger_count` asserts widths of
-  `2/3/5 * 420`, both in `layout/tests/test_gen_layouts.py`); the vertical grid is not
+  `3/4/6 * 420`, both in `layout/tests/test_gen_layouts.py`); the vertical grid is not
   separately checked. Row 3 (Metal1 only) is **met by construction** — the
   only metal entries in the `layout.layers` map in
   `layout/example_config.json` are `metal1` and `metal1_label` (its other six
   are well, diffusion, poly, implant and contact layers), and no generator
   draws a second metal.
-  Row 4 (every pin on a grid point) is **not met** as the generator stands
-  (measured 2026-11-23 on `main` @ `6ce61ff`):
-  `layout/tests/test_gen_layouts.py:214` asserts every `metal1_label` of every
-  config cell — gate pads, outputs and the VSS/VDD rail labels — is a multiple
-  of the same 420 nm on both axes from the cell origin and lies on Metal1. It
-  is landed as an expected failure and `:221` pins what it finds: 15 of the 17
-  labels on the four cells off the grid — every gate pad and output on both
-  axes, and the rail labels on x for the three even-column cells — all of them
-  on Metal1. The generator fix is tracked in #225.
+  Row 4 (every pin on a grid point) is **met** (#225, measured on the
+  regenerated cells):
+  `PinOnGrid.test_every_pin_label_is_on_the_routing_grid` in
+  `layout/tests/test_gen_layouts.py` asserts every `metal1_label` of every config cell — gate pads, outputs and
+  the VSS/VDD rail labels — is a multiple of the same 420 nm on both axes from
+  the cell origin and lies on Metal1, and `PinOnGrid.test_row4_off_grid_record` pins that no label is off the
+  grid on the four cells (17 of 17 on grid, up from 2 of 17 before #225). The
+  generator moved the diffusion nodes onto the grid columns and the gates a
+  half pitch between them, so a cell is `(columns + 2)` pitches wide (inv_1
+  840 -> 1260 nm). Row 2's 420 nm gate-to-gate spacing is unchanged. DRC and
+  LVS were re-recorded on the new streams (below).
 - **Cells (row 5: target 40).** Four are generated from
   `layout/example_config.json`: `sg13g2_inv_1`, `_inv_2`, `_inv_4`,
   `sg13g2_nand2_1`. Sequential cells (row 6) are out of target scope.
@@ -68,14 +71,27 @@ The ratified target is `spec/0001-target-specification.md` (rows 1-12). Against 
   holds the `add8` baseline on the stock `sg13g2_stdcell` only: synthesis,
   place-and-route with all three power gates, gate-level LVS `match`, routed
   GDS and a clean `klt drc` (#9, #41).
-- **Evidence grade.** `manifests/signoff-report.txt` (`klt signoff --manifest`):
-  tier none, **T1 14/22 items met, 1 not_applicable** (updated for item 5
-  analog, #180, on top of item 6 digital N/A, item 8 analog and item 9 analog
-  on `main`). Met: items 1-4 on both partitions, item 5 analog, item 8 analog,
-  items 9 and 10 on both partitions. Not applicable: item 6 digital. Unmet:
-  item 5 digital, item 6 analog, item 7 on both partitions, item 8 digital and
-  item 11 on both partitions — `no_evidence` except item 11 digital
-  (`supply_spec_incomplete`). Tracker: #3.
+  Row 10 stays unmeasured; what is known is the geometry it starts from. As
+  built under the `(columns + 2) * 420 nm` pin-on-grid phasing (#225), at the
+  3360 nm row height (`layout/gen_layouts.py` over `layout/example_config.json`,
+  `main` @ `829d86f`, 2026-11-23): `sg13g2_inv_1` 1260 nm / 4.2336 um^2,
+  `sg13g2_inv_2` 1680 nm / 5.6448 um^2, `sg13g2_inv_4` 2520 nm / 8.4672 um^2,
+  `sg13g2_nand2_1` 1680 nm / 5.6448 um^2; sum 7140 nm / 23.9904 um^2. The
+  stock `sg13g2_stdcell` (IHP-Open-PDK v0.3.0 LEF, `CoreSite` 0.48 x 3.78 um)
+  draws the same four cells at 1.44 / 1.92 / 2.88 / 1.92 um wide, 30.8448 um^2
+  summed, so the same site count (17) on a smaller site gives 7/9 (about
+  0.778x) per cell and summed. That is geometric headroom of about 22 % below
+  row 10's `<= 1.00x` target, not a result: #225 spent the 1-pitch margin the
+  off-grid `(columns + 1)` widths had (5460 nm, +30.8 % to 7140 nm), and
+  diffusion-break and multi-track column overheads and post-synthesis drive
+  sizing are still to draw from it. The `<= 0.80x` stretch is not covered by
+  the site-count geometry alone.
+- **Evidence grade.** See the committed
+  [`manifests/signoff-report.txt`](manifests/signoff-report.txt)
+  (`klt signoff --manifest`) — it contains the evidence tier, the T1 item
+  total and the per-item results for each partition. Tracker:
+  [#3](https://github.com/2AMLogic/sg13g2-stdcells/issues/3) collects
+  the remaining follow-up work.
 
 ### What the layout generator can place today
 
