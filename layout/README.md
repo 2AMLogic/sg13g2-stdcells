@@ -269,7 +269,7 @@ failure:
 | `xor2_1` | `[250, 500]` / `[400, 800]` | 250 nm fingers are too short for a contact |
 | `a22oi_1` | `[500]` / `[800]` | needs 4 channel tracks (`X`, `n1`, `n2`, `n3`), config allows 1 |
 | `nand4_1` | `[500]` / `[400]` | needs 4 channel tracks (`Y`, `n1`, `n2`, `n3`), config allows 1 |
-| `mux2_1` | `[500]` / `[400, 800]` | PMOS height profile notches over columns 8..9, a 405 nm `nwell` opening under the 620 nm minimum |
+| `mux2_1` | `[500]` / `[400, 800]` | PMOS height profile notches over columns 8..9, a 550 nm `nwell` opening under the 620 nm minimum |
 
 No cell fails with `needs a diffusion break` any more: the break model moved
 every one of them to its next named limit, dominated by the one-track channel
@@ -277,9 +277,10 @@ every one of them to its next named limit, dominated by the one-track channel
 13-cell demo census of `design/example_config.json` under the committed
 layout/process blocks (`test_gen_layouts.py::DiffusionBreaks` asserts it) and
 for the 40-cell `2AMLogic/sg13cmos5l-stdcells` census (`d91a3a3`): there 3 of
-40 place (the three inverters, unchanged), and of the 21 former break rows 17
-now name their channel-track count, 2 the contact floor, 1 a notch and 1 the
-gate-net limit. The break geometry itself places and measures clean on the
+40 place (the three inverters, unchanged), and of the 21 former break rows 12
+now name their channel-track count, 5 the contact floor (`and4_1`, `mux4_1`,
+`nand4_1`, `nor4_1`, `or4_1`), 1 an n-well notch (`mux2_1`) and 3 the
+repeated-gate limit (`mux2_2`, `xnor2_1`, `xor2_1`). The break geometry itself places and measures clean on the
 recorded `break-pmos-p420` control above.
 
 So the capability is exercised in `test_gen_layouts.py::MixedFingerWidths` and

@@ -103,10 +103,11 @@ Probed on this branch (the diffusion-break model of #169 landed) by running
 |---|---|---|
 | places | `inv_1/2/4/8/16`, `nand2_1` | |
 | fails | `nor2_1`, `nor2_2`, `or2_1`, `or2_2`, `nor3_1`, `a21oi_1`, `xor2_1`, `xnor2_1` | diffusion 250 nm tall is too short for a contact |
-| fails | `nand2_2`, `buf_1`, `and2_1` | needs 2 channel tracks (`X`+inverter net), config allows 1 |
+| fails | `nand2_2` | needs 2 channel tracks (`Y` and the stack net `n1`), config allows 1 |
+| fails | `buf_1`, `and2_1` | needs 2 channel tracks (`X` and the inverter net `X_i`), config allows 1 |
 | fails | `nand3_1`, `o21ai_1` | needs 3 channel tracks, config allows 1 |
 | fails | `nand4_1`, `a22oi_1` | needs 4 channel tracks (the break splits the series middles), config allows 1 |
-| fails | `mux2_1` | PMOS height profile notches over columns 8..9, a 405 nm `nwell` opening under the 620 nm minimum |
+| fails | `mux2_1` | PMOS height profile notches over columns 8..9, a 550 nm `nwell` opening under the 620 nm minimum |
 | fails | `nor4_1` | 500 nm device cannot be drawn as 4 fingers on the 10 nm grid |
 
 No cell reports `needs a diffusion break` any more: the break model (#169)
@@ -114,7 +115,7 @@ moved each of those cells to its next named limit, dominated by the one-track
 channel and the 300 nm contact floor. The break geometry itself is measured
 clean on the recorded `break-pmos-p420` control (DRC clean, LVS match,
 `layout/drc/controls/`). The placement model is what holds the generator to 6
-of the 20 cells probed above (row 5 targets 40);
+of the 23 cells probed above (row 5 targets 40);
 `layout/example_config.json`, which lists four of
 those six, is what holds the committed count at 4.
 

@@ -716,7 +716,7 @@ class DiffusionBreaks(unittest.TestCase):
     def test_demo_census_reports_no_diffusion_break(self):
         """AC of issue #169: every demo cell either places or names a different
         limit. demo_xor2_1 / demo_mux2_1 / demo_a21oi_1 land on their measured
-        next limits (a contact floor, an nwell notch, a contact floor)."""
+        next limits (a contact floor, a 550 nm nwell opening, a contact floor)."""
         design = json.loads((LAYOUT.parent / "design" / "example_config.json").read_text())
         for cell in design["cells"]:
             cfg = copy.deepcopy(CFG)
@@ -728,7 +728,7 @@ class DiffusionBreaks(unittest.TestCase):
                 msg = str(e)
             self.assertNotIn("diffusion break", msg, cell["name"])
         for name, fragment in (("demo_xor2_1", "too short for a contact"),
-                               ("demo_mux2_1", "notches over columns"),
+                               ("demo_mux2_1", "an opening of 550 nm in nwell"),
                                ("demo_a21oi_1", "too short for a contact")):
             cell = next(c for c in design["cells"] if c["name"] == name)
             cfg = copy.deepcopy(CFG)
@@ -865,11 +865,15 @@ class DrivenGateRoute(unittest.TestCase):
             self.assertIn("Y_i", str(e))
             self.assertIn("riser", str(e))
             return
-        boxes, roots = m1_components(S)
-        lx, ly = next((x, y) for lay, x, y, t in S.labels if lay == "metal1_label" and t == "Y_i")
-        root = next(roots[i] for i, b in enumerate(boxes) if b[0] <= lx <= b[2] and b[1] <= ly <= b[3])
-        members = [b for i, b in enumerate(boxes) if roots[i] == root]
-        self.assertGreater(len(members), 1, "Y_i's gate pad is an island, not tied to its driver")
+        # Read the drawn conductor, not its rectangle count: Y_i's component
+        # must carry the second stage's gate contact AND drain contacts in
+        # both strips, or the gate is an island however many boxes it has.
+        comp, conts = self.route(S, "Y_i")
+        self.assertTrue(any(self.on_poly(S, c) for c in conts), "no gate contact on the Y_i route")
+        mid = cfg["layout"]["row_height_nm"] // 2
+        diffs = [c for c in conts if not self.on_poly(S, c)]
+        self.assertTrue(any((c[2] + c[4]) // 2 < mid for c in diffs), "Y_i does not reach the NMOS strip")
+        self.assertTrue(any((c[2] + c[4]) // 2 > mid for c in diffs), "Y_i does not reach the PMOS strip")
 
 
 def notch_layers(cfg=CFG):
