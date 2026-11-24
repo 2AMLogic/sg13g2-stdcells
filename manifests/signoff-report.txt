@@ -6,9 +6,9 @@ tier: none
 T1: 15/22 items met, 1 not_applicable
 
 [MET  ] T1 #1 [analog] Design sources
-        cite: manifests/envelopes/item1.analog.attest.json (kind=generic, status=pass, content_hash=sha256:c4b2668f1e64b0b9218cfe5e84492f6826e34a5fb6b50c016567e401142d1744, exit_status=0)
+        cite: manifests/envelopes/item1.analog.attest.json (kind=generic, status=pass, content_hash=sha256:cf262b1581042b14490eb00c1df54681767f9a62e0faa02bc0740340d2be3973, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
-        bound: T1 item #1 -> 7 members (content_hash=sha256:c4b2668f1e64b0b9218cfe5e84492f6826e34a5fb6b50c016567e401142d1744)
+        bound: T1 item #1 -> 7 members (content_hash=sha256:cf262b1581042b14490eb00c1df54681767f9a62e0faa02bc0740340d2be3973)
         member design/gen_netlists.py: verified
         member layout/example_config.json: verified
         member layout/lvs/netlists/sg13g2_inv_1.spice: verified
@@ -73,7 +73,7 @@ T1: 15/22 items met, 1 not_applicable
           11 [benchmark ratio]: The energy bound compares total post-synthesis energy over one fixed seeded vector set at TT, using the same clock period and power tool for both libraries.
           12 [benchmark ratio]: The period bound compares worst input-to-output path delays at each specified corner using the same virtual clock and I/O constraints for both post-synthesis netlists.
 [UNMET] T1 #7 [analog] Post-layout verification
-        reason: no_evidence
+        reason: check_failed
 [UNMET] T1 #7 [digital] Post-layout verification
         reason: no_evidence
 [MET  ] T1 #8 [analog] Characterization report
@@ -82,9 +82,9 @@ T1: 15/22 items met, 1 not_applicable
 [UNMET] T1 #8 [digital] Characterization report
         reason: no_evidence
 [MET  ] T1 #9 [analog] Testbenches shipped
-        cite: manifests/envelopes/item9.analog.attest.json (kind=generic, status=pass, content_hash=sha256:1a89872f56b9596661105b45ad834a37d8ae235a1cc68966e4a3b9389d32f81d, exit_status=0)
+        cite: manifests/envelopes/item9.analog.attest.json (kind=generic, status=pass, content_hash=sha256:30956f0a6ba66e1d24be8e3c56cf686389413918a9ac6863a6d7860804b82974, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
-        bound: T1 item #9 -> manifests/inventories/item9.analog.json (content_hash=sha256:1a89872f56b9596661105b45ad834a37d8ae235a1cc68966e4a3b9389d32f81d)
+        bound: T1 item #9 -> manifests/inventories/item9.analog.json (content_hash=sha256:30956f0a6ba66e1d24be8e3c56cf686389413918a9ac6863a6d7860804b82974)
 [MET  ] T1 #9 [digital] Testbenches shipped
         cite: manifests/envelopes/item9.digital.attest.json (kind=generic, status=pass, content_hash=sha256:4bd2c9878210e148c0e5d5ee31f893de1a0c92ab230afc5908ead1cb34004f85, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
@@ -871,5 +871,5 @@ spec rows (1):
         from: sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.timing.report.json (B_s0p4_l0p1_in_slew_rise)
         from: sim/item5/records/20261121-135717-f5cb68a/sg13g2_nand2_1.timing.report.json (B_s0p4_l0p1_in_slew_fall)
 
-source: docs/design-evidence-tiers.md (content_hash=sha256:2bc576233450be5e650805a4e5fda8567b7c6120dee5aff3fb8732d5f7a1b4f6)
-build: klt 0.9.3.dev4224+gcc049d4d9637
+source: docs/design-evidence-tiers.md (content_hash=sha256:2bcc48dde882d2310d5e5cc9a69acc4c1f942425a7e152f87640fc347b4b65a0)
+build: klt 0.9.3.dev4954+g093d4f7a60a9

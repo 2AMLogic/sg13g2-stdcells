@@ -128,6 +128,24 @@
           "9"
         ]
       }
+    ],
+    "7.analog": [
+      {
+        "file": "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_1.pex.report.json",
+        "content_hash": "sha256:e5942af435743be27558fe427f8990c28d376d20ae7b86f13263e701e805f217"
+      },
+      {
+        "file": "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_2.pex.report.json",
+        "content_hash": "sha256:73f8d732af84184311bd628d3c4645ba01a2c670f8c617dbbd35bcd6d3510b85"
+      },
+      {
+        "file": "sim/item7/records/20261124-051500-67f6c15/sg13g2_inv_4.pex.report.json",
+        "content_hash": "sha256:9ef5817bbba510eab7091681449a5b6bf1e4df852a4d65a85f2265bdd03bd448"
+      },
+      {
+        "file": "sim/item7/records/20261124-051500-67f6c15/sg13g2_nand2_1.pex.report.json",
+        "content_hash": "sha256:12f02067276b8d3c9d583ceaf18c7b76e1e459371aa28256cd85dd01796d5868"
+      }
     ]
   },
   "spec_rows": {
