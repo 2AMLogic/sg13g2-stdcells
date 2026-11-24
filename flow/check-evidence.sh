@@ -55,11 +55,15 @@ if [ "$nargs" -eq 6 ]; then
     # clocked (timing_status=="constrained" only says at least one path was
     # timed; an unavailable sub-check reports count:null, so status is checked
     # alongside count), non-negative setup slack, and null (no hold path) or
-    # non-negative hold slack. An empty corner list proves nothing.
+    # non-negative hold slack. An empty corner list proves nothing, and a
+    # present `corners` must itself be an array (null or an object fails; the
+    # flat form is read only when the key is absent). The envelope must also
+    # report status ok on routed geometry (issue #190).
     jq -e '
-      (.geometry_source|type=="string") and (has("corners") or has("timing_status"))
-      and ((.corners // [.]) as $c
-        | ($c|length)>=1
+      .status=="ok" and .geometry_source=="routed"
+      and (has("corners") or has("timing_status"))
+      and ((if has("corners") then .corners else [.] end) as $c
+        | ($c|type)=="array" and ($c|length)>=1
         and all($c[];
             .timing_status=="constrained"
             and (.constraint_completeness|type=="object")
@@ -73,7 +77,7 @@ if [ "$nargs" -eq 6 ]; then
             and (.worst_hold_slack_ns==null
                  or ((.worst_hold_slack_ns|type=="number") and .worst_hold_slack_ns>=0))))
     ' "$sta" >/dev/null \
-      || bad "gate 4: STA is not constrained with complete constraint_completeness and non-negative slack at every corner ($sta)"
+      || bad "gate 4: STA is not an ok, routed, constrained run with complete constraint_completeness and non-negative slack at every corner ($sta)"
   else
     bad "STA report missing or unreadable: ${sta:-<empty>}"
   fi

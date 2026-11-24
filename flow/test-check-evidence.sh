@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Edge tests for check-evidence.sh (issues #9, #175 and #247). Runs one real klt
-# place-and-route on a copy of request-par.json with `power` deleted, then
-# asserts the check rejects it while still seeing status ok / stage route.
+# Edge tests for check-evidence.sh (issues #9, #175, #190 and #247). Runs one
+# real klt place-and-route on a copy of request-par.json with `power` deleted,
+# then asserts the check rejects it while still seeing status ok / stage route.
 # Then exercises the STA / functional-verification gates: a passing pair is
-# accepted, and each bad envelope alone -- an unconstrained corner, incomplete
-# or unavailable constraint_completeness, negative setup slack, negative hold
-# slack, an empty corner list, a failing FV status, a partial pair, an
-# unreadable report -- is rejected.
+# accepted, and each bad envelope alone -- a non-ok status, non-routed
+# geometry, a `corners` value that is not an array, an unconstrained corner,
+# incomplete or unavailable constraint_completeness, negative setup slack,
+# negative hold slack, an empty corner list, a failing FV status, a partial
+# pair, an unreadable report -- is rejected.
 # Needs a completed flow/run.sh (flow/build/{add8_synth.v,par.out.json,
 # lvs.out.json,erc.json,sta.json,fv.json}). Single local run, no grids.
 set -euo pipefail
@@ -45,6 +46,16 @@ jq '(.corners[0]).worst_hold_slack_ns=-0.001' build/sta.json > "$t/sta-neghold.j
 reject "$t/sta-neghold.json" build/fv.json "negative hold slack"
 jq '.corners=[]' build/sta.json > "$t/sta-nocorners.json"
 reject "$t/sta-nocorners.json" build/fv.json "an empty corner list"
+jq '.status="error"' build/sta.json > "$t/sta-status.json"
+reject "$t/sta-status.json" build/fv.json "an STA envelope with status error"
+jq '.geometry_source="synthesized"' build/sta.json > "$t/sta-geom.json"
+reject "$t/sta-geom.json" build/fv.json "non-routed STA geometry"
+jq '.corners|=(map({key:(.corner),value:.})|from_entries)' build/sta.json > "$t/sta-objcorners.json"
+reject "$t/sta-objcorners.json" build/fv.json "a corners object in place of an array"
+jq '.corners=null' build/sta.json > "$t/sta-nullcorners.json"
+reject "$t/sta-nullcorners.json" build/fv.json "a null corners field"
+jq '. + .corners[0] | del(.corner) | .corners=null' build/sta.json > "$t/sta-flat-nullcorners.json"
+reject "$t/sta-flat-nullcorners.json" build/fv.json "a null corners field alongside passing top-level timing fields"
 jq '.status="fail"' build/fv.json > "$t/fv-fail.json"
 reject build/sta.json "$t/fv-fail.json" "a failing functional-verification run"
 reject "" build/fv.json "a partial pair (no STA report)"
