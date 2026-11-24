@@ -29,8 +29,11 @@
     ],
     "4.digital": "flow/records/20261104-df96543/lvs.json",
     "5.digital": [
-      "flow/records/20261121-be3a384/sta.json",
-      "flow/records/20261121-be3a384/functional-verification.json"
+      {
+        "file": "flow/records/20261124-32b1130/sta.json",
+        "content_hash": "sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68"
+      },
+      "flow/records/20261124-32b1130/functional-verification.json"
     ],
     "6.digital": {
       "not_applicable": {

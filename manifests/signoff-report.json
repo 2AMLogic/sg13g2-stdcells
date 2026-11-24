@@ -9111,15 +9111,15 @@
     "supply_spec_incomplete": 1
   },
   "source_doc": "docs/design-evidence-tiers.md",
-  "source_doc_content_hash": "sha256:2bcc48dde882d2310d5e5cc9a69acc4c1f942425a7e152f87640fc347b4b65a0",
+  "source_doc_content_hash": "sha256:589f39656b16d78d72504caff9088eddeed49136e2513d074cae1bc95e53837c",
   "build": {
-    "version": "0.9.3.dev4954+g093d4f7a60a9",
-    "package_version": "0.9.3.dev4954+g093d4f7a60a9",
-    "git_commit": "093d4f7a60a9387eb67ba6423571f0a4ebb4fe59",
+    "version": "0.9.3.dev5253+gdb1e2f17146d",
+    "package_version": "0.9.3.dev5253+gdb1e2f17146d",
+    "git_commit": "db1e2f17146dc834ec4aab351ef9ffd8c716d36c",
     "git_tag": null,
     "dirty": false,
     "is_release": false,
-    "grading_ruleset_id": "sha256:8194be0a337f5a8f31683f44ec037a732557d67a2cadc107682de568f0f23c91"
+    "grading_ruleset_id": "sha256:655754996ac9a0b1ae2b9aada74f7e036ace96f55af1e3a9a204d97a3370b6fc"
   },
   "items": [
     {
@@ -9625,7 +9625,7 @@
       "title": "Full corner verification vs a ratified spec",
       "partition": "analog",
       "partition_boundary": "transistor-level cells (sg13g2_inv_1, sg13g2_inv_2, sg13g2_inv_4, sg13g2_nand2_1): SPICE characterization, klt sim corner evidence and layout DRC/LVS",
-      "text": "PVT corner-matrix simulation results covering every spec row at its bound corners, with per-row pass/fail and the binding corner recorded. A spec needing several testbenches cites several `klt sim` envelopes, optionally naming the rows each covers and declaring the full row set; the item is met only when every cited envelope passes and every declared row is covered, and rows no envelope can express are declared gaps that keep it unmet. A row defined by an analytical/linear-model run may instead cite a committed `model-run` envelope (same per-row, limits-bearing coverage rule; `klt` does not execute the model).",
+      "text": "PVT corner-matrix simulation results covering every spec row at its bound corners, with per-row pass/fail and the binding corner recorded. A spec needing several testbenches cites several `klt sim` envelopes, optionally naming the rows each covers and declaring the full row set; the item is met only when every cited envelope passes and every declared row is covered, and rows no envelope can express are declared gaps that keep it unmet. A row defined by an analytical/linear-model run may instead cite a committed `model-run` envelope (same per-row coverage rule: a passing measurement with a recognised, non-null `min`/`max` bound; `klt` does not execute the model).",
       "notes": [
         "Both require the spec table itself to be ratified \u2014 verdicts against a draft spec are provisional by construction."
       ],
@@ -9821,24 +9821,27 @@
       "reason": null,
       "graded_by_build": true,
       "citation": {
-        "file": "flow/records/20261121-be3a384/sta.json",
+        "file": "flow/records/20261124-32b1130/sta.json",
         "command": null,
         "kind": "sta",
         "check_status": "ok",
         "content_hash": "sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68",
-        "input_verified": null,
-        "exit_status": 0
+        "input_verified": true,
+        "exit_status": 0,
+        "detail": {
+          "geometry_source": "routed"
+        }
       },
       "citations_graded": [
         {
-          "citation": "flow/records/20261121-be3a384/sta.json",
+          "citation": "flow/records/20261124-32b1130/sta.json",
           "status": "met",
           "reason": null,
           "content_hash": "sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68",
-          "input_verified": null
+          "input_verified": true
         },
         {
-          "citation": "flow/records/20261121-be3a384/functional-verification.json",
+          "citation": "flow/records/20261124-32b1130/functional-verification.json",
           "status": "met",
           "reason": null,
           "content_hash": "sha256:634aa17455f198c207f1e8a6492fdb601dfba8c54016f4905e9ea6131a53e139",
@@ -9847,16 +9850,19 @@
       ],
       "citations": [
         {
-          "file": "flow/records/20261121-be3a384/sta.json",
+          "file": "flow/records/20261124-32b1130/sta.json",
           "command": null,
           "kind": "sta",
           "check_status": "ok",
           "content_hash": "sha256:3c692108ddda21013a3e4c69cc219b41516a7367c000a79601f2825de7d7aa68",
-          "input_verified": null,
-          "exit_status": 0
+          "input_verified": true,
+          "exit_status": 0,
+          "detail": {
+            "geometry_source": "routed"
+          }
         },
         {
-          "file": "flow/records/20261121-be3a384/functional-verification.json",
+          "file": "flow/records/20261124-32b1130/functional-verification.json",
           "command": null,
           "kind": "functional-verification",
           "check_status": "pass",
