@@ -21,6 +21,7 @@ _None._
 `loom:important`; taken before unlabelled work.
 
 - **#171**: layout: gen_layouts.py cannot join two nets in the Metal1 channel of a 3.36 um / 0.42 um-pitch row (buf, folded nand2/nor2, and2)
+- **#173**: T1 item 11 digital: declare well/substrate ties in flow/erc-spec.json, re-run the flow and re-cite
 - **#256**: layout: place a buffer's output-stage input pad on a 3360 nm row at 420 nm pitch
 
 ## Ready
@@ -38,7 +39,6 @@ Issues currently being built (`loom:building`).
 - **#69**: Write characterization records in one shape: drop the first-cell copy and per-cell run-level repeats in sim/characterize/runner.py
 - **#170**: layout: gen_layouts.py refuses a cell when the complementary device's width does not divide by the larger finger count on the width grid
 - **#182**: T1 item 6 analog: propose a statistical spec row for the cells (decision record 0003) backed by a pilot klt yield campaign
-- **#202**: Remove leaking workdir=None mkdtemp fallback in sim/characterize/runner.py:run_klt and pass tmp_path from test_runner_batch_flags.py
 - **#215**: Parse the Liberty evidence record once per freshness check
 - **#223**: Share klt_version and BATCH_CAPACITY_WAIT_S between the item5 and characterize runners
 
@@ -61,7 +61,6 @@ Issues carrying `loom:curated`.
 
 - **#3**: Gap-to-T1 tracker: sg13g2-stdcells artifact-presence survey *(curated)*
 - **#59**: Collapse sim/harness/evidence.py to the one record kind in use and drop stale DRAFT corner markers *(curated)*
-- **#62**: Remove two unused layout toolchain fields and append a correction to the bootstrap note *(curated)*
 - **#69**: Write characterization records in one shape: drop the first-cell copy and per-cell run-level repeats in sim/characterize/runner.py *(curated)*
 - **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count *(curated)*
 - **#170**: layout: gen_layouts.py refuses a cell when the complementary device's width does not divide by the larger finger count on the width grid *(curated)*
@@ -69,12 +68,11 @@ Issues carrying `loom:curated`.
 - **#177**: T1 item 8 digital: aggregate the add8 baseline delay, area and power into one attested characterization report (rows 10-12 declared unmeasured) *(curated)*
 - **#178**: T1 item 9 analog: attest the cell characterization testbench with a cold-start command and a recorded, pinned PDK revision *(curated)*
 - **#182**: T1 item 6 analog: propose a statistical spec row for the cells (decision record 0003) backed by a pilot klt yield campaign *(curated)*
-- **#202**: Remove leaking workdir=None mkdtemp fallback in sim/characterize/runner.py:run_klt and pass tmp_path from test_runner_batch_flags.py *(curated)*
 - **#256**: layout: place a buffer's output-stage input pad on a 3360 nm row at 420 nm pitch *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-- **#62**: Remove two unused layout toolchain fields and append a correction to the bootstrap note *(hermit)*
+- **#282**: Remove unused extra/notes slot from sim/harness/evidence.py (logged as done in #111, still present) *(hermit)*
 
 ## Epics
 
@@ -86,12 +84,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 2 |
 | Very important | 0 |
-| Important | 2 |
+| Important | 3 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 2 |
-| In Progress (`loom:building`) | 7 |
+| In Progress (`loom:building`) | 6 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 2 |
-| Curated | 12 |
+| Curated | 10 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
