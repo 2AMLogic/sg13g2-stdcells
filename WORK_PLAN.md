@@ -14,7 +14,7 @@ Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a h
 
 `loom:very-important` (one counts per workspace); every stage takes these first.
 
-- **#177**: T1 item 8 digital: aggregate the add8 baseline delay, area and power into one attested characterization report (rows 10-12 declared unmeasured)
+_None._
 
 ## Important
 
@@ -38,17 +38,16 @@ Issues currently being built (`loom:building`).
 - **#59**: Collapse sim/harness/evidence.py to the one record kind in use and drop stale DRAFT corner markers
 - **#69**: Write characterization records in one shape: drop the first-cell copy and per-cell run-level repeats in sim/characterize/runner.py
 - **#170**: layout: gen_layouts.py refuses a cell when the complementary device's width does not divide by the larger finger count on the width grid
-- **#177**: T1 item 8 digital: aggregate the add8 baseline delay, area and power into one attested characterization report (rows 10-12 declared unmeasured)
 - **#182**: T1 item 6 analog: propose a statistical spec row for the cells (decision record 0003) backed by a pilot klt yield campaign
 - **#215**: Parse the Liberty evidence record once per freshness check
 - **#223**: Share klt_version and BATCH_CAPACITY_WAIT_S between the item5 and characterize runners
-- **#290**: Reuse item 5 measurement targets when grading simulation reports
+- **#292**: Share manifest evidence wrapper and single-envelope setup in manifests/tests/test_check_attestations.py
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#287**: feat: attest the add8 stock-library characterization across three corners
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -56,7 +55,7 @@ PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#121**: docs(spec): add decision record on attestation pin granularity (0002)
 - **#205**: spec: add proposed statistical delay row 0003-R1 with pilot klt yield mismatch campaign
-- **#291**: refactor(sim): grade item 5 reports with targets from each request
+- **#294**: Share manifest evidence wrapper and single-envelope setup in manifests/tests/test_check_attestations.py
 
 ## Proposed
 
@@ -68,7 +67,6 @@ Issues carrying `loom:curated`.
 - **#110**: T1 item 10's hygiene envelope pins high-churn files, so every merge of main silently overstates the signoff count *(curated)*
 - **#170**: layout: gen_layouts.py refuses a cell when the complementary device's width does not divide by the larger finger count on the width grid *(curated)*
 - **#171**: layout: gen_layouts.py cannot join two nets in the Metal1 channel of a 3.36 um / 0.42 um-pitch row (buf, folded nand2/nor2, and2) *(curated)*
-- **#177**: T1 item 8 digital: aggregate the add8 baseline delay, area and power into one attested characterization report (rows 10-12 declared unmeasured) *(curated)*
 - **#178**: T1 item 9 analog: attest the cell characterization testbench with a cold-start command and a recorded, pinned PDK revision *(curated)*
 - **#182**: T1 item 6 analog: propose a statistical spec row for the cells (decision record 0003) backed by a pilot klt yield campaign *(curated)*
 - **#256**: layout: place a buffer's output-stage input pad on a 3360 nm row at 420 nm pitch *(curated)*
@@ -77,7 +75,6 @@ Issues carrying `loom:curated`.
 
 - **#282**: Remove unused extra/notes slot from sim/harness/evidence.py (logged as done in #111, still present) *(hermit)*
 - **#285**: Drop unread finger ordinals and diffusion chain numbers from layout placement *(hermit)*
-- **#292**: Share manifest evidence wrapper and single-envelope setup in manifests/tests/test_check_attestations.py *(hermit)*
 
 ## Epics
 
@@ -88,13 +85,13 @@ _None._
 | Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 2 |
-| Very important | 1 |
+| Very important | 0 |
 | Important | 3 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 2 |
-| In Progress (`loom:building`) | 8 |
-| PRs awaiting review | 1 |
+| In Progress (`loom:building`) | 7 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 3 |
-| Curated | 10 |
-| Architect / Hermit proposals | 3 |
+| Curated | 9 |
+| Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

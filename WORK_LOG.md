@@ -4,6 +4,8 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-26
 
+- **PR #287**: feat: attest the add8 stock-library characterization across three corners
+- **Issue #177** (closed): T1 item 8 digital: aggregate the add8 baseline delay, area and power into one attested characterization report (rows 10-12 declared unmeasured)
 - **PR #296**: refactor(sim): dedupe fixture-mutation helpers in test_check_library
 - **Issue #295** (closed): Share record-header, sidecar, and text-replace helpers in sim/tests/test_check_library.py
 - **PR #291**: refactor(sim): grade item 5 reports with targets from each request
