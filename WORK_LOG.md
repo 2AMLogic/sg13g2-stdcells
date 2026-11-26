@@ -4,6 +4,10 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-26
 
+- **PR #296**: refactor(sim): dedupe fixture-mutation helpers in test_check_library
+- **Issue #295** (closed): Share record-header, sidecar, and text-replace helpers in sim/tests/test_check_library.py
+- **PR #291**: refactor(sim): grade item 5 reports with targets from each request
+- **Issue #290** (closed): Reuse item 5 measurement targets when grading simulation reports
 - **PR #289**: ci: delegate evidence-sta-fv-reject to the shared flow edge suite
 - **Issue #288** (closed): Share STA/FV jq mutation suite between check-ci.sh and flow/test-check-evidence.sh
 
