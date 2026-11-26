@@ -14,7 +14,7 @@ Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a h
 
 `loom:very-important` (one counts per workspace); every stage takes these first.
 
-_None._
+- **#177**: T1 item 8 digital: aggregate the add8 baseline delay, area and power into one attested characterization report (rows 10-12 declared unmeasured)
 
 ## Important
 
@@ -38,15 +38,17 @@ Issues currently being built (`loom:building`).
 - **#59**: Collapse sim/harness/evidence.py to the one record kind in use and drop stale DRAFT corner markers
 - **#69**: Write characterization records in one shape: drop the first-cell copy and per-cell run-level repeats in sim/characterize/runner.py
 - **#170**: layout: gen_layouts.py refuses a cell when the complementary device's width does not divide by the larger finger count on the width grid
+- **#177**: T1 item 8 digital: aggregate the add8 baseline delay, area and power into one attested characterization report (rows 10-12 declared unmeasured)
 - **#182**: T1 item 6 analog: propose a statistical spec row for the cells (decision record 0003) backed by a pilot klt yield campaign
 - **#215**: Parse the Liberty evidence record once per freshness check
 - **#223**: Share klt_version and BATCH_CAPACITY_WAIT_S between the item5 and characterize runners
+- **#290**: Reuse item 5 measurement targets when grading simulation reports
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#287**: feat: attest the add8 stock-library characterization across three corners
 
 ## Approved (Awaiting Merge)
 
@@ -54,6 +56,7 @@ PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#121**: docs(spec): add decision record on attestation pin granularity (0002)
 - **#205**: spec: add proposed statistical delay row 0003-R1 with pilot klt yield mismatch campaign
+- **#291**: refactor(sim): grade item 5 reports with targets from each request
 
 ## Proposed
 
@@ -73,6 +76,8 @@ Issues carrying `loom:curated`.
 ## Proposed (Architect / Hermit)
 
 - **#282**: Remove unused extra/notes slot from sim/harness/evidence.py (logged as done in #111, still present) *(hermit)*
+- **#285**: Drop unread finger ordinals and diffusion chain numbers from layout placement *(hermit)*
+- **#292**: Share manifest evidence wrapper and single-envelope setup in manifests/tests/test_check_attestations.py *(hermit)*
 
 ## Epics
 
@@ -83,13 +88,13 @@ _None._
 | Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 2 |
-| Very important | 0 |
+| Very important | 1 |
 | Important | 3 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 2 |
-| In Progress (`loom:building`) | 6 |
-| PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 2 |
+| In Progress (`loom:building`) | 8 |
+| PRs awaiting review | 1 |
+| Approved PRs awaiting merge | 3 |
 | Curated | 10 |
-| Architect / Hermit proposals | 1 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

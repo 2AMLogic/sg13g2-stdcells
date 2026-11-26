@@ -2,6 +2,11 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-26
+
+- **PR #289**: ci: delegate evidence-sta-fv-reject to the shared flow edge suite
+- **Issue #288** (closed): Share STA/FV jq mutation suite between check-ci.sh and flow/test-check-evidence.sh
+
 ### 2026-11-24
 
 - **PR #281**: chore(layout): drop unread pin fields, append correction paragraph
