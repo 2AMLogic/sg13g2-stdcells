@@ -4,6 +4,8 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-26
 
+- **PR #300**: fix(sim): assemble item 5 requests once and reject an off-corner rail
+- **Issue #299** (closed): Share the item 5 transient request builder and check its stimulus voltage against TT
 - **PR #287**: feat: attest the add8 stock-library characterization across three corners
 - **Issue #177** (closed): T1 item 8 digital: aggregate the add8 baseline delay, area and power into one attested characterization report (rows 10-12 declared unmeasured)
 - **PR #296**: refactor(sim): dedupe fixture-mutation helpers in test_check_library
