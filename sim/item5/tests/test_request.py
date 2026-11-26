@@ -8,6 +8,7 @@ from committed sources, so the tests pin that derivation against the real
 tree, not a mock.
 """
 
+import dataclasses
 import json
 from pathlib import Path
 
@@ -19,6 +20,7 @@ from sim.item5.request import (
     RAIL_TOLERANCE_V,
     SPEC_ROW,
     TIMING_TOLERANCE,
+    RequestError,
     arcs_for,
     build_function_netlist,
     build_function_request,
@@ -36,6 +38,9 @@ CONFIG = REPO_ROOT / "layout" / "example_config.json"
 VIEW = REPO_ROOT / "views" / "sg13g2_stdcells_tt_1p20v_25c.lib"
 NETLISTS = REPO_ROOT / "layout" / "lvs" / "netlists"
 VIEW_TEXT = VIEW.read_text()
+RECORD = REPO_ROOT / "sim" / "item5" / "records" / "20261121-135717-f5cb68a"
+RECORD_PDK_DIR = "/home/ubuntu/share/pdk/ihp-sg13g2"
+OFF_CORNER_RAIL_V = 1.0
 
 INV1 = CellSpec("sg13g2_inv_1", inputs=("A",), outputs={"Y": "!A"},
                 netlist=str(NETLISTS / "sg13g2_inv_1.spice"))
@@ -275,3 +280,51 @@ def test_timing_targets_and_limits_match_the_committed_view(view):
                 want = view.expected(cell.name, arc, quantity, i, j) * view.time_unit_scale
             assert targets[m["name"]] == want
             assert m["limits"]["min"] < want < m["limits"]["max"], (m["name"], want)
+
+
+@pytest.mark.parametrize("builder", [build_timing_request, build_timing_request_with_targets])
+def test_timing_request_stimulus_off_corner_rejected(view, builder):
+    off_corner = dataclasses.replace(view, voltage=OFF_CORNER_RAIL_V)
+    with pytest.raises(RequestError, match=(
+        r"sg13g2_inv_1\.timing\.spice: stimulus rail 1\.0 V disagrees with"
+        r" the TT corner supply 1\.2 V"
+    )):
+        builder(INV1, arcs_for(INV1), off_corner, "/pdk")
+
+
+@pytest.mark.parametrize("builder", [build_function_request, build_function_request_with_targets])
+def test_function_request_stimulus_off_corner_rejected(builder):
+    with pytest.raises(RequestError, match=(
+        r"sg13g2_inv_1\.function\.spice: stimulus rail 1\.0 V disagrees with"
+        r" the TT corner supply 1\.2 V"
+    )):
+        builder(INV1, "/pdk", OFF_CORNER_RAIL_V)
+
+
+def test_function_request_corner_is_row9_target():
+    supply = json.loads(CONFIG.read_text())["process"]["supply_v"]
+    req = build_function_request(INV1, "/pdk", supply)
+    process, supply_v, temperature_c = CHAR_CORNER_PVT["tt"]
+    assert req["corners"] == {"process": [process],
+                              "supply_v": {"Vdd": [supply_v]},
+                              "temperature_c": [temperature_c]}
+    assert req["netlist"] == "sg13g2_inv_1.function.spice"
+    assert req["analysis"]["kind"] == "tran"
+
+
+@pytest.mark.parametrize("kind", ["function", "timing"])
+def test_requests_re_derive_the_committed_record(view, cells, kind):
+    """Every committed request document is the builder's output, byte for byte
+    (``RECORD_PDK_DIR`` is the PDK root it was built with, and ``runner.run_all``
+    serialises with ``json.dumps(request, indent=2)``): netlist name, corner,
+    models, analysis with its transient stop time, and every measurement in
+    order."""
+    supply = json.loads(CONFIG.read_text())["process"]["supply_v"]
+    for cell in cells:
+        if kind == "timing":
+            request, _ = build_timing_request_with_targets(
+                cell, arcs_for(cell), view, RECORD_PDK_DIR)
+        else:
+            request, _ = build_function_request_with_targets(cell, RECORD_PDK_DIR, supply)
+        committed = (RECORD / f"{cell.name}.{kind}.request.json").read_text()
+        assert json.dumps(request, indent=2) + "\n" == committed, f"{cell.name}.{kind}"
