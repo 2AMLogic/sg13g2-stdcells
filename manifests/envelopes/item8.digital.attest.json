@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 8,
+  "summary": "T1 item 8 (Characterization report): 23/23 attestation checks passed (klt signoff --attest)",
+  "source": "manifests/inventories/item8.digital.json",
+  "attestation": {
+    "producer": "klt signoff --attest",
+    "inventory_schema_version": 1,
+    "hash_algorithm": "sha256-raw-bytes",
+    "check_count": 23,
+    "passed_count": 23,
+    "checks": [
+      {
+        "check": "present",
+        "role": "report",
+        "path": "flow/records/20261123-item8-digital/REPORT.md",
+        "passed": true,
+        "content_hash": "sha256:c46003a8f3d7e225703c20a955027307876571405f2ca2db209c927c0e3ee4af"
+      },
+      {
+        "check": "present",
+        "role": "evidence",
+        "path": "flow/records/20261104-df96543/synthesize.json",
+        "passed": true,
+        "content_hash": "sha256:53d40d63e19da88f8a3f4460923eb4f15926fc2861ae4bec84f66fc26d476c41"
+      },
+      {
+        "check": "present",
+        "role": "evidence",
+        "path": "flow/records/20261121-be3a384/place-and-route.json",
+        "passed": true,
+        "content_hash": "sha256:6368328d1463276702e0056e6653bc258ad84f446c69eccf928b5b493a680524"
+      },
+      {
+        "check": "present",
+        "role": "evidence",
+        "path": "flow/records/20261121-be3a384/sta.json",
+        "passed": true,
+        "content_hash": "sha256:24ff12dec65b4c483fad6fd0905a5640b8154eb7f72a77b319b67f6e4829aa12"
+      },
+      {
+        "check": "envelope",
+        "role": "evidence",
+        "path": "flow/records/20261104-df96543/synthesize.json",
+        "kind": "synthesize",
+        "passed": true
+      },
+      {
+        "check": "envelope",
+        "role": "evidence",
+        "path": "flow/records/20261121-be3a384/place-and-route.json",
+        "kind": "place-and-route",
+        "passed": true
+      },
+      {
+        "check": "envelope",
+        "role": "evidence",
+        "path": "flow/records/20261121-be3a384/sta.json",
+        "kind": "sta",
+        "passed": true
+      },
+      {
+        "check": "citation",
+        "role": "spec_row",
+        "row": "benchmark-basis-1-pdk-shipped-liberty",
+        "envelopes": [
+          "flow/records/20261104-df96543/synthesize.json",
+          "flow/records/20261121-be3a384/place-and-route.json",
+          "flow/records/20261121-be3a384/sta.json"
+        ],
+        "passed": true
+      },
+      {
+        "check": "uncited_row",
+        "role": "row",
+        "row": "spec-row-10-benchmark-cell-area",
+        "issue": 286,
+        "passed": true
+      },
+      {
+        "check": "uncited_row",
+        "role": "row",
+        "row": "spec-row-11-benchmark-energy",
+        "issue": 286,
+        "passed": true
+      },
+      {
+        "check": "uncited_row",
+        "role": "row",
+        "row": "spec-row-12-benchmark-clock-period",
+        "issue": 286,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "flow/records/20261104-df96543/synthesize.json",
+        "argv": [
+          "python3",
+          "manifests/check_item8_digital_report.py"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "flow/records/20261121-be3a384/place-and-route.json",
+        "argv": [
+          "python3",
+          "manifests/check_item8_digital_report.py"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "command",
+        "role": "freshness",
+        "target": "flow/records/20261121-be3a384/sta.json",
+        "argv": [
+          "python3",
+          "manifests/check_item8_digital_report.py"
+        ],
+        "cwd": ".",
+        "exit_status": 0,
+        "passed": true
+      },
+      {
+        "check": "metric",
+        "role": "digital",
+        "corner": "fast_1p32V_m40C",
+        "metric": "area",
+        "envelope": "flow/records/20261104-df96543/synthesize.json",
+        "field": "area_um2",
+        "value": 411.8688,
+        "passed": true
+      },
+      {
+        "check": "metric",
+        "role": "digital",
+        "corner": "fast_1p32V_m40C",
+        "metric": "fmax",
+        "envelope": "flow/records/20261121-be3a384/sta.json",
+        "field": "corners.1.fmax_mhz",
+        "value": 212.095,
+        "passed": true
+      },
+      {
+        "check": "metric",
+        "role": "digital",
+        "corner": "fast_1p32V_m40C",
+        "metric": "power",
+        "envelope": "flow/records/20261121-be3a384/sta.json",
+        "field": "corners.1.estimated_power_mw",
+        "value": 0.008,
+        "passed": true
+      },
+      {
+        "check": "metric",
+        "role": "digital",
+        "corner": "slow_1p08V_125C",
+        "metric": "area",
+        "envelope": "flow/records/20261104-df96543/synthesize.json",
+        "field": "area_um2",
+        "value": 411.8688,
+        "passed": true
+      },
+      {
+        "check": "metric",
+        "role": "digital",
+        "corner": "slow_1p08V_125C",
+        "metric": "fmax",
+        "envelope": "flow/records/20261121-be3a384/sta.json",
+        "field": "corners.2.fmax_mhz",
+        "value": 175.583,
+        "passed": true
+      },
+      {
+        "check": "metric",
+        "role": "digital",
+        "corner": "slow_1p08V_125C",
+        "metric": "power",
+        "envelope": "flow/records/20261121-be3a384/sta.json",
+        "field": "corners.2.estimated_power_mw",
+        "value": 0.005,
+        "passed": true
+      },
+      {
+        "check": "metric",
+        "role": "digital",
+        "corner": "typ_1p20V_25C",
+        "metric": "area",
+        "envelope": "flow/records/20261104-df96543/synthesize.json",
+        "field": "area_um2",
+        "value": 411.8688,
+        "passed": true
+      },
+      {
+        "check": "metric",
+        "role": "digital",
+        "corner": "typ_1p20V_25C",
+        "metric": "fmax",
+        "envelope": "flow/records/20261121-be3a384/sta.json",
+        "field": "corners.0.fmax_mhz",
+        "value": 196.607,
+        "passed": true
+      },
+      {
+        "check": "metric",
+        "role": "digital",
+        "corner": "typ_1p20V_25C",
+        "metric": "power",
+        "envelope": "flow/records/20261121-be3a384/sta.json",
+        "field": "corners.0.estimated_power_mw",
+        "value": 0.0063,
+        "passed": true
+      }
+    ],
+    "description": "Stock sg13g2_stdcell reference for add8 under Benchmark basis item 1 of spec/0001-target-specification.md. The baseline entry cites the PDK-shipped Liberty flow. Its fixed mapped netlist has one post-synthesis area across all STA corners. Fmax is derived from the constrained combinational path and power is an engine-default activity proxy. Spec rows 10-12 are owned and unmeasured pending the matched-library benchmarks in #286."
+  },
+  "provenance": {
+    "klt_version": "0.9.3.dev5425+gfcb95f422140",
+    "klayout_version": "0.30.14",
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "path": {
+        "path": "manifests/inventories/item8.digital.json",
+        "scope": "repo"
+      },
+      "content_hash": "sha256:08735f860f673c4d92524fbc500bdcb055a38c1a4177d9ce39bc584774329f07"
+    }
+  }
+}

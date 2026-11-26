@@ -2,12 +2,102 @@
   "schema_version": 1,
   "kind": "t1-attestation-inventory",
   "t1_item": 8,
-  "description": "Digital partition characterization report: the add8 baseline (stock sg13g2_stdcell) area, critical-path delay/Fmax and default-activity power proxy per corner, aggregated in flow/records/20261123-item8-digital/REPORT.md from committed flow records. Spec rows 10-12 are owned by this partition and UNMEASURED (they are ratios against this library's own cells, which have not been benchmarked); they carry no citation on purpose and no baseline number is cited as their result. This inventory is not attestable until 2AMLogic/klayout-tools#5856 lands a field to declare owned-but-unmeasured rows; the rows are not dropped from spec_rows to get a green attest.",
+  "description": "Stock sg13g2_stdcell reference for add8 under Benchmark basis item 1 of spec/0001-target-specification.md. The baseline entry cites the PDK-shipped Liberty flow. Its fixed mapped netlist has one post-synthesis area across all STA corners. Fmax is derived from the constrained combinational path and power is an engine-default activity proxy. Spec rows 10-12 are owned and unmeasured pending the matched-library benchmarks in #286.",
   "report": "flow/records/20261123-item8-digital/REPORT.md",
   "spec_rows": [
     "spec-row-10-benchmark-cell-area",
     "spec-row-11-benchmark-energy",
-    "spec-row-12-benchmark-clock-period"
+    "spec-row-12-benchmark-clock-period",
+    "benchmark-basis-1-pdk-shipped-liberty"
   ],
-  "citations": {}
+  "citations": {
+    "benchmark-basis-1-pdk-shipped-liberty": [
+      "flow/records/20261104-df96543/synthesize.json",
+      "flow/records/20261121-be3a384/place-and-route.json",
+      "flow/records/20261121-be3a384/sta.json"
+    ]
+  },
+  "uncited_rows": [
+    {
+      "row": "spec-row-10-benchmark-cell-area",
+      "issue": 286
+    },
+    {
+      "row": "spec-row-11-benchmark-energy",
+      "issue": 286
+    },
+    {
+      "row": "spec-row-12-benchmark-clock-period",
+      "issue": 286
+    }
+  ],
+  "envelope_checks": {
+    "flow/records/20261104-df96543/synthesize.json": {
+      "argv": [
+        "python3",
+        "manifests/check_item8_digital_report.py"
+      ]
+    },
+    "flow/records/20261121-be3a384/place-and-route.json": {
+      "argv": [
+        "python3",
+        "manifests/check_item8_digital_report.py"
+      ]
+    },
+    "flow/records/20261121-be3a384/sta.json": {
+      "argv": [
+        "python3",
+        "manifests/check_item8_digital_report.py"
+      ]
+    }
+  },
+  "corners": [
+    "typ_1p20V_25C",
+    "fast_1p32V_m40C",
+    "slow_1p08V_125C"
+  ],
+  "metrics": {
+    "typ_1p20V_25C": {
+      "area": {
+        "envelope": "flow/records/20261104-df96543/synthesize.json",
+        "field": "area_um2"
+      },
+      "fmax": {
+        "envelope": "flow/records/20261121-be3a384/sta.json",
+        "field": "corners.0.fmax_mhz"
+      },
+      "power": {
+        "envelope": "flow/records/20261121-be3a384/sta.json",
+        "field": "corners.0.estimated_power_mw"
+      }
+    },
+    "fast_1p32V_m40C": {
+      "area": {
+        "envelope": "flow/records/20261104-df96543/synthesize.json",
+        "field": "area_um2"
+      },
+      "fmax": {
+        "envelope": "flow/records/20261121-be3a384/sta.json",
+        "field": "corners.1.fmax_mhz"
+      },
+      "power": {
+        "envelope": "flow/records/20261121-be3a384/sta.json",
+        "field": "corners.1.estimated_power_mw"
+      }
+    },
+    "slow_1p08V_125C": {
+      "area": {
+        "envelope": "flow/records/20261104-df96543/synthesize.json",
+        "field": "area_um2"
+      },
+      "fmax": {
+        "envelope": "flow/records/20261121-be3a384/sta.json",
+        "field": "corners.2.fmax_mhz"
+      },
+      "power": {
+        "envelope": "flow/records/20261121-be3a384/sta.json",
+        "field": "corners.2.estimated_power_mw"
+      }
+    }
+  }
 }
