@@ -20,11 +20,15 @@ the committed Liberty view.
 Both run at the row 9 target corner — process `mos_tt`, 1.20 V supply, 25 C
 (`sim/harness/corners.py`'s `tt` pairing, the same table `klt characterize`
 uses) — with the PDK's `cornerMOSlv.lib` models and the `psp103.osdi`
-preload, exactly as `sim/characterize/` binds them. The cell under test is
-never copied: each generated testbench `.include`s the committed
-`design/gen_netlists.py` output under `layout/lvs/netlists/` (the files CI's
-`netlists` stage checks fresh), so the deck's netlist closure pins the
-generated cell's bytes (`environment.netlist_closure` in each envelope).
+preload, exactly as `sim/characterize/` binds them. Both requests are
+assembled by one shared function that reads that pairing once and refuses a
+stimulus rail that is not its supply: the function deck swings to the config's
+`supply_v`, the timing deck to the view's `nom_voltage`, and a disagreement
+raises before `klt` is ever run. The cell under test is never copied: each
+generated testbench `.include`s the committed `design/gen_netlists.py` output
+under `layout/lvs/netlists/` (the files CI's `netlists` stage checks fresh),
+so the deck's netlist closure pins the generated cell's bytes
+(`environment.netlist_closure` in each envelope).
 
 **function** — one unloaded DUT; inputs step through every input combination
 (two states for the inverters, four for the NAND), each held 3 ns after a

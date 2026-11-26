@@ -385,6 +385,37 @@ def _delay_input_edge(sense: str, table: str) -> str:
     raise RequestError(f"unknown timing sense {sense!r}")
 
 
+def _assemble_request(netlist: str, stop_s: float, measurements: list[dict],
+                      supply_v: float, pdk_dir: str | Path) -> dict:
+    """Wrap one testbench's measurements in the ``klt sim`` request document.
+
+    The corner is the row 9 TT pairing, read here and nowhere else.
+    ``supply_v`` is the rail the testbench's stimulus actually swings to (the
+    config rail for the function bench, the view's ``nom_voltage`` for the
+    timing bench) and must be that pairing's supply, or the deck would run at
+    one rail while the request -- and so the envelope's corner id -- cites
+    another.
+    """
+    from ..harness.corners import CHAR_CORNER_PVT
+
+    process, corner_supply_v, temperature_c = CHAR_CORNER_PVT["tt"]
+    if supply_v != corner_supply_v:
+        raise RequestError(
+            f"{netlist}: stimulus rail {supply_v} V disagrees with"
+            f" the TT corner supply {corner_supply_v} V"
+        )
+    pdk = Path(pdk_dir)
+    return {
+        "netlist": netlist,
+        "corners": _corner_block(process, corner_supply_v, temperature_c),
+        "models": {"lib": str(pdk / MODEL_LIB)},
+        "options": {"osdi_preload": [str(pdk / p) for p in OSDI_PRELOAD]},
+        "analysis": {"kind": "tran",
+                     "args": f"{TRAN_STEP_S:.6g} {stop_s:.6g} 0 {TRAN_STEP_S:.6g}"},
+        "measurements": measurements,
+    }
+
+
 def build_timing_request(cell: CellSpec, arcs: list[Arc], view: LibertyView,
                          pdk_dir: str | Path, spec_row: str = SPEC_ROW,
                          tol: float = TIMING_TOLERANCE) -> dict:
@@ -415,9 +446,6 @@ def build_timing_request_with_targets(
         raise RequestError(
             f"derived sense disagrees with the committed view for {cell.name} arcs {wrong}"
         )
-    from ..harness.corners import CHAR_CORNER_PVT
-
-    process, supply_v, temperature_c = CHAR_CORNER_PVT["tt"]
     supply = view.voltage
     v_delay = supply * view.delay_threshold
     v_lo, v_hi = supply * view.slew_lo, supply * view.slew_hi
@@ -467,16 +495,8 @@ def build_timing_request_with_targets(
                         f"TARG v({vin}) VAL={targ_v:.6g} {edge.upper()}=1",
                         slew_s,
                     )
-    pdk = Path(pdk_dir)
-    return {
-        "netlist": f"{cell.name}.timing.spice",
-        "corners": _corner_block(process, supply_v, temperature_c),
-        "models": {"lib": str(pdk / MODEL_LIB)},
-        "options": {"osdi_preload": [str(pdk / p) for p in OSDI_PRELOAD]},
-        "analysis": {"kind": "tran",
-                     "args": f"{TRAN_STEP_S:.6g} {TRAN_STOP_S:.6g} 0 {TRAN_STEP_S:.6g}"},
-        "measurements": measurements,
-    }, targets
+    return _assemble_request(f"{cell.name}.timing.spice", TRAN_STOP_S, measurements,
+                             supply, pdk_dir), targets
 
 
 def build_function_request(cell: CellSpec, pdk_dir: str | Path,
@@ -492,9 +512,6 @@ def build_function_request_with_targets(
     spec_row: str = SPEC_ROW, rail_tol_v: float = RAIL_TOLERANCE_V,
 ) -> tuple[dict, dict[str, float]]:
     """Build the function request and its expected output rails in volts."""
-    from ..harness.corners import CHAR_CORNER_PVT
-
-    process, corner_supply, temperature_c = CHAR_CORNER_PVT["tt"]
     asts = {pin: parse_function(func) for pin, func in cell.outputs.items()}
     states = list(product((0, 1), repeat=len(cell.inputs)))
     measurements = []
@@ -518,15 +535,6 @@ def build_function_request_with_targets(
                 "unit": "V",
                 "spec_row": spec_row,
             })
-    pdk = Path(pdk_dir)
-    return {
-        "netlist": f"{cell.name}.function.spice",
-        "corners": _corner_block(process, corner_supply, temperature_c),
-        "models": {"lib": str(pdk / MODEL_LIB)},
-        "options": {"osdi_preload": [str(pdk / p) for p in OSDI_PRELOAD]},
-        "analysis": {
-            "kind": "tran",
-            "args": f"{TRAN_STEP_S:.6g} {len(states) * STATE_S + 1e-9:.6g} 0 {TRAN_STEP_S:.6g}",
-        },
-        "measurements": measurements,
-    }, targets
+    return _assemble_request(f"{cell.name}.function.spice",
+                             len(states) * STATE_S + 1e-9, measurements,
+                             supply_v, pdk_dir), targets
