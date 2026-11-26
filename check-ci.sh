@@ -27,6 +27,7 @@
 # With no argument every stage runs, in the order above. The workflow passes a
 # stage name per step so GitHub still reports pass/fail per check.
 set -euo pipefail
+unset CDPATH
 
 cd "$(dirname "$0")"
 

@@ -19,6 +19,7 @@
 # par.out.json,lvs.out.json,erc.json,sta.json,fv.json}). Single local run, no
 # grids.
 set -euo pipefail
+unset CDPATH
 # --record DIR resolves against the invoker's cwd, before the cd "$here" below.
 record=""
 if [ "$#" -eq 2 ] && [ "$1" = "--record" ]; then
@@ -145,11 +146,10 @@ reject "$sta" "$t/fv-strcount.json" "a string-valued test_count"
 # unreadable report (rejected with INVALID EVIDENCE like any other), while
 # five arguments, empty or not, is a usage error (exit 2) -- the check picks
 # its mode by argument count, never by emptiness.
+reject "" "" "empty STA and FV paths"
+reject "" "$fv" "an empty STA path with a valid FV report"
+reject "$sta" "" "a valid STA report with an empty FV path"
 base=("$req" "$par" "$lvs" "$erc")
-for extra in "|" "|$fv" "$sta|"; do
-  IFS='|' read -r a b <<<"$extra"
-  reject "$a" "$b" "optional arguments [$extra]"
-done
 for five in "" "$sta"; do
   rc=0
   ./check-evidence.sh "${base[@]}" "$five" >/dev/null 2>/dev/null || rc=$?
