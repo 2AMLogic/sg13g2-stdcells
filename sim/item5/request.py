@@ -394,6 +394,15 @@ def build_timing_request(cell: CellSpec, arcs: list[Arc], view: LibertyView,
     limit is agreement with the view's own value at that same point, every
     measurement is tagged with the spec row it grades.
     """
+    request, _ = build_timing_request_with_targets(cell, arcs, view, pdk_dir, spec_row, tol)
+    return request
+
+
+def build_timing_request_with_targets(
+    cell: CellSpec, arcs: list[Arc], view: LibertyView, pdk_dir: str | Path,
+    spec_row: str = SPEC_ROW, tol: float = TIMING_TOLERANCE,
+) -> tuple[dict, dict[str, float]]:
+    """Build the timing request and its nominal measurement values in seconds."""
     if not arcs:
         raise RequestError(f"cell {cell.name!r} has no timing arcs")
     missing = [a.related_pin for a in arcs
@@ -413,55 +422,51 @@ def build_timing_request(cell: CellSpec, arcs: list[Arc], view: LibertyView,
     v_delay = supply * view.delay_threshold
     v_lo, v_hi = supply * view.slew_lo, supply * view.slew_hi
     measurements = []
+    targets = {}
+
+    def add_measurement(name: str, clause: str, target: float) -> None:
+        targets[name] = target
+        measurements.append({
+            "name": name,
+            "spice": f".meas tran {name} {clause}",
+            "limits": _limits(target, tol),
+            "unit": "s",
+            "spec_row": spec_row,
+        })
+
+    edges = (("rise", v_lo, v_hi), ("fall", v_hi, v_lo))
     for arc in arcs:
         for i, slew_ns in enumerate(view.slews):
             slew_s = slew_ns * view.time_unit_scale
             for j, load_pf in enumerate(view.loads):
                 tag = f"{arc.related_pin}_s{_tag(slew_ns)}_l{_tag(load_pf)}"
                 vin, y = f"in_{tag}", f"y_{tag}"
-                common = {"unit": "s", "spec_row": spec_row}
                 for table, out_edge in (("cell_rise", "RISE"), ("cell_fall", "FALL")):
                     in_edge = _delay_input_edge(arc.sense, table)
-                    measurements.append({
-                        "name": f"{tag}_{table}",
-                        "spice": f".meas tran {tag}_{table} TRIG v({vin}) VAL={v_delay:.6g} "
-                                 f"{in_edge}=1 TARG v({y}) VAL={v_delay:.6g} {out_edge}=1",
-                        "limits": _limits(
-                            view.expected(cell.name, arc.related_pin, table, i, j)
-                            * view.time_unit_scale, tol),
-                        **common,
-                    })
-                measurements.append({
-                    "name": f"{tag}_rise_transition",
-                    "spice": f".meas tran {tag}_rise_transition TRIG v({y}) VAL={v_lo:.6g} "
-                             f"RISE=1 TARG v({y}) VAL={v_hi:.6g} RISE=1",
-                    "limits": _limits(
-                        view.expected(cell.name, arc.related_pin, "rise_transition", i, j)
-                        * view.time_unit_scale, tol),
-                    **common,
-                })
-                measurements.append({
-                    "name": f"{tag}_fall_transition",
-                    "spice": f".meas tran {tag}_fall_transition TRIG v({y}) VAL={v_hi:.6g} "
-                             f"FALL=1 TARG v({y}) VAL={v_lo:.6g} FALL=1",
-                    "limits": _limits(
-                        view.expected(cell.name, arc.related_pin, "fall_transition", i, j)
-                        * view.time_unit_scale, tol),
-                    **common,
-                })
+                    add_measurement(
+                        f"{tag}_{table}",
+                        f"TRIG v({vin}) VAL={v_delay:.6g} {in_edge}=1 "
+                        f"TARG v({y}) VAL={v_delay:.6g} {out_edge}=1",
+                        view.expected(cell.name, arc.related_pin, table, i, j) * view.time_unit_scale,
+                    )
+                for edge, trig_v, targ_v in edges:
+                    table = f"{edge}_transition"
+                    add_measurement(
+                        f"{tag}_{table}",
+                        f"TRIG v({y}) VAL={trig_v:.6g} {edge.upper()}=1 "
+                        f"TARG v({y}) VAL={targ_v:.6g} {edge.upper()}=1",
+                        view.expected(cell.name, arc.related_pin, table, i, j) * view.time_unit_scale,
+                    )
                 # stimulus self-check: the applied ramp's threshold-to-threshold
                 # duration is the tabulated input transition, both edges
                 # (a falling edge crosses the high threshold first)
-                for meas_edge, trig_v, targ_v in (("rise", v_lo, v_hi),
-                                                  ("fall", v_hi, v_lo)):
-                    measurements.append({
-                        "name": f"{tag}_in_slew_{meas_edge}",
-                        "spice": f".meas tran {tag}_in_slew_{meas_edge} "
-                                 f"TRIG v({vin}) VAL={trig_v:.6g} {meas_edge.upper()}=1 "
-                                 f"TARG v({vin}) VAL={targ_v:.6g} {meas_edge.upper()}=1",
-                        "limits": _limits(slew_s, tol),
-                        **common,
-                    })
+                for edge, trig_v, targ_v in edges:
+                    add_measurement(
+                        f"{tag}_in_slew_{edge}",
+                        f"TRIG v({vin}) VAL={trig_v:.6g} {edge.upper()}=1 "
+                        f"TARG v({vin}) VAL={targ_v:.6g} {edge.upper()}=1",
+                        slew_s,
+                    )
     pdk = Path(pdk_dir)
     return {
         "netlist": f"{cell.name}.timing.spice",
@@ -471,33 +476,44 @@ def build_timing_request(cell: CellSpec, arcs: list[Arc], view: LibertyView,
         "analysis": {"kind": "tran",
                      "args": f"{TRAN_STEP_S:.6g} {TRAN_STOP_S:.6g} 0 {TRAN_STEP_S:.6g}"},
         "measurements": measurements,
-    }
+    }, targets
 
 
 def build_function_request(cell: CellSpec, pdk_dir: str | Path,
                            supply_v: float, spec_row: str = SPEC_ROW,
                            rail_tol_v: float = RAIL_TOLERANCE_V) -> dict:
     """The function ``klt sim`` request for one cell, at the view's corner."""
+    request, _ = build_function_request_with_targets(cell, pdk_dir, supply_v, spec_row, rail_tol_v)
+    return request
+
+
+def build_function_request_with_targets(
+    cell: CellSpec, pdk_dir: str | Path, supply_v: float,
+    spec_row: str = SPEC_ROW, rail_tol_v: float = RAIL_TOLERANCE_V,
+) -> tuple[dict, dict[str, float]]:
+    """Build the function request and its expected output rails in volts."""
     from ..harness.corners import CHAR_CORNER_PVT
 
     process, corner_supply, temperature_c = CHAR_CORNER_PVT["tt"]
     asts = {pin: parse_function(func) for pin, func in cell.outputs.items()}
     states = list(product((0, 1), repeat=len(cell.inputs)))
     measurements = []
+    targets = {}
     for k, state in enumerate(states):
         env = dict(zip(cell.inputs, state))
         at = k * STATE_S + SAMPLE_AFTER_EDGE_S
         state_tag = "_".join(f"{p}{v}" for p, v in env.items())
         for out_pin, ast in asts.items():
-            expected = evaluate_function(ast, env)
-            if expected:
+            name = f"y_{state_tag}_{out_pin}"
+            if evaluate_function(ast, env):
+                targets[name] = supply_v
                 limits = {"min": supply_v - rail_tol_v, "max": supply_v + rail_tol_v}
             else:
+                targets[name] = 0.0
                 limits = {"max": rail_tol_v}
             measurements.append({
-                "name": f"y_{state_tag}_{out_pin}",
-                "spice": f".meas tran y_{state_tag}_{out_pin} "
-                         f"FIND v(y_dut_{out_pin}) AT={at:.6g}",
+                "name": name,
+                "spice": f".meas tran {name} FIND v(y_dut_{out_pin}) AT={at:.6g}",
                 "limits": limits,
                 "unit": "V",
                 "spec_row": spec_row,
@@ -513,4 +529,4 @@ def build_function_request(cell: CellSpec, pdk_dir: str | Path,
             "args": f"{TRAN_STEP_S:.6g} {len(states) * STATE_S + 1e-9:.6g} 0 {TRAN_STEP_S:.6g}",
         },
         "measurements": measurements,
-    }
+    }, targets

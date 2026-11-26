@@ -22,10 +22,15 @@ import tempfile
 from pathlib import Path
 
 from ..harness.report import allocate_record_id, commit_stamp, git_provenance
-from .request import (SPEC_ROW, Arc, CellSpec, LibertyView, arcs_for,
-                      build_function_netlist, build_function_request,
-                      build_timing_netlist, build_timing_request,
-                      parse_liberty)
+from .request import (
+    SPEC_ROW,
+    arcs_for,
+    build_function_netlist,
+    build_function_request_with_targets,
+    build_timing_netlist,
+    build_timing_request_with_targets,
+    parse_liberty,
+)
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
@@ -68,39 +73,6 @@ def run_klt_sim(request_path: Path, backend: str, outdir: Path) -> str:
             f"{(proc.stdout + proc.stderr).strip()[:2000]}"
         )
     return proc.stdout
-
-
-def expected_map(cell: CellSpec, arcs: list[Arc], view: LibertyView,
-                 supply_v: float) -> dict[str, float]:
-    """Measurement name -> the committed value it is checked against.
-
-    Timing names map to the view's table entry (seconds); stimulus self-check
-    names map to the tabulated input transition; function names map to the
-    rail (0 or ``supply_v``) the cell's own function demands.  Mirrors the
-    limit computation in :mod:`sim.item5.request` so the record can report
-    the observed worst-case agreement independently of pass/fail.
-    """
-    from .request import _tag  # noqa: PLC2701 -- same package, record-facing helper
-
-    exp: dict[str, float] = {}
-    for arc in arcs:
-        for i, slew_ns in enumerate(view.slews):
-            for j, load_pf in enumerate(view.loads):
-                tag = f"{arc.related_pin}_s{_tag(slew_ns)}_l{_tag(load_pf)}"
-                for table in ("cell_rise", "cell_fall", "rise_transition", "fall_transition"):
-                    exp[f"{tag}_{table}"] = (view.expected(cell.name, arc.related_pin,
-                                                           table, i, j)
-                                              * view.time_unit_scale)
-                exp[f"{tag}_in_slew_rise"] = exp[f"{tag}_in_slew_fall"] = \
-                    slew_ns * view.time_unit_scale
-    from itertools import product
-    from .request import evaluate_function, parse_function
-    for state in product((0, 1), repeat=len(cell.inputs)):
-        env = dict(zip(cell.inputs, state))
-        tag = "_".join(f"{p}{v}" for p, v in env.items())
-        for out_pin, func in cell.outputs.items():
-            exp[f"y_{tag}_{out_pin}"] = evaluate_function(parse_function(func), env) * supply_v
-    return exp
 
 
 def _grade(report: dict, exp: dict[str, float], what: str) -> dict:
@@ -155,11 +127,11 @@ def run_all(pdk_dir: str | Path, backend: str = "local",
                 ref = os.path.relpath(NETLISTS_DIR / f"{cell.name}.spice", rec_dir)
                 if kind == "timing":
                     netlist = build_timing_netlist(cell, arcs, view, ref)
-                    request = build_timing_request(cell, arcs, view, pdk_dir)
+                    request, targets = build_timing_request_with_targets(cell, arcs, view, pdk_dir)
                 else:
                     supply = _config_supply(config)
                     netlist = build_function_netlist(cell, ref, supply)
-                    request = build_function_request(cell, pdk_dir, supply)
+                    request, targets = build_function_request_with_targets(cell, pdk_dir, supply)
                 (rec_dir / f"{base.name}.spice").write_text(netlist)
                 (rec_dir / f"{base.name}.request.json").write_text(
                     json.dumps(request, indent=2) + "\n")
@@ -167,8 +139,7 @@ def run_all(pdk_dir: str | Path, backend: str = "local",
                                           backend, Path(tmp) / f"{cell.name}.{kind}")
                 (rec_dir / f"{base.name}.report.json").write_text(report_text)
                 report = json.loads(report_text)
-                grade = _grade(report, expected_map(cell, arcs, view, _config_supply(config)),
-                               f"{cell.name}.{kind}")
+                grade = _grade(report, targets, f"{cell.name}.{kind}")
                 grade.update({"cell": cell.name, "kind": kind,
                               "file": os.path.relpath(
                                   rec_dir / f"{base.name}.report.json", REPO_ROOT),
