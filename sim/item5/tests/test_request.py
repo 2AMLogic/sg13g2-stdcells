@@ -15,11 +15,21 @@ import pytest
 
 from sim.characterize.request import CellSpec, cells_from_config
 from sim.harness.corners import CHAR_CORNER_PVT
-from sim.item5.request import (RAIL_TOLERANCE_V, SPEC_ROW, TIMING_TOLERANCE,
-                               arcs_for, build_function_netlist,
-                               build_function_request, build_timing_netlist,
-                               build_timing_request, evaluate_function,
-                               parse_function, parse_liberty)
+from sim.item5.request import (
+    RAIL_TOLERANCE_V,
+    SPEC_ROW,
+    TIMING_TOLERANCE,
+    arcs_for,
+    build_function_netlist,
+    build_function_request,
+    build_function_request_with_targets,
+    build_timing_netlist,
+    build_timing_request,
+    build_timing_request_with_targets,
+    evaluate_function,
+    parse_function,
+    parse_liberty,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CONFIG = REPO_ROOT / "layout" / "example_config.json"
@@ -226,13 +236,16 @@ def test_timing_request_missing_arc_rejected(view):
 
 def test_function_request_states_and_limits(view):
     supply = json.loads(CONFIG.read_text())["process"]["supply_v"]
-    req = build_function_request(NAND2, "/pdk", supply)
+    req, targets = build_function_request_with_targets(NAND2, "/pdk", supply)
+    assert req == build_function_request(NAND2, "/pdk", supply)
     names = [m["name"] for m in req["measurements"]]
     assert names == [f"y_{state}_Y" for state in ("A0_B0", "A0_B1", "A1_B0", "A1_B1")]
+    assert targets.keys() == set(names)
     by_name = {m["name"]: m for m in req["measurements"]}
     for state, expected_high in (("A0_B0", True), ("A0_B1", True),
                                  ("A1_B0", True), ("A1_B1", False)):
         m = by_name[f"y_{state}_Y"]
+        assert targets[m["name"]] == (supply if expected_high else 0.0)
         if expected_high:
             assert m["limits"] == {"min": supply - RAIL_TOLERANCE_V,
                                    "max": supply + RAIL_TOLERANCE_V}
@@ -246,19 +259,19 @@ def test_function_request_states_and_limits(view):
     assert "AT=8e-09" in by_name["y_A1_B0_Y"]["spice"]
 
 
-def test_lims_always_bracket_the_committed_value(view):
-    tables = ("cell_rise", "cell_fall", "rise_transition", "fall_transition")
+def test_timing_targets_and_limits_match_the_committed_view(view):
     for cell in cells_from_config(CONFIG, NETLISTS):
-        req = build_timing_request(cell, arcs_for(cell), view, "/pdk")
+        req, targets = build_timing_request_with_targets(cell, arcs_for(cell), view, "/pdk")
+        assert req == build_timing_request(cell, arcs_for(cell), view, "/pdk")
+        assert targets.keys() == {m["name"] for m in req["measurements"]}
         for m in req["measurements"]:
-            for table in tables:
-                if not m["name"].endswith("_" + table):
-                    continue
-                tag = m["name"][: -len(table) - 1]
-                arc, rest = tag.split("_s", 1)
-                slew_s, load_s = rest.split("_l", 1)
-                slew = float(slew_s.replace("p", "."))
-                load = float(load_s.replace("p", "."))
+            arc, slew_tag, load_tag, quantity = m["name"].split("_", 3)
+            slew = float(slew_tag[1:].replace("p", "."))
+            load = float(load_tag[1:].replace("p", "."))
+            if quantity in ("in_slew_rise", "in_slew_fall"):
+                want = slew * view.time_unit_scale
+            else:
                 i, j = view.slews.index(slew), view.loads.index(load)
-                want = view.expected(cell.name, arc, table, i, j) * 1e-9
-                assert m["limits"]["min"] < want < m["limits"]["max"], (m["name"], want)
+                want = view.expected(cell.name, arc, quantity, i, j) * view.time_unit_scale
+            assert targets[m["name"]] == want
+            assert m["limits"]["min"] < want < m["limits"]["max"], (m["name"], want)
