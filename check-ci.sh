@@ -20,7 +20,9 @@
 #   evidence-reject  the evidence check rejects the negative control
 #   evidence-sta-fv-accept  the six-argument evidence check (gates 4 STA and 5
 #                    functional verification) accepts the committed record
-#   evidence-sta-fv-reject  the six-argument check rejects jq-minted mutants
+#   evidence-sta-fv-reject  the shared STA/FV edge-case suite in
+#                    flow/test-check-evidence.sh rejects jq-minted mutants of
+#                    the committed record
 #
 # With no argument every stage runs, in the order above. The workflow passes a
 # stage name per step so GitHub still reports pass/fail per check.
@@ -103,7 +105,10 @@ stage_evidence_reject() {
 # Gates 4 (STA) and 5 (functional verification) of check-evidence.sh, replayed
 # on the committed STA/FV record (issue #189). jq and bash only: the mutants are
 # minted from the committed sta.json / functional-verification.json, never from
-# a live flow run. FLOW_RECORD stays on the legacy record for the stages above.
+# a live flow run. The reject stage delegates to the shared edge-case suite in
+# flow/test-check-evidence.sh --record (issue #288), so CI and the local
+# post-flow run exercise one mutation list instead of two drifting copies.
+# FLOW_RECORD stays on the legacy record for the stages above.
 STA_FV_RECORD=flow/records/20261121-be3a384
 
 stage_evidence_sta_fv_accept() {
@@ -115,46 +120,11 @@ stage_evidence_sta_fv_accept() {
     "$STA_FV_RECORD/functional-verification.json"
 }
 
-# sta_fv_reject <label> <sta> <fv>: the six-argument check must exit non-zero
-# AND say INVALID EVIDENCE, so a usage error (exit 2) or a missing file cannot
-# pass as a rejection.
-sta_fv_reject() {
-  local label="$1" sta="$2" fv="$3" err rc=0
-  err=$(flow/check-evidence.sh flow/request-par.json \
-    "$STA_FV_RECORD/place-and-route.json" \
-    "$STA_FV_RECORD/lvs.json" \
-    "$STA_FV_RECORD/erc.json" \
-    "$sta" "$fv" 2>&1 >/dev/null) || rc=$?
-  if [ "$rc" -eq 0 ]; then
-    echo "evidence-sta-fv-reject: accepted $label; expected non-zero exit" >&2
-    return 1
-  fi
-  if ! printf '%s\n' "$err" | grep -q 'INVALID EVIDENCE'; then
-    echo "evidence-sta-fv-reject: $label failed (exit $rc) without INVALID EVIDENCE:" >&2
-    printf '%s\n' "$err" >&2
-    return 1
-  fi
-}
-
 stage_evidence_sta_fv_reject() {
-  local sta="$STA_FV_RECORD/sta.json" fv="$STA_FV_RECORD/functional-verification.json" t
-  t=$(mktemp -d)
-  # shellcheck disable=SC2064
-  trap "rm -rf '$t'" RETURN
-  jq '(.corners[0]).timing_status="unconstrained"' "$sta" >"$t/a.json"
-  sta_fv_reject "an unconstrained corner" "$t/a.json" "$fv" || return 1
-  jq '(.corners[0]).worst_slack_ns="-1"' "$sta" >"$t/b.json"
-  sta_fv_reject "string-valued setup slack" "$t/b.json" "$fv" || return 1
-  jq 'del(.corners[0].worst_hold_slack_ns)' "$sta" >"$t/c.json"
-  sta_fv_reject "a missing hold-slack field" "$t/c.json" "$fv" || return 1
-  jq '.corners=[]' "$sta" >"$t/d.json"
-  sta_fv_reject "an empty corner list" "$t/d.json" "$fv" || return 1
-  jq '.tests[0].status="failed"' "$fv" >"$t/e.json"
-  sta_fv_reject "a failed test under a passing summary" "$sta" "$t/e.json" || return 1
-  : >"$t/f.json"
-  sta_fv_reject "a zero-byte STA file" "$t/f.json" "$fv" || return 1
-  sta_fv_reject "a partial pair (no STA report)" "" "$fv" || return 1
-  sta_fv_reject "a partial pair (no FV report)" "$sta" "" || return 1
+  # One shared suite (issue #288): the same jq + bash STA/FV edge cases the
+  # local post-flow run exercises, replayed against the committed record.
+  # Tool-free -- --record mode skips the live klt no-power control.
+  flow/test-check-evidence.sh --record "$STA_FV_RECORD"
 }
 
 run_stage() {

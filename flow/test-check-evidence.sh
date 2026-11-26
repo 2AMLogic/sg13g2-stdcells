@@ -1,114 +1,162 @@
 #!/usr/bin/env bash
-# Edge tests for check-evidence.sh (issues #9, #175, #190 and #247). Runs one
-# real klt place-and-route on a copy of request-par.json with `power` deleted,
-# then asserts the check rejects it while still seeing status ok / stage route.
-# Then exercises the STA / functional-verification gates: a passing pair is
-# accepted, and each bad envelope alone -- a non-ok status, non-routed
-# geometry, a `corners` value that is not an array, an unconstrained corner,
-# incomplete or unavailable constraint_completeness, negative setup slack,
-# negative hold slack, an empty corner list, a failing FV status, a partial
-# pair, an unreadable report -- is rejected.
-# Needs a completed flow/run.sh (flow/build/{add8_synth.v,par.out.json,
-# lvs.out.json,erc.json,sta.json,fv.json}). Single local run, no grids.
+# Edge tests for check-evidence.sh (issues #9, #175, #190 and #247). With no
+# argument, runs one real klt place-and-route on a copy of request-par.json
+# with `power` deleted, then asserts the check rejects it while still seeing
+# status ok / stage route. Then exercises the STA / functional-verification
+# gates: a passing pair is accepted, and each bad envelope alone -- a non-ok
+# status, non-routed geometry, a `corners` value that is not an array, an
+# unconstrained corner, incomplete or unavailable constraint_completeness,
+# negative setup slack, negative hold slack, an empty corner list, a failing
+# FV status, a partial pair, an unreadable report -- is rejected with
+# INVALID EVIDENCE on stderr, so a usage error (exit 2) cannot pass as a
+# gate rejection.
+# `--record DIR` (issue #288) skips the live klt run and replays the same
+# STA/FV edge cases against a committed record's place-and-route.json,
+# lvs.json, erc.json, sta.json and functional-verification.json, minting
+# mutants in a scratch dir: jq and bash only, no klt and no prior flow run,
+# which is how check-ci.sh covers gates 4 and 5 in tool-free CI.
+# No-argument mode needs a completed flow/run.sh (flow/build/{add8_synth.v,
+# par.out.json,lvs.out.json,erc.json,sta.json,fv.json}). Single local run, no
+# grids.
 set -euo pipefail
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; cd "$here"
-d=build/nopower; rm -rf "$d"; mkdir -p "$d"
-jq 'del(.power) | .netlist="../add8_synth.v"' request-par.json > "$d/request-par.json"
-klt place-and-route "$d/request-par.json" ${PDK_ARGS:---pdk ihp-sg13g2} --format json > "$d/par.json"
-jq -e '.status=="ok" and .stage_reached=="route"' "$d/par.json" >/dev/null \
-  || { echo "setup: no-power run did not reach route" >&2; exit 2; }
-echo "no-power run: status ok, pdn=$(jq -c '.power.pdn // "absent"' "$d/par.json")"
-if ./check-evidence.sh "$d/request-par.json" "$d/par.json" build/lvs.out.json build/erc.json build/sta.json build/fv.json 2>"$d/check.err"; then
-  echo "FAIL: check accepted a request without power" >&2; exit 1
+# --record DIR resolves against the invoker's cwd, before the cd "$here" below.
+record=""
+if [ "$#" -eq 2 ] && [ "$1" = "--record" ]; then
+  [ -d "$2" ] || { echo "setup: record dir '$2' not found" >&2; exit 2; }
+  record="$(cd "$2" && pwd)"
+elif [ "$#" -ne 0 ]; then
+  echo "usage: $0 [--record DIR]" >&2
+  exit 2
 fi
-cat "$d/check.err"; echo "PASS: no-power request flagged invalid"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; cd "$here"
 
-t=build/evidence-edge; rm -rf "$t"; mkdir -p "$t"
-for f in par.out.json lvs.out.json erc.json sta.json fv.json; do
-  [ -s "build/$f" ] || { echo "setup: run flow/run.sh first (build/$f missing)" >&2; exit 2; }
-done
+if [ -z "$record" ]; then
+  d=build/nopower; rm -rf "$d"; mkdir -p "$d"
+  jq 'del(.power) | .netlist="../add8_synth.v"' request-par.json > "$d/request-par.json"
+  klt place-and-route "$d/request-par.json" ${PDK_ARGS:---pdk ihp-sg13g2} --format json > "$d/par.json"
+  jq -e '.status=="ok" and .stage_reached=="route"' "$d/par.json" >/dev/null \
+    || { echo "setup: no-power run did not reach route" >&2; exit 2; }
+  echo "no-power run: status ok, pdn=$(jq -c '.power.pdn // "absent"' "$d/par.json")"
+  if ./check-evidence.sh "$d/request-par.json" "$d/par.json" build/lvs.out.json build/erc.json build/sta.json build/fv.json 2>"$d/check.err"; then
+    echo "FAIL: check accepted a request without power" >&2; exit 1
+  fi
+  cat "$d/check.err"; echo "PASS: no-power request flagged invalid"
+fi
 
-./check-evidence.sh request-par.json build/par.out.json build/lvs.out.json build/erc.json build/sta.json build/fv.json
+# The five reports the STA/FV edge cases replay over: the flow/run.sh scratch
+# outputs by default, a committed record's five reports with --record (whose
+# mutants then go to a scratch dir, not build/ or the record itself).
+req=request-par.json
+if [ -z "$record" ]; then
+  par=build/par.out.json; lvs=build/lvs.out.json; erc=build/erc.json
+  sta=build/sta.json; fv=build/fv.json
+  for f in "$par" "$lvs" "$erc" "$sta" "$fv"; do
+    [ -s "$f" ] || { echo "setup: run flow/run.sh first ($f missing)" >&2; exit 2; }
+  done
+  t=build/evidence-edge; rm -rf "$t"; mkdir -p "$t"
+else
+  par="$record/place-and-route.json"; lvs="$record/lvs.json"; erc="$record/erc.json"
+  sta="$record/sta.json"; fv="$record/functional-verification.json"
+  for f in "$par" "$lvs" "$erc" "$sta" "$fv"; do
+    [ -s "$f" ] || { echo "setup: record $record is incomplete ($f missing)" >&2; exit 2; }
+  done
+  t=$(mktemp -d)
+  trap 'rm -rf "$t"' EXIT
+fi
+
+./check-evidence.sh "$req" "$par" "$lvs" "$erc" "$sta" "$fv"
 echo "PASS: passing STA + functional-verification pair accepted"
 
-reject() { # reject <sta> <fv> <label>
-  if ./check-evidence.sh request-par.json build/par.out.json build/lvs.out.json build/erc.json "$1" "$2" 2>"$t/err"; then
+reject() { # reject <sta> <fv> <label>: non-zero exit AND INVALID EVIDENCE on
+  # stderr, so a usage error (exit 2) or a missing file cannot pass as a
+  # gate rejection.
+  local rc=0
+  ./check-evidence.sh "$req" "$par" "$lvs" "$erc" "$1" "$2" 2>"$t/err" || rc=$?
+  if [ "$rc" -eq 0 ]; then
     echo "FAIL: check accepted $3" >&2; exit 1
+  fi
+  if ! grep -q 'INVALID EVIDENCE' "$t/err"; then
+    echo "FAIL: $3 rejected (exit $rc) without INVALID EVIDENCE:" >&2
+    sed 's/^/  /' "$t/err" >&2; exit 1
   fi
   sed 's/^/  /' "$t/err"; echo "PASS: $3 rejected"
 }
 
-jq '(.corners[0]).timing_status="unconstrained"' build/sta.json > "$t/sta-unconstrained.json"
-reject "$t/sta-unconstrained.json" build/fv.json "an unconstrained corner"
-jq '(.corners[0]).worst_slack_ns=-0.001' build/sta.json > "$t/sta-negsetup.json"
-reject "$t/sta-negsetup.json" build/fv.json "negative setup slack"
-jq '(.corners[0]).worst_hold_slack_ns=-0.001' build/sta.json > "$t/sta-neghold.json"
-reject "$t/sta-neghold.json" build/fv.json "negative hold slack"
-jq '.corners=[]' build/sta.json > "$t/sta-nocorners.json"
-reject "$t/sta-nocorners.json" build/fv.json "an empty corner list"
-jq '.status="error"' build/sta.json > "$t/sta-status.json"
-reject "$t/sta-status.json" build/fv.json "an STA envelope with status error"
-jq '.geometry_source="synthesized"' build/sta.json > "$t/sta-geom.json"
-reject "$t/sta-geom.json" build/fv.json "non-routed STA geometry"
-jq '.corners|=(map({key:(.corner),value:.})|from_entries)' build/sta.json > "$t/sta-objcorners.json"
-reject "$t/sta-objcorners.json" build/fv.json "a corners object in place of an array"
-jq '.corners=null' build/sta.json > "$t/sta-nullcorners.json"
-reject "$t/sta-nullcorners.json" build/fv.json "a null corners field"
-jq '. + .corners[0] | del(.corner) | .corners=null' build/sta.json > "$t/sta-flat-nullcorners.json"
-reject "$t/sta-flat-nullcorners.json" build/fv.json "a null corners field alongside passing top-level timing fields"
-jq '.status="fail"' build/fv.json > "$t/fv-fail.json"
-reject build/sta.json "$t/fv-fail.json" "a failing functional-verification run"
-reject "" build/fv.json "a partial pair (no STA report)"
-reject "$t/missing.json" build/fv.json "an unreadable STA report"
-reject build/sta.json "$t/missing.json" "an unreadable FV report"
-jq '(.corners[0]).worst_slack_ns="-1"' build/sta.json > "$t/sta-strsetup.json"
-reject "$t/sta-strsetup.json" build/fv.json "string-valued setup slack"
-jq '(.corners[0]).worst_hold_slack_ns="-1"' build/sta.json > "$t/sta-strhold.json"
-reject "$t/sta-strhold.json" build/fv.json "string-valued hold slack"
-jq 'del(.corners[0].worst_hold_slack_ns)' build/sta.json > "$t/sta-nohold.json"
-reject "$t/sta-nohold.json" build/fv.json "a missing hold-slack field"
-jq '(.corners[0]).constraint_completeness.status="incomplete"' build/sta.json > "$t/sta-incomplete.json"
-reject "$t/sta-incomplete.json" build/fv.json "incomplete constraint_completeness"
+jq '(.corners[0]).timing_status="unconstrained"' "$sta" > "$t/sta-unconstrained.json"
+reject "$t/sta-unconstrained.json" "$fv" "an unconstrained corner"
+jq '(.corners[0]).worst_slack_ns=-0.001' "$sta" > "$t/sta-negsetup.json"
+reject "$t/sta-negsetup.json" "$fv" "negative setup slack"
+jq '(.corners[0]).worst_hold_slack_ns=-0.001' "$sta" > "$t/sta-neghold.json"
+reject "$t/sta-neghold.json" "$fv" "negative hold slack"
+jq '.corners=[]' "$sta" > "$t/sta-nocorners.json"
+reject "$t/sta-nocorners.json" "$fv" "an empty corner list"
+jq '.status="error"' "$sta" > "$t/sta-status.json"
+reject "$t/sta-status.json" "$fv" "an STA envelope with status error"
+jq '.geometry_source="synthesized"' "$sta" > "$t/sta-geom.json"
+reject "$t/sta-geom.json" "$fv" "non-routed STA geometry"
+jq '.corners|=(map({key:(.corner),value:.})|from_entries)' "$sta" > "$t/sta-objcorners.json"
+reject "$t/sta-objcorners.json" "$fv" "a corners object in place of an array"
+jq '.corners=null' "$sta" > "$t/sta-nullcorners.json"
+reject "$t/sta-nullcorners.json" "$fv" "a null corners field"
+jq '. + .corners[0] | del(.corner) | .corners=null' "$sta" > "$t/sta-flat-nullcorners.json"
+reject "$t/sta-flat-nullcorners.json" "$fv" "a null corners field alongside passing top-level timing fields"
+jq '.status="fail"' "$fv" > "$t/fv-fail.json"
+reject "$sta" "$t/fv-fail.json" "a failing functional-verification run"
+reject "" "$fv" "a partial pair (no STA report)"
+reject "$t/missing.json" "$fv" "an unreadable STA report"
+reject "$sta" "$t/missing.json" "an unreadable FV report"
+jq '(.corners[0]).worst_slack_ns="-1"' "$sta" > "$t/sta-strsetup.json"
+reject "$t/sta-strsetup.json" "$fv" "string-valued setup slack"
+jq '(.corners[0]).worst_hold_slack_ns="-1"' "$sta" > "$t/sta-strhold.json"
+reject "$t/sta-strhold.json" "$fv" "string-valued hold slack"
+jq 'del(.corners[0].worst_hold_slack_ns)' "$sta" > "$t/sta-nohold.json"
+reject "$t/sta-nohold.json" "$fv" "a missing hold-slack field"
+jq '(.corners[0]).constraint_completeness.status="incomplete"' "$sta" > "$t/sta-incomplete.json"
+reject "$t/sta-incomplete.json" "$fv" "incomplete constraint_completeness"
 grep -qi "constraint.completeness" "$t/err" \
   || { echo "FAIL: gate 4 message did not name constraint completeness" >&2; exit 1; }
-jq '(.corners[0]).constraint_completeness.status="unknown"' build/sta.json > "$t/sta-cc-unknown.json"
-reject "$t/sta-cc-unknown.json" build/fv.json "unknown constraint_completeness"
-jq '(.corners[0]).constraint_completeness.unconstrained_endpoints.count=1' build/sta.json > "$t/sta-unconstrained-ep.json"
-reject "$t/sta-unconstrained-ep.json" build/fv.json "non-zero unconstrained_endpoints.count under complete status"
-jq '(.corners[0]).constraint_completeness.unclocked_registers={status:"unavailable",count:null}' build/sta.json > "$t/sta-unclocked-unavail.json"
-reject "$t/sta-unclocked-unavail.json" build/fv.json "unavailable unclocked_registers with null count under complete status"
-jq 'del(.corners[0].constraint_completeness)' build/sta.json > "$t/sta-no-cc.json"
-reject "$t/sta-no-cc.json" build/fv.json "a missing constraint_completeness block"
-jq '(.corners[0]).constraint_completeness.unclocked_registers.count=1' build/sta.json > "$t/sta-unclocked-reg.json"
-reject "$t/sta-unclocked-reg.json" build/fv.json "non-zero unclocked_registers.count under complete status"
-jq '(.corners[0]).constraint_completeness.unconstrained_endpoints={status:"unavailable",count:null}' build/sta.json > "$t/sta-unconstrained-unavail.json"
-reject "$t/sta-unconstrained-unavail.json" build/fv.json "unavailable unconstrained_endpoints with null count under complete status"
-jq '. + .corners[0] | del(.corners, .corner)' build/sta.json > "$t/sta-flat-ok.json"
-./check-evidence.sh request-par.json build/par.out.json build/lvs.out.json build/erc.json "$t/sta-flat-ok.json" build/fv.json
+jq '(.corners[0]).constraint_completeness.status="unknown"' "$sta" > "$t/sta-cc-unknown.json"
+reject "$t/sta-cc-unknown.json" "$fv" "unknown constraint_completeness"
+jq '(.corners[0]).constraint_completeness.unconstrained_endpoints.count=1' "$sta" > "$t/sta-unconstrained-ep.json"
+reject "$t/sta-unconstrained-ep.json" "$fv" "non-zero unconstrained_endpoints.count under complete status"
+jq '(.corners[0]).constraint_completeness.unclocked_registers={status:"unavailable",count:null}' "$sta" > "$t/sta-unclocked-unavail.json"
+reject "$t/sta-unclocked-unavail.json" "$fv" "unavailable unclocked_registers with null count under complete status"
+jq 'del(.corners[0].constraint_completeness)' "$sta" > "$t/sta-no-cc.json"
+reject "$t/sta-no-cc.json" "$fv" "a missing constraint_completeness block"
+jq '(.corners[0]).constraint_completeness.unclocked_registers.count=1' "$sta" > "$t/sta-unclocked-reg.json"
+reject "$t/sta-unclocked-reg.json" "$fv" "non-zero unclocked_registers.count under complete status"
+jq '(.corners[0]).constraint_completeness.unconstrained_endpoints={status:"unavailable",count:null}' "$sta" > "$t/sta-unconstrained-unavail.json"
+reject "$t/sta-unconstrained-unavail.json" "$fv" "unavailable unconstrained_endpoints with null count under complete status"
+jq '. + .corners[0] | del(.corners, .corner)' "$sta" > "$t/sta-flat-ok.json"
+./check-evidence.sh "$req" "$par" "$lvs" "$erc" "$t/sta-flat-ok.json" "$fv"
 echo "PASS: flat single-corner STA envelope accepted"
 jq '.constraint_completeness.status="incomplete"' "$t/sta-flat-ok.json" > "$t/sta-flat-incomplete.json"
-reject "$t/sta-flat-incomplete.json" build/fv.json "a flat single-corner STA envelope with incomplete constraint_completeness"
+reject "$t/sta-flat-incomplete.json" "$fv" "a flat single-corner STA envelope with incomplete constraint_completeness"
 : > "$t/empty.json"
-reject "$t/empty.json" build/fv.json "an empty STA file"
-reject build/sta.json "$t/empty.json" "an empty FV file"
-jq '.tests[0].status="failed"' build/fv.json > "$t/fv-testfailed.json"
-reject build/sta.json "$t/fv-testfailed.json" "a failed test under a passing summary"
-jq '.tests[0].status="skipped" | .passed_count=0 | .skipped_count=1' build/fv.json > "$t/fv-allskipped.json"
-reject build/sta.json "$t/fv-allskipped.json" "an all-skipped envelope"
-jq '.test_count="0"' build/fv.json > "$t/fv-strcount.json"
-reject build/sta.json "$t/fv-strcount.json" "a string-valued test_count"
-# Argument forms: empty optional paths and a wrong count must not pass.
-base=(request-par.json build/par.out.json build/lvs.out.json build/erc.json)
-for extra in "" "|" "|build/fv.json" "build/sta.json|"; do
+reject "$t/empty.json" "$fv" "an empty STA file"
+reject "$sta" "$t/empty.json" "an empty FV file"
+jq '.tests[0].status="failed"' "$fv" > "$t/fv-testfailed.json"
+reject "$sta" "$t/fv-testfailed.json" "a failed test under a passing summary"
+jq '.tests[0].status="skipped" | .passed_count=0 | .skipped_count=1' "$fv" > "$t/fv-allskipped.json"
+reject "$sta" "$t/fv-allskipped.json" "an all-skipped envelope"
+jq '.test_count="0"' "$fv" > "$t/fv-strcount.json"
+reject "$sta" "$t/fv-strcount.json" "a string-valued test_count"
+# Argument forms: a six-argument call with an empty optional path is an
+# unreadable report (rejected with INVALID EVIDENCE like any other), while
+# five arguments, empty or not, is a usage error (exit 2) -- the check picks
+# its mode by argument count, never by emptiness.
+base=("$req" "$par" "$lvs" "$erc")
+for extra in "|" "|$fv" "$sta|"; do
   IFS='|' read -r a b <<<"$extra"
-  if [ -z "$extra" ]; then args=("${base[@]}" ""); else args=("${base[@]}" "$a" "$b"); fi
-  if ./check-evidence.sh "${args[@]}" 2>/dev/null; then
-    echo "FAIL: check accepted optional arguments [$extra]" >&2; exit 1
-  fi
-  echo "PASS: optional arguments [$extra] rejected"
+  reject "$a" "$b" "optional arguments [$extra]"
 done
-if ./check-evidence.sh "${base[@]}" build/sta.json 2>/dev/null; then
-  echo "FAIL: check accepted five arguments" >&2; exit 1
-fi
-echo "PASS: five arguments rejected"
+for five in "" "$sta"; do
+  rc=0
+  ./check-evidence.sh "${base[@]}" "$five" >/dev/null 2>/dev/null || rc=$?
+  if [ "$rc" -ne 2 ]; then
+    echo "FAIL: five arguments [${five:-<empty>}] exited $rc, expected usage error 2" >&2
+    exit 1
+  fi
+  echo "PASS: five arguments [${five:-<empty>}] rejected as a usage error"
+done
 echo "all evidence edge cases hold"
