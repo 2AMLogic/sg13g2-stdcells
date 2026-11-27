@@ -222,6 +222,21 @@ def run_manifest(root: Path, manifest: Path) -> int:
     return ca.main(["--manifest", str(manifest), "--repo-root", str(root)])
 
 
+def run_evidence(root: Path, evidence: dict) -> int:
+    manifest = write_manifest(root, {"block": "fake", "evidence": evidence})
+    return run_manifest(root, manifest)
+
+
+@pytest.fixture
+def single_envelope_repo(tmp_path):
+    root, _ = make_repo(
+        tmp_path,
+        {"f.txt": b"f"},
+        {"item.attest.json": single_shape_envelope("f.txt", b"f")},
+    )
+    return root
+
+
 def test_real_committed_manifest_pins_match_envelopes():
     manifest = Path(__file__).resolve().parents[1] / "sg13g2-stdcells.json"
     repo_root = Path(__file__).resolve().parents[2]
@@ -238,23 +253,17 @@ def test_manifest_pin_match_passes_both_provenance_shapes(tmp_path):
         "item9.attest.json": single_shape_envelope("design/gen.py", b"gen"),
     }
     root, _ = make_repo(tmp_path, files, envelopes)
-    manifest = write_manifest(
-        root,
-        {
-            "block": "fake",
-            "evidence": {
-                "1.analog": {
-                    "file": "envelopes/item1.attest.json",
-                    "content_hash": "sha256:" + "ab" * 32,
-                },
-                "9.digital": {
-                    "file": "envelopes/item9.attest.json",
-                    "content_hash": sha(b"gen"),
-                },
-            },
+    evidence = {
+        "1.analog": {
+            "file": "envelopes/item1.attest.json",
+            "content_hash": "sha256:" + "ab" * 32,
         },
-    )
-    assert run_manifest(root, manifest) == 0
+        "9.digital": {
+            "file": "envelopes/item9.attest.json",
+            "content_hash": sha(b"gen"),
+        },
+    }
+    assert run_evidence(root, evidence) == 0
 
 
 @pytest.fixture
@@ -275,8 +284,7 @@ def item6_documents(tmp_path):
 
 
 def run_item6_manifest(root, documents):
-    manifest = {"evidence": {"6.digital": {"not_applicable": documents}}}
-    return run_manifest(root, write_manifest(root, manifest))
+    return run_evidence(root, {"6.digital": {"not_applicable": documents}})
 
 
 def test_not_applicable_document_pins_match(tmp_path, item6_documents, capsys):
@@ -336,19 +344,13 @@ def test_manifest_pin_mismatch_fails_naming_key_envelope_and_digests(tmp_path, c
         )
     }
     root, _ = make_repo(tmp_path, files, envelopes)
-    manifest = write_manifest(
-        root,
-        {
-            "block": "fake",
-            "evidence": {
-                "1.analog": {
-                    "file": "envelopes/item1.attest.json",
-                    "content_hash": "sha256:" + "cd" * 32,
-                }
-            },
+    evidence = {
+        "1.analog": {
+            "file": "envelopes/item1.attest.json",
+            "content_hash": "sha256:" + "cd" * 32,
         },
-    )
-    assert run_manifest(root, manifest) == 1
+    }
+    assert run_evidence(root, evidence) == 1
     err = capsys.readouterr().err
     assert 'evidence["1.analog"]' in err
     assert "envelopes/item1.attest.json" in err
@@ -357,52 +359,30 @@ def test_manifest_pin_mismatch_fails_naming_key_envelope_and_digests(tmp_path, c
     assert "klt signoff --attest" in err  # the message names the repair
 
 
-def test_manifest_single_input_envelope_pin_mismatch_fails(tmp_path, capsys):
-    files = {"f.txt": b"f"}
-    envelopes = {"item.attest.json": single_shape_envelope("f.txt", b"f")}
-    root, _ = make_repo(tmp_path, files, envelopes)
-    manifest = write_manifest(
-        root,
-        {
-            "block": "fake",
-            "evidence": {
-                "9.digital": {
-                    "file": "envelopes/item.attest.json",
-                    "content_hash": sha(b"not f"),
-                }
-            },
-        },
-    )
-    assert run_manifest(root, manifest) == 1
+def test_manifest_single_input_envelope_pin_mismatch_fails(
+    single_envelope_repo, capsys
+):
+    pin = {"file": "envelopes/item.attest.json", "content_hash": sha(b"not f")}
+    assert run_evidence(single_envelope_repo, {"9.digital": pin}) == 1
     err = capsys.readouterr().err
     assert 'evidence["9.digital"]' in err
 
 
-def test_manifest_bare_path_entries_are_skipped_not_errors(tmp_path, capsys):
+def test_manifest_bare_path_entries_are_skipped_not_errors(
+    single_envelope_repo, capsys
+):
     # Several evidence entries today are bare path strings or lists of them
     # (e.g. 4.digital); they record locations without a pin and must not
     # trip the check. One object pin rides along so the manifest is checkable
     # at all -- a manifest with no pins at all is the zero-pin error (#129).
-    files = {"f.txt": b"f"}
-    envelopes = {"item.attest.json": single_shape_envelope("f.txt", b"f")}
-    root, _ = make_repo(tmp_path, files, envelopes)
-    manifest = write_manifest(
-        root,
-        {
-            "block": "fake",
-            "evidence": {
-                "1.digital": "flow/records/r/synthesize.json",
-                "3.analog": "layout/drc/cell.json",
-                "4.analog": ["layout/lvs/cell_1.json", "layout/lvs/cell_2.json"],
-                "11.digital": ["flow/records/r/erc.json"],
-                "9.digital": {
-                    "file": "envelopes/item.attest.json",
-                    "content_hash": sha(b"f"),
-                },
-            },
-        },
-    )
-    assert run_manifest(root, manifest) == 0
+    evidence = {
+        "1.digital": "flow/records/r/synthesize.json",
+        "3.analog": "layout/drc/cell.json",
+        "4.analog": ["layout/lvs/cell_1.json", "layout/lvs/cell_2.json"],
+        "11.digital": ["flow/records/r/erc.json"],
+        "9.digital": {"file": "envelopes/item.attest.json", "content_hash": sha(b"f")},
+    }
+    assert run_evidence(single_envelope_repo, evidence) == 0
     assert capsys.readouterr().err == ""
 
 
@@ -446,8 +426,7 @@ def item5_reports(tmp_path):
 
 
 def run_item5_manifest(root, pins):
-    manifest = {"block": "fake", "evidence": {"5.analog": pins}}
-    return run_manifest(root, write_manifest(root, manifest))
+    return run_evidence(root, {"5.analog": pins})
 
 
 def test_manifest_list_of_pinned_objects_checked_and_counted(item5_reports, capsys):
@@ -489,19 +468,8 @@ def test_manifest_list_pinned_object_naming_missing_report_fails(
     tmp_path, capsys
 ):
     root, _ = make_repo(tmp_path, {}, {})
-    manifest = write_manifest(
-        root,
-        {
-            "block": "fake",
-            "evidence": {
-                "5.analog": [
-                    {"file": "sim/records/gone.report.json",
-                     "content_hash": sha(b"x")}
-                ]
-            },
-        },
-    )
-    assert run_manifest(root, manifest) == 2
+    pins = [{"file": "sim/records/gone.report.json", "content_hash": sha(b"x")}]
+    assert run_item5_manifest(root, pins) == 2
     err = capsys.readouterr().err
     assert 'evidence["5.analog"][0]' in err
     assert "does not exist" in err
@@ -511,19 +479,8 @@ def test_manifest_list_pinned_object_naming_non_json_report_fails(
     tmp_path, capsys
 ):
     root, _ = make_repo(tmp_path, {"sim/records/plain.report.json": b"not json"}, {})
-    manifest = write_manifest(
-        root,
-        {
-            "block": "fake",
-            "evidence": {
-                "5.analog": [
-                    {"file": "sim/records/plain.report.json",
-                     "content_hash": sha(b"x")}
-                ]
-            },
-        },
-    )
-    assert run_manifest(root, manifest) == 2
+    pins = [{"file": "sim/records/plain.report.json", "content_hash": sha(b"x")}]
+    assert run_item5_manifest(root, pins) == 2
     err = capsys.readouterr().err
     assert 'evidence["5.analog"][0]' in err
     assert "not valid JSON" in err
@@ -588,17 +545,8 @@ def test_manifest_empty_or_string_only_list_still_pins_nothing(tmp_path, capsys)
     # nothing -- skipped element by element -- so a manifest with no other
     # pins still hits the zero-pin error (#129).
     root, _ = make_repo(tmp_path, {}, {})
-    manifest = write_manifest(
-        root,
-        {
-            "block": "fake",
-            "evidence": {
-                "5.analog": [],
-                "11.digital": ["flow/records/r/erc.json"],
-            },
-        },
-    )
-    assert run_manifest(root, manifest) == 2
+    evidence = {"5.analog": [], "11.digital": ["flow/records/r/erc.json"]}
+    assert run_evidence(root, evidence) == 2
     assert "no evidence pins" in capsys.readouterr().err
 
 
@@ -608,17 +556,11 @@ def test_manifest_with_zero_pins_fails_not_vacuously(tmp_path, capsys):
     # sibling of an empty envelope dir in the default mode. It must exit 2
     # naming the manifest, never print the success line.
     root, _ = make_repo(tmp_path, {}, {})
-    manifest = write_manifest(
-        root,
-        {
-            "block": "fake",
-            "evidence": {
-                "1.digital": "flow/records/r/synthesize.json",
-                "4.analog": ["layout/lvs/cell_1.json", "layout/lvs/cell_2.json"],
-            },
-        },
-    )
-    assert run_manifest(root, manifest) == 2
+    evidence = {
+        "1.digital": "flow/records/r/synthesize.json",
+        "4.analog": ["layout/lvs/cell_1.json", "layout/lvs/cell_2.json"],
+    }
+    assert run_evidence(root, evidence) == 2
     captured = capsys.readouterr()
     assert captured.out == ""
     assert MANIFEST_NAME in captured.err
@@ -667,62 +609,33 @@ def test_manifest_invalid_json_keeps_specific_message(tmp_path, capsys):
 
 def test_manifest_naming_missing_envelope_fails_loudly(tmp_path, capsys):
     root, _ = make_repo(tmp_path, {}, {})
-    manifest = write_manifest(
-        root,
-        {
-            "block": "fake",
-            "evidence": {
-                "2.digital": {
-                    "file": "envelopes/gone.attest.json",
-                    "content_hash": sha(b"x"),
-                }
-            },
-        },
-    )
-    assert run_manifest(root, manifest) == 2
+    pin = {"file": "envelopes/gone.attest.json", "content_hash": sha(b"x")}
+    assert run_evidence(root, {"2.digital": pin}) == 2
     err = capsys.readouterr().err
     assert 'evidence["2.digital"]' in err
     assert "envelopes/gone.attest.json" in err
     assert "does not exist" in err
 
 
-def test_manifest_object_entry_without_content_hash_fails_loudly(tmp_path, capsys):
-    files = {"f.txt": b"f"}
-    envelopes = {"item.attest.json": single_shape_envelope("f.txt", b"f")}
-    root, _ = make_repo(tmp_path, files, envelopes)
-    manifest = write_manifest(
-        root,
-        {"block": "fake",
-         "evidence": {"9.digital": {"file": "envelopes/item.attest.json"}}},
-    )
-    assert run_manifest(root, manifest) == 2
+def test_manifest_object_entry_without_content_hash_fails_loudly(
+    single_envelope_repo, capsys
+):
+    evidence = {"9.digital": {"file": "envelopes/item.attest.json"}}
+    assert run_evidence(single_envelope_repo, evidence) == 2
     assert 'evidence["9.digital"]' in capsys.readouterr().err
 
 
-def test_manifest_malformed_pin_fails_loudly(tmp_path):
-    files = {"f.txt": b"f"}
-    envelopes = {"item.attest.json": single_shape_envelope("f.txt", b"f")}
-    root, _ = make_repo(tmp_path, files, envelopes)
-    manifest = write_manifest(
-        root,
-        {"block": "fake",
-         "evidence": {"9.digital": {"file": "envelopes/item.attest.json",
-                                    "content_hash": "deadbeef"}}},
-    )
-    assert run_manifest(root, manifest) == 2
+def test_manifest_malformed_pin_fails_loudly(single_envelope_repo):
+    pin = {"file": "envelopes/item.attest.json", "content_hash": "deadbeef"}
+    assert run_evidence(single_envelope_repo, {"9.digital": pin}) == 2
 
 
 def test_manifest_naming_unparseable_envelope_fails_loudly(tmp_path, capsys):
     root, _ = make_repo(tmp_path, {}, {})
     env_path = root / "envelopes" / "broken.attest.json"
     env_path.write_text("{not json")
-    manifest = write_manifest(
-        root,
-        {"block": "fake",
-         "evidence": {"1.analog": {"file": "envelopes/broken.attest.json",
-                                   "content_hash": sha(b"x")}}},
-    )
-    assert run_manifest(root, manifest) == 2
+    pin = {"file": "envelopes/broken.attest.json", "content_hash": sha(b"x")}
+    assert run_evidence(root, {"1.analog": pin}) == 2
     assert "broken.attest.json" in capsys.readouterr().err
 
 
@@ -753,13 +666,8 @@ def test_manifest_naming_non_object_envelope_fails_loudly(tmp_path, capsys):
     # never a traceback.
     root, _ = make_repo(tmp_path, {}, {})
     (root / "envelopes" / "list.attest.json").write_text("[]\n")
-    manifest = write_manifest(
-        root,
-        {"block": "fake",
-         "evidence": {"1.analog": {"file": "envelopes/list.attest.json",
-                                   "content_hash": sha(b"x")}}},
-    )
-    assert run_manifest(root, manifest) == 2
+    pin = {"file": "envelopes/list.attest.json", "content_hash": sha(b"x")}
+    assert run_evidence(root, {"1.analog": pin}) == 2
     err = capsys.readouterr().err
     assert "list.attest.json: top level is not a JSON object" in err
     assert "Traceback" not in err
@@ -772,14 +680,9 @@ def test_manifest_mode_does_not_walk_the_envelope_dir(tmp_path):
     files = {"f.txt": b"f"}
     stale = single_shape_envelope("f.txt", b"CHANGED")  # stale member hash
     root, env_dir = make_repo(tmp_path, files, {"stale.attest.json": stale})
-    manifest = write_manifest(
-        root,
-        {"block": "fake",
-         "evidence": {"9.digital": {"file": "envelopes/stale.attest.json",
-                                    "content_hash": sha(b"CHANGED")}}},
-    )
+    pin = {"file": "envelopes/stale.attest.json", "content_hash": sha(b"CHANGED")}
     assert run(root, env_dir) == 1  # envelope walk sees the staleness
-    assert run_manifest(root, manifest) == 0  # the pin matches the aggregate
+    assert run_evidence(root, {"9.digital": pin}) == 0  # the pin matches the aggregate
 
 
 def test_diverging_hashes_for_one_path_fail(tmp_path):
