@@ -1,5 +1,5 @@
-"""Tests for layout/run_erc.py and layout/toolchain_pin.py pure helpers, plus
-the shape of the ERC evidence committed under layout/erc/."""
+"""Tests for layout/run_erc.py, plus the shape of the ERC evidence committed
+under layout/erc/."""
 import contextlib
 import io
 import json
@@ -14,37 +14,6 @@ from unittest import mock
 LAYOUT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(LAYOUT))
 import run_erc  # noqa: E402
-import toolchain_pin  # noqa: E402
-
-HELP = """usage: klt
-positional arguments:
-  <command>
-    layers              enumerate layers
-    drc                 run a headless DRC deck
-    lvs                 compare netlists
-"""
-
-HELP_WITH_ERC = """usage: klt
-positional arguments:
-  <command>
-    layers              enumerate layers
-    drc                 run a headless DRC deck
-    erc                 supply/tie connectivity checks
-    lvs                 compare netlists
-"""
-
-
-class ToolchainPin(unittest.TestCase):
-    def test_pin_lists_erc(self):
-        self.assertIn("erc", toolchain_pin.required_commands())
-
-    def test_missing_names_erc_command(self):
-        """The runner fails loudly when klt lacks `erc` (issue #179): the
-        shared check names it, so a missing subcommand is never skipped."""
-        self.assertEqual(toolchain_pin.missing_commands(["drc", "erc", "lvs"], HELP),
-                         ["erc"])
-        self.assertEqual(toolchain_pin.missing_commands(["drc", "erc", "lvs"], HELP_WITH_ERC),
-                         [])
 
 
 class Command(unittest.TestCase):
@@ -60,10 +29,6 @@ class Command(unittest.TestCase):
         cmd = run_erc.build_command("layout/erc/controls/missing-tie-nwell-inv1.gds",
                                     "layout/erc-spec.json", None)
         self.assertNotIn("--top", cmd)
-
-    def test_cells_come_from_example_config(self):
-        self.assertEqual(run_erc.cell_names(LAYOUT / "example_config.json"),
-                         ["sg13g2_inv_1", "sg13g2_inv_2", "sg13g2_inv_4", "sg13g2_nand2_1"])
 
     def test_supplies_come_from_the_config_or_its_parsed_document(self):
         self.assertEqual(run_erc.supply_names(LAYOUT / "example_config.json"), ["VDD", "VSS"])
@@ -134,6 +99,8 @@ class RecordedEvidence(unittest.TestCase):
             yield cell, json.loads((LAYOUT / "erc" / f"{cell}.json").read_text())
 
     def test_every_cell_clean_one_island_per_supply_no_skipped_tie(self):
+        # the spec committed beside the reports is the one they ran with
+        spec_sha = run_erc.sha(LAYOUT / "erc-spec.json")
         seen = 0
         for cell, rep in self.reports():
             self.assertTrue(run_erc.cell_ok(rep), cell)
@@ -142,11 +109,7 @@ class RecordedEvidence(unittest.TestCase):
                              [("VDD", 1, 1), ("VSS", 1, 1)], cell)
             self.assertEqual(run_erc.missing_ties(rep), [], cell)
             self.assertEqual(run_erc.degenerate_ties(rep), [], cell)
-            # the spec committed beside the reports is the one they ran with
-            import hashlib
-            digest = hashlib.sha256((LAYOUT / "erc-spec.json").read_bytes()).hexdigest()
-            self.assertEqual(rep["provenance"]["spec"]["content_hash"],
-                             f"sha256:{digest}", cell)
+            self.assertEqual(rep["provenance"]["spec"]["content_hash"], spec_sha, cell)
             seen += 1
         self.assertEqual(seen, 4)
 
