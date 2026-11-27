@@ -2,6 +2,19 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-26
+
+- **PR #300**: fix(sim): assemble item 5 requests once and reject an off-corner rail
+- **Issue #299** (closed): Share the item 5 transient request builder and check its stimulus voltage against TT
+- **PR #287**: feat: attest the add8 stock-library characterization across three corners
+- **Issue #177** (closed): T1 item 8 digital: aggregate the add8 baseline delay, area and power into one attested characterization report (rows 10-12 declared unmeasured)
+- **PR #296**: refactor(sim): dedupe fixture-mutation helpers in test_check_library
+- **Issue #295** (closed): Share record-header, sidecar, and text-replace helpers in sim/tests/test_check_library.py
+- **PR #291**: refactor(sim): grade item 5 reports with targets from each request
+- **Issue #290** (closed): Reuse item 5 measurement targets when grading simulation reports
+- **PR #289**: ci: delegate evidence-sta-fv-reject to the shared flow edge suite
+- **Issue #288** (closed): Share STA/FV jq mutation suite between check-ci.sh and flow/test-check-evidence.sh
+
 ### 2026-11-24
 
 - **PR #281**: chore(layout): drop unread pin fields, append correction paragraph

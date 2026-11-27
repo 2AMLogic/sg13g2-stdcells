@@ -61,7 +61,7 @@ seeded random-vector set; no such vector-driven figure exists, and klt has no
 activity input or energy-per-op metric (klayout-tools#4914). The values must
 not be read as row 11 quantities.
 
-## Evidence status
+## Evidence status on 2026-11-23
 
 `8.digital` stays uncited and `unmet`. `klt signoff --attest 8` cannot accept an
 inventory that owns rows 10-12 with no citation until
@@ -73,3 +73,16 @@ runs that script today (`check-ci.sh` is itself hash-pinned in the item 10
 envelope, so it is not edited here); enforcement arrives with the
 `envelope_checks` entry added when the `8.digital` envelope is attested at
 step 4. Until then it is a manual check.
+
+### Attestation update, 2026-11-26
+
+The digital item 8 inventory now cites the three source records under
+`benchmark-basis-1-pdk-shipped-liberty`, the separately labelled stock-library
+reference allowed by Benchmark basis item 1. Its `area` binding is the same
+post-synthesis cell area at each STA corner because all three time the same
+mapped netlist. The `fmax` and default-activity `power` bindings use the
+corresponding corner in the STA record. Each citation runs
+`python3 manifests/check_item8_digital_report.py` to check the tables.
+
+The inventory declares the three ratio rows in `uncited_rows`. Their paired
+measurements remain outstanding. [Benchmark tracking issue #286](https://github.com/2AMLogic/sg13g2-stdcells/issues/286)

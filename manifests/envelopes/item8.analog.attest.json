@@ -24,7 +24,7 @@
         "role": "evidence",
         "path": "manifests/envelopes/item9.analog.attest.json",
         "passed": true,
-        "content_hash": "sha256:fbcb1c0d469f05d3099ec870a369f00e09a2613c91caad0148d854743574394e"
+        "content_hash": "sha256:68da2fdee6921cdad7985b30cdd413d9e49237273ca6f5c56fa671c12d4c07f9"
       },
       {
         "check": "envelope",

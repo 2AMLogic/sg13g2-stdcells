@@ -53,6 +53,10 @@
       "file": "manifests/envelopes/item8.analog.attest.json",
       "content_hash": "sha256:191c3c82a8bb01e2491602b530ac0b2b9f62a13f7ccef7027ff3a1cd47b0aecb"
     },
+    "8.digital": {
+      "file": "manifests/envelopes/item8.digital.attest.json",
+      "content_hash": "sha256:08735f860f673c4d92524fbc500bdcb055a38c1a4177d9ce39bc584774329f07"
+    },
     "9.analog": {
       "file": "manifests/envelopes/item9.analog.attest.json",
       "content_hash": "sha256:6a5c363dfabf8da6e1f2d1fc44f1407be783ff7008e43a4a8ff9d4ffacca77a5"

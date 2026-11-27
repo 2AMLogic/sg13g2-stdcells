@@ -3,7 +3,7 @@ partition boundary:
   analog: transistor-level cells (sg13g2_inv_1, sg13g2_inv_2, sg13g2_inv_4, sg13g2_nand2_1): SPICE characterization, klt sim corner evidence and layout DRC/LVS
   digital: add8 synthesis/place-and-route benchmark flow on the stock sg13g2_stdcell baseline
 tier: none
-T1: 16/22 items met, 1 not_applicable
+T1: 17/22 items met, 1 not_applicable
 
 [MET  ] T1 #1 [analog] Design sources
         cite: manifests/envelopes/item1.analog.attest.json (kind=generic, status=pass, content_hash=sha256:cf262b1581042b14490eb00c1df54681767f9a62e0faa02bc0740340d2be3973, exit_status=0)
@@ -79,8 +79,9 @@ T1: 16/22 items met, 1 not_applicable
 [MET  ] T1 #8 [analog] Characterization report
         cite: manifests/envelopes/item8.analog.attest.json (kind=generic, status=pass, content_hash=sha256:191c3c82a8bb01e2491602b530ac0b2b9f62a13f7ccef7027ff3a1cd47b0aecb, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches
-[UNMET] T1 #8 [digital] Characterization report
-        reason: no_evidence
+[MET  ] T1 #8 [digital] Characterization report
+        cite: manifests/envelopes/item8.digital.attest.json (kind=generic, status=pass, content_hash=sha256:08735f860f673c4d92524fbc500bdcb055a38c1a4177d9ce39bc584774329f07, exit_status=0)
+        input: re-hashed the artifact this envelope names -- matches
 [MET  ] T1 #9 [analog] Testbenches shipped
         cite: manifests/envelopes/item9.analog.attest.json (kind=generic, status=pass, content_hash=sha256:6a5c363dfabf8da6e1f2d1fc44f1407be783ff7008e43a4a8ff9d4ffacca77a5, exit_status=0)
         input: re-hashed the artifact this envelope names -- matches

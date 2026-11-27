@@ -60,11 +60,32 @@ def run(tree):
     return check_library.check(lib, repo_root=root, records_dir=records)
 
 
-def edit_sidecar(lib, **changes):
-    path = Path(str(lib) + ".provenance")
-    prov = json.loads(path.read_text())
+def read_sidecar(lib):
+    return json.loads(Path(str(lib) + ".provenance").read_text())
+
+
+def edit_sidecar(lib, *, remove=(), **changes):
+    prov = read_sidecar(lib)
+    for key in remove:
+        del prov[key]
     prov.update(changes)
-    path.write_text(json.dumps(prov, indent=2, sort_keys=True) + "\n")
+    Path(str(lib) + ".provenance").write_text(
+        json.dumps(prov, indent=2, sort_keys=True) + "\n")
+
+
+def replace_text(path, old, new):
+    path.write_text(path.read_text().replace(old, new))
+
+
+def edit_record_header(records, prefix, replacement=None):
+    record = records / REAL_RECORD.name
+    lines = record.read_text().splitlines(keepends=True)
+    if replacement is None:
+        lines = [line for line in lines if not line.startswith(prefix)]
+    else:
+        rewrite = replacement if callable(replacement) else lambda line: replacement
+        lines = [rewrite(line) if line.startswith(prefix) else line for line in lines]
+    record.write_text("".join(lines))
 
 
 def test_baseline_is_fresh(tree):
@@ -74,8 +95,8 @@ def test_baseline_is_fresh(tree):
 def test_config_edit_is_drift(tree):
     # The characterization pins the config's bytes; an edit invalidates the pin.
     root, lib, _ = tree
-    config = root / "layout" / "example_config.json"
-    config.write_text(config.read_text().replace('"l_nm": 130', '"l_nm": 150'))
+    replace_text(root / "layout" / "example_config.json",
+                 '"l_nm": 130', '"l_nm": 150')
     problems = run(tree)
     assert any("example_config.json" in p and "sha256" in p for p in problems), problems
 
@@ -89,8 +110,7 @@ def test_missing_config_is_drift(tree):
 def test_hand_edited_lib_losing_a_cell_is_drift(tree):
     # A view that no longer holds a cell the sidecar claims was characterized.
     _, lib, _ = tree
-    text = lib.read_text().replace("cell (sg13g2_nand2_1)", "cell (sg13g2_nand2_XX)")
-    lib.write_text(text)
+    replace_text(lib, "cell (sg13g2_nand2_1)", "cell (sg13g2_nand2_XX)")
     assert any("sg13g2_nand2_1" in p for p in run(tree))
 
 
@@ -107,8 +127,7 @@ def test_library_name_not_derived_from_sidecar_corner_is_drift(tree):
     # no other check can see it -- the declared name must be related to the
     # name the sidecar's corner derives.
     _, lib, _ = tree
-    sidecar = Path(str(lib) + ".provenance")
-    corner = json.loads(sidecar.read_text())["corner"]
+    corner = read_sidecar(lib)["corner"]
     edit_sidecar(lib, corner={**corner, "name": "ff", "process": "mos_ff",
                               "supply_v": 1.32, "temperature_c": -40.0})
     problems = run(tree)
@@ -120,24 +139,20 @@ def test_hand_edited_lib_voltage_is_drift(tree):
     # An attribute tampered in the view itself, library name and cell set
     # untouched: the corner comparison is what catches it (issue #119).
     _, lib, _ = tree
-    text = lib.read_text().replace("nom_voltage : 1.2;", "nom_voltage : 3.3;")
-    lib.write_text(text)
+    replace_text(lib, "nom_voltage : 1.2;", "nom_voltage : 3.3;")
     problems = run(tree)
     assert any("nom_voltage" in p and "3.3" in p for p in problems), problems
 
 
 def test_hand_edited_lib_temperature_is_drift(tree):
     _, lib, _ = tree
-    text = lib.read_text().replace("nom_temperature : 25;", "nom_temperature : 125;")
-    lib.write_text(text)
+    replace_text(lib, "nom_temperature : 25;", "nom_temperature : 125;")
     assert any("125" in p for p in run(tree))
 
 
 def test_hand_edited_lib_operating_conditions_name_is_drift(tree):
     _, lib, _ = tree
-    text = lib.read_text().replace("operating_conditions (tt) {",
-                                   "operating_conditions (ff) {")
-    lib.write_text(text)
+    replace_text(lib, "operating_conditions (tt) {", "operating_conditions (ff) {")
     assert any("ff" in p for p in run(tree))
 
 
@@ -145,8 +160,7 @@ def test_hand_edited_lib_operating_conditions_voltage_is_drift(tree):
     # The group's voltage is compared as well as the nom_* attribute, so a
     # tamper that touches only the group is still caught.
     _, lib, _ = tree
-    text = lib.read_text().replace("\n    voltage : 1.2;", "\n    voltage : 3.3;")
-    lib.write_text(text)
+    replace_text(lib, "\n    voltage : 1.2;", "\n    voltage : 3.3;")
     problems = run(tree)
     assert any("operating_conditions(tt) voltage" in p and "3.3" in p
                for p in problems), problems
@@ -157,8 +171,7 @@ def test_view_process_factor_is_deliberately_unchecked(tree):
     # the view's process attributes are numeric process factors -- not
     # comparable, so process is deliberately not pinned (issue #119).
     _, lib, _ = tree
-    text = lib.read_text().replace("nom_process : 1;", "nom_process : 0.9;")
-    lib.write_text(text)
+    replace_text(lib, "nom_process : 1;", "nom_process : 0.9;")
     assert run(tree) == []
 
 
@@ -189,8 +202,7 @@ def test_cell_present_only_in_a_provenance_path_is_drift(tree):
     # The name survives only inside a **Netlist provenance** path line -- that is
     # not a measurement, so the record does not speak for the cell.
     _, _, records = tree
-    record = records / REAL_RECORD.name
-    record.write_text(record.read_text().replace("- **Cell**: sg13g2_inv_4\n", ""))
+    replace_text(records / REAL_RECORD.name, "- **Cell**: sg13g2_inv_4\n", "")
     assert any("sg13g2_inv_4" in p for p in run(tree))
 
 
@@ -210,18 +222,15 @@ def test_provenance_without_a_netlist_path_is_not_a_stand_in(tree):
     # measurements) cannot be compared against <cell>.spice -- the checker
     # stays silent rather than rejecting evidence shapes it cannot judge.
     _, lib, records = tree
-    record = records / REAL_RECORD.name
-    text = record.read_text().replace(
-        "- **Netlist provenance**: netlist supplied to klt characterize:",
-        "- **Netlist provenance**: extracted from layout")
-    record.write_text(text)
+    replace_text(records / REAL_RECORD.name,
+                 "- **Netlist provenance**: netlist supplied to klt characterize:",
+                 "- **Netlist provenance**: extracted from layout")
     assert not any(".spice" in p for p in run(tree))
 
 
 def test_record_missing_a_cell_is_drift(tree):
     _, _, records = tree
-    record = records / REAL_RECORD.name
-    record.write_text(record.read_text().replace("sg13g2_inv_4", "sg13g2_inv_X"))
+    replace_text(records / REAL_RECORD.name, "sg13g2_inv_4", "sg13g2_inv_X")
     assert any("sg13g2_inv_4" in p for p in run(tree))
 
 
@@ -254,10 +263,8 @@ def test_dirty_sidecar_stamp_is_drift(tree):
 def test_dirty_record_stamp_is_drift(tree):
     # The measurement the sidecar cites itself stamps a dirty tree (issue #134).
     _, _, records = tree
-    record = records / REAL_RECORD.name
-    record.write_text("".join(
-        line.rstrip("\n") + " (dirty)\n" if line.startswith("**Repo commit**") else line
-        for line in record.read_text().splitlines(keepends=True)))
+    edit_record_header(records, "**Repo commit**",
+                       lambda line: line.rstrip("\n") + " (dirty)\n")
     problems = run(tree)
     assert any(REAL_RECORD.name in p and "(dirty)" in p for p in problems), problems
 
@@ -266,10 +273,7 @@ def test_sidecar_without_repo_commit_is_drift(tree):
     # Decided explicitly (issue #134): repo_commit is a REQUIRED_KEY, so
     # provenance without a stamp cannot pass unstated.
     _, lib, _ = tree
-    prov = json.loads(Path(str(lib) + ".provenance").read_text())
-    del prov["repo_commit"]
-    Path(str(lib) + ".provenance").write_text(
-        json.dumps(prov, indent=2, sort_keys=True) + "\n")
+    edit_sidecar(lib, remove=["repo_commit"])
     assert any("repo_commit" in p for p in run(tree))
 
 
@@ -292,17 +296,6 @@ def test_commit_with_dirty_substring_outside_the_suffix_is_not_flagged(tree):
     assert len(problems) == 1, problems
 
 
-def test_record_without_a_commit_stamp_is_drift(tree):
-    # The cited measurement's stamp is its reproducibility claim; a record
-    # without the line names no tree it is reproducible from (issue #134).
-    _, _, records = tree
-    record = records / REAL_RECORD.name
-    record.write_text("".join(
-        line for line in record.read_text().splitlines(keepends=True)
-        if not line.startswith("**Repo commit**")))
-    assert any("Repo commit" in p for p in run(tree))
-
-
 def test_sidecar_repointed_at_another_trees_record_is_drift(tree):
     # The sidecar names tree X, the record it cites stamps tree Y: the
     # provenance chain is internally contradictory and must not report
@@ -320,7 +313,7 @@ def test_dirty_suffix_alone_does_not_double_as_a_mismatch(tree):
     # finding only; the commit parts still agree, so #147 adds no duplicate
     # mismatch finding for the same dirty suffix.
     _, lib, _ = tree
-    prov = json.loads(Path(str(lib) + ".provenance").read_text())
+    prov = read_sidecar(lib)
     edit_sidecar(lib, repo_commit=prov["repo_commit"] + " (dirty)")
     problems = run(tree)
     assert any("repo_commit" in p and "(dirty)" in p for p in problems), problems
@@ -331,25 +324,18 @@ def test_dirty_suffix_alone_does_not_double_as_a_mismatch(tree):
 # --- PDK pin (issue #178) -----------------------------------------------------
 
 
-def sidecar_pdk(lib):
-    return json.loads(Path(str(lib) + ".provenance").read_text())["pdk"]
-
-
 def test_sidecar_without_pdk_pin_is_drift(tree):
     # pdk is a REQUIRED_KEY, like repo_commit (#134): provenance that pins no
     # PDK revision cannot pass unstated.
     _, lib, _ = tree
-    prov = json.loads(Path(str(lib) + ".provenance").read_text())
-    del prov["pdk"]
-    Path(str(lib) + ".provenance").write_text(
-        json.dumps(prov, indent=2, sort_keys=True) + "\n")
+    edit_sidecar(lib, remove=["pdk"])
     assert any("pdk" in p for p in run(tree))
 
 
 def test_sidecar_pdk_without_a_name_is_drift(tree):
     # A revision alone names a commit of no identified PDK.
     _, lib, _ = tree
-    revision = sidecar_pdk(lib)["revision"]
+    revision = read_sidecar(lib)["pdk"]["revision"]
     edit_sidecar(lib, pdk={"revision": revision})
     problems = run(tree)
     assert any("names no PDK" in p for p in problems), problems
@@ -389,10 +375,7 @@ def test_record_pdk_stamp_changed_alone_is_drift(tree):
     # The mirror of the repointed sidecar: the record's stamp moved, the
     # sidecar pin stayed -- same contradiction, caught from the other side.
     _, _, records = tree
-    record = records / REAL_RECORD.name
-    record.write_text("".join(
-        f"**PDK**: IHP-Open-PDK @ {'b' * 40}\n" if line.startswith("**PDK**") else line
-        for line in record.read_text().splitlines(keepends=True)))
+    edit_record_header(records, "**PDK**", f"**PDK**: IHP-Open-PDK @ {'b' * 40}\n")
     problems = run(tree)
     assert any("another PDK revision" in p for p in problems), problems
     assert len(problems) == 1, problems
@@ -404,10 +387,7 @@ def test_record_without_a_pdk_stamp_is_drift(tree):
     # stamp (issue #134), and the agreement check stays silent rather than
     # adding a second finding for a stamp that is not there.
     _, _, records = tree
-    record = records / REAL_RECORD.name
-    record.write_text("".join(
-        line for line in record.read_text().splitlines(keepends=True)
-        if not line.startswith("**PDK**")))
+    edit_record_header(records, "**PDK**")
     problems = run(tree)
     assert any("no **PDK** stamp" in p for p in problems), problems
     assert not any("another PDK revision" in p for p in problems), problems
@@ -415,10 +395,7 @@ def test_record_without_a_pdk_stamp_is_drift(tree):
 
 def test_record_pdk_stamp_short_revision_is_drift(tree):
     _, _, records = tree
-    record = records / REAL_RECORD.name
-    record.write_text("".join(
-        "**PDK**: IHP-Open-PDK @ 5cccb161\n" if line.startswith("**PDK**") else line
-        for line in record.read_text().splitlines(keepends=True)))
+    edit_record_header(records, "**PDK**", "**PDK**: IHP-Open-PDK @ 5cccb161\n")
     problems = run(tree)
     assert any("not a full commit SHA" in p for p in problems), problems
     assert any("another PDK revision" in p for p in problems), problems
@@ -452,14 +429,13 @@ def test_writer_pdk_format_is_what_the_checker_reads(tree):
 
 
 def test_record_without_a_commit_stamp_yields_no_mismatch_finding(tree):
+    # The cited measurement's stamp is its reproducibility claim; a record
+    # without the line names no tree it is reproducible from (issue #134).
     # With no record stamp the existing check reports the missing line;
     # the agreement check stays silent rather than adding a second finding
     # for a stamp that is not there (issue #147).
     _, _, records = tree
-    record = records / REAL_RECORD.name
-    record.write_text("".join(
-        line for line in record.read_text().splitlines(keepends=True)
-        if not line.startswith("**Repo commit**")))
+    edit_record_header(records, "**Repo commit**")
     problems = run(tree)
     assert any("Repo commit" in p for p in problems), problems
     assert not any("another tree" in p for p in problems), problems
@@ -471,10 +447,7 @@ def test_record_with_a_blank_commit_stamp_is_drift(tree):
     # (issue #154). The agreement check abstains -- the sidecar's commit is
     # compared against nothing.
     _, _, records = tree
-    record = records / REAL_RECORD.name
-    record.write_text("".join(
-        "**Repo commit**: \n" if line.startswith("**Repo commit**") else line
-        for line in record.read_text().splitlines(keepends=True)))
+    edit_record_header(records, "**Repo commit**", "**Repo commit**: \n")
     problems = run(tree)
     assert any(REAL_RECORD.name in p and "Repo commit" in p for p in problems), problems
     assert not any("another tree" in p for p in problems), problems

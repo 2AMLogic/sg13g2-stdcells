@@ -101,7 +101,7 @@
         "role": "testbench",
         "path": "sim/item5/request.py",
         "passed": true,
-        "content_hash": "sha256:44fe570f53c1c5c14feb69c5b4e2136a6a0090794a4baaaa94a78d9ac84f2c76"
+        "content_hash": "sha256:7cabb58c93584236cdbd731f7b8b830c549c604489ff515d7e78d22bb2aba193"
       },
       {
         "check": "present",
@@ -115,7 +115,7 @@
         "role": "testbench",
         "path": "sim/item5/tests/test_request.py",
         "passed": true,
-        "content_hash": "sha256:0f9c197f4027428cfd28d6ca0ed3bfb38efe7a2ba3b4be84f008907066d3f33d"
+        "content_hash": "sha256:868d548eef7a33d7424684ff438d99549edd6eafbbe43be5ee8e2883019e4e9f"
       },
       {
         "check": "command",
