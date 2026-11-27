@@ -95,6 +95,20 @@ def _path_of(value, envelope_name, where):
     return value["path"]
 
 
+def _provenance_input(envelope, envelope_name):
+    """Return envelope["provenance"]["input"], raising EnvelopeError unless the
+    envelope, its provenance, and provenance.input are all JSON objects."""
+    if not isinstance(envelope, dict):
+        raise EnvelopeError(f"{envelope_name}: top level is not a JSON object")
+    provenance = envelope.get("provenance")
+    if not isinstance(provenance, dict):
+        raise EnvelopeError(f"{envelope_name}: no provenance object")
+    inp = provenance.get("input")
+    if not isinstance(inp, dict):
+        raise EnvelopeError(f"{envelope_name}: provenance.input is not an object")
+    return inp
+
+
 def collect_records(envelope, envelope_name):
     """Return [(where, relpath, digest)] for every recorded content_hash that
     names a file."""
@@ -125,12 +139,7 @@ def collect_records(envelope, envelope_name):
         )
         records.append((f"attestation.checks[{i}]", check["path"], digest))
 
-    provenance = envelope.get("provenance")
-    if not isinstance(provenance, dict):
-        raise EnvelopeError(f"{envelope_name}: no provenance object")
-    inp = provenance.get("input")
-    if not isinstance(inp, dict):
-        raise EnvelopeError(f"{envelope_name}: provenance.input is not an object")
+    inp = _provenance_input(envelope, envelope_name)
 
     if "path" in inp:
         rel = _path_of(inp["path"], envelope_name, "provenance.input.path")
@@ -201,14 +210,7 @@ def envelope_input_hash(envelope, envelope_name):
     """Return the envelope's provenance.input.content_hash digest -- the
     single-file digest for the path shape, the input-set aggregate for the
     paths shape. This is the field a block manifest's evidence pin names."""
-    if not isinstance(envelope, dict):
-        raise EnvelopeError(f"{envelope_name}: top level is not a JSON object")
-    provenance = envelope.get("provenance")
-    if not isinstance(provenance, dict):
-        raise EnvelopeError(f"{envelope_name}: no provenance object")
-    inp = provenance.get("input")
-    if not isinstance(inp, dict):
-        raise EnvelopeError(f"{envelope_name}: provenance.input is not an object")
+    inp = _provenance_input(envelope, envelope_name)
     if "content_hash" not in inp:
         raise EnvelopeError(
             f"{envelope_name}: provenance.input records no content_hash"
@@ -393,91 +395,84 @@ def manifest_pin_findings(manifest, manifest_name, repo_root):
     if not isinstance(evidence, dict):
         errors.append(f"{manifest_name}: no evidence object")
         return checked, errors, failures
+    def check_pin(check_fn, pin, location):
+        """Run one pin check, counting it unless it raised a structural error."""
+        nonlocal checked
+        try:
+            mismatch = check_fn(pin, manifest_name, location, repo_root)
+        except EnvelopeError as exc:
+            errors.append(str(exc))
+            return
+        checked += 1
+        if mismatch:
+            failures.append(mismatch)
+
     for key, entry in evidence.items():
         where = f'evidence["{key}"]'
-        if isinstance(entry, str):
-            # A bare evidence path: a location recorded without a pin,
-            # nothing to compare.
-            continue
-        if isinstance(entry, list):
-            # A list mixes shapes element by element (#220): bare strings
-            # are locations without a pin and are skipped, while {file,
-            # content_hash, ...} objects are envelope pins compared exactly
-            # like the top-level object branch below -- item 5's analog
-            # citations are klt sim reports whose provenance.input
-            # .content_hash is the pin. A string-only list still pins
-            # nothing.
-            # A nested list is a cited group (item 11's analog groups pair
-            # an ERC and an LVS record per cell); its elements are walked
-            # the same way, one level deep.
-            flat = []
-            for i, element in enumerate(entry):
-                if isinstance(element, list):
-                    flat.extend(
-                        (f"{where}[{i}][{j}]", sub)
-                        for j, sub in enumerate(element)
-                    )
-                else:
-                    flat.append((f"{where}[{i}]", element))
-            for location, element in flat:
-                if isinstance(element, str):
-                    continue
-                if not isinstance(element, dict):
+        if isinstance(entry, dict):
+            if key in ("6", "6.digital") and "not_applicable" in entry:
+                form = entry["not_applicable"]
+                if not isinstance(form, dict):
                     errors.append(
-                        f"{manifest_name}: {location}: expected a path string "
-                        f"or a {{file, content_hash}} object, got "
-                        f"{type(element).__name__}"
+                        f"{manifest_name}: {where}.not_applicable: expected an object"
                     )
                     continue
-                try:
-                    mismatch = _envelope_pin_mismatch(
-                        element, manifest_name, location, repo_root
+                for document in ("spec", "statement"):
+                    check_pin(
+                        _document_pin_mismatch,
+                        form.get(document),
+                        f"{where}.not_applicable.{document}",
                     )
-                except EnvelopeError as exc:
-                    errors.append(str(exc))
-                    continue
-                checked += 1
-                if mismatch:
-                    failures.append(mismatch)
-            continue
-        if not isinstance(entry, dict):
+                continue
+            items = [(where, entry)]
+        elif isinstance(entry, (str, list)):
+            # A bare string is a location recorded without a pin. A list mixes
+            # shapes element by element (#220): bare strings are skipped and
+            # {file, content_hash, ...} objects are envelope pins compared
+            # exactly like a top-level object -- item 5's analog citations are
+            # klt sim reports whose provenance.input.content_hash is the pin.
+            # A nested list is a cited group (item 11's analog groups pair an
+            # ERC and an LVS record per cell); its elements are walked the
+            # same way, one level deep.
+            items = []
+            if isinstance(entry, list):
+                for i, element in enumerate(entry):
+                    if isinstance(element, list):
+                        items.extend(
+                            (f"{where}[{i}][{j}]", sub)
+                            for j, sub in enumerate(element)
+                        )
+                    else:
+                        items.append((f"{where}[{i}]", element))
+        else:
             errors.append(
                 f"{manifest_name}: {where}: expected a path string, a list of "
                 f"paths or pinned objects, or a {{file, content_hash}} object, "
                 f"got {type(entry).__name__}"
             )
             continue
-        if key in ("6", "6.digital") and "not_applicable" in entry:
-            form = entry["not_applicable"]
-            if not isinstance(form, dict):
+        for location, element in items:
+            if isinstance(element, str):
+                continue
+            if not isinstance(element, dict):
                 errors.append(
-                    f"{manifest_name}: {where}.not_applicable: expected an object"
+                    f"{manifest_name}: {location}: expected a path string "
+                    f"or a {{file, content_hash}} object, got "
+                    f"{type(element).__name__}"
                 )
                 continue
-            for document in ("spec", "statement"):
-                location = f"{where}.not_applicable.{document}"
-                try:
-                    mismatch = _document_pin_mismatch(
-                        form.get(document), manifest_name, location, repo_root
-                    )
-                except EnvelopeError as exc:
-                    errors.append(str(exc))
-                    continue
-                checked += 1
-                if mismatch:
-                    failures.append(mismatch)
-            continue
-        try:
-            mismatch = _envelope_pin_mismatch(
-                entry, manifest_name, where, repo_root
-            )
-        except EnvelopeError as exc:
-            errors.append(str(exc))
-            continue
-        checked += 1
-        if mismatch:
-            failures.append(mismatch)
+            check_pin(_envelope_pin_mismatch, element, location)
     return checked, errors, failures
+
+
+def _report_findings(errors, failures):
+    """Print errors then failures to stderr; return 2 if any error, else 1 if
+    any failure, else 0."""
+    for finding in (*errors, *failures):
+        print(f"check_attestations: {finding}", file=sys.stderr)
+    if errors:
+        return 2
+    return 1 if failures else 0
 
 
 def main(argv=None):
@@ -511,14 +506,9 @@ def main(argv=None):
         checked, errors, failures = manifest_pin_findings(
             manifest, args.manifest.name, repo_root
         )
-        for error in errors:
-            print(f"check_attestations: {error}", file=sys.stderr)
-        for failure in failures:
-            print(f"check_attestations: {failure}", file=sys.stderr)
-        if errors:
-            return 2
-        if failures:
-            return 1
+        status = _report_findings(errors, failures)
+        if status:
+            return status
         if not checked:
             print(f"check_attestations: no evidence pins found in "
                   f"{args.manifest.name}: every evidence entry records a "
@@ -566,14 +556,9 @@ def main(argv=None):
                     f"but the tree has sha256:{actual}"
                 )
 
-    for error in errors:
-        print(f"check_attestations: {error}", file=sys.stderr)
-    for failure in failures:
-        print(f"check_attestations: {failure}", file=sys.stderr)
-    if errors:
-        return 2
-    if failures:
-        return 1
+    status = _report_findings(errors, failures)
+    if status:
+        return status
     print(f"check_attestations: {total} recorded hashes across {len(envelopes)} "
           f"envelopes all match the tree")
     return 0
