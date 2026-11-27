@@ -165,7 +165,7 @@ def _pairings(ndevs, pdevs, budget, cap):
     out = []
     steps = [0]
 
-    def extend(k, nord, pord, used_n, used_p, nbrk, pbrk, uset):
+    def extend(k, nord, pord, used_n, used_p, nbrk, pbrk, break_count):
         steps[0] += 1
         if steps[0] > cap:
             raise _SearchExhausted
@@ -184,26 +184,23 @@ def _pairings(ndevs, pdevs, budget, cap):
                         if j in used_p:
                             continue
                         for popt in _step_options(pdevs, j, ptail):
-                            if nopt[2] or popt[2]:
-                                if len(uset) + (k not in uset) > budget:
-                                    continue
-                                nuset = uset | {k}
-                            else:
-                                nuset = uset
+                            next_break_count = break_count + (nopt[2] or popt[2])
+                            if next_break_count > budget:
+                                continue
                             nord.append((i, nopt[0], nopt[1]))
                             pord.append((j, popt[0], popt[1]))
                             used_n.add(i)
                             used_p.add(j)
                             extend(k + 1, nord, pord, used_n, used_p,
                                    nbrk + (k,) if nopt[2] else nbrk,
-                                   pbrk + (k,) if popt[2] else pbrk, nuset)
+                                   pbrk + (k,) if popt[2] else pbrk, next_break_count)
                             used_p.discard(j)
                             used_n.discard(i)
                             pord.pop()
                             nord.pop()
 
     try:
-        extend(0, [], [], set(), set(), (), (), frozenset())
+        extend(0, [], [], set(), set(), (), (), 0)
     except _SearchExhausted:
         return None
     return out
@@ -280,8 +277,9 @@ def order_strips(ndevs, pdevs):
         cand = _pairings(ndevs, pdevs, budget, cap=300_000)
         if cand is None:
             break
+        # At the first successful budget, every candidate breaks the same number of columns.
         for a, abrk, b, bbrk in cand:
-            key = (len(set(abrk) | set(bbrk)), len(abrk) + len(bbrk),
+            key = (len(abrk) + len(bbrk),
                    tuple(i for i, _, _ in a), tuple(i for i, _, _ in b),
                    tuple(l for _, l, _ in a), tuple(l for _, l, _ in b),
                    abrk, bbrk)
