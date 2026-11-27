@@ -2,6 +2,13 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-27
+
+- **PR #305**: refactor: count shared diffusion breaks during strip pairing
+- **Issue #304** (closed): Count diffusion breaks once per column in the bounded pairing search
+- **PR #294**: refactor: share evidence and single-envelope setup in manifest tests
+- **Issue #292** (closed): Share manifest evidence wrapper and single-envelope setup in manifests/tests/test_check_attestations.py
+
 ### 2026-11-26
 
 - **PR #300**: fix(sim): assemble item 5 requests once and reject an off-corner rail
