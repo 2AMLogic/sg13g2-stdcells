@@ -1,8 +1,9 @@
 """Tests for layout/run_lvs.py and layout/toolchain_pin.py pure helpers, plus
 the shape of the LVS evidence committed under layout/lvs/."""
+import contextlib
+import io
 import json
 import pathlib
-import subprocess
 import sys
 import tempfile
 import types
@@ -24,6 +25,15 @@ positional arguments:
     lvs                 compare netlists
 """
 
+HELP_WITH_ERC = """usage: klt
+positional arguments:
+  <command>
+    layers              enumerate layers
+    drc                 run a headless DRC deck
+    erc                 supply/tie connectivity checks
+    lvs                 compare netlists
+"""
+
 
 class ToolchainPin(unittest.TestCase):
     def test_advertised(self):
@@ -35,6 +45,129 @@ class ToolchainPin(unittest.TestCase):
 
     def test_pin_lists_lvs_and_extract(self):
         self.assertTrue({"drc", "extract", "lvs"} <= set(toolchain_pin.required_commands()))
+
+    def test_pin_lists_erc(self):
+        self.assertIn("erc", toolchain_pin.required_commands())
+
+    def test_missing_names_erc_command(self):
+        """The runner fails loudly when klt lacks `erc` (issue #179): the
+        shared check names it, so a missing subcommand is never skipped."""
+        self.assertEqual(toolchain_pin.missing_commands(["drc", "erc", "lvs"], HELP),
+                         ["erc"])
+        self.assertEqual(toolchain_pin.missing_commands(["drc", "erc", "lvs"], HELP_WITH_ERC),
+                         [])
+
+
+class SharedRunner(unittest.TestCase):
+    """The runner plumbing every layout/ runner imports from toolchain_pin:
+    one CLI skeleton, one preflight diagnostic, one --check bookkeeping."""
+
+    def test_load_json_accepts_a_path_or_an_already_parsed_document(self):
+        doc = toolchain_pin.load_json(CONFIG)
+        self.assertEqual(doc["process"]["vdd_net"], "VDD")
+        self.assertIs(toolchain_pin.load_json(doc), doc)
+        self.assertEqual(toolchain_pin.cell_names(doc), toolchain_pin.cell_names(CONFIG))
+
+    def test_parse_runner_args_defaults_beside_the_config(self):
+        a, cfgdir, gds, out = toolchain_pin.parse_runner_args(
+            "Doc.\n", "lvs", ["--config", str(CONFIG)])
+        self.assertEqual((cfgdir, gds, out), (LAYOUT, LAYOUT / "gds", LAYOUT / "lvs"))
+        self.assertEqual((a.config, a.check), (str(CONFIG), False))
+
+    def test_parse_runner_args_keeps_explicit_paths_and_extra_flags(self):
+        argv = ["--config", str(CONFIG), "--spec", "s", "--gds", "g", "--out", "o", "--check"]
+        a, cfgdir, gds, out = toolchain_pin.parse_runner_args(
+            "Doc.\n", "erc", argv, extra_flags=("--spec",))
+        self.assertEqual((cfgdir, a.spec, gds, out, a.check),
+                         (LAYOUT, "s", pathlib.Path("g"), pathlib.Path("o"), True))
+
+    def test_ensure_commands_is_one_preflight_diagnostic(self):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err), \
+                mock.patch.object(toolchain_pin, "check_commands", return_value=[]):
+            self.assertEqual(toolchain_pin.ensure_commands("run_x"), 0)
+        with contextlib.redirect_stderr(err), \
+                mock.patch.object(toolchain_pin, "check_commands", return_value=["drc", "erc"]):
+            self.assertEqual(toolchain_pin.ensure_commands("run_x"), 1)
+            self.assertEqual(toolchain_pin.ensure_commands("run_x", "install the build"), 1)
+        with contextlib.redirect_stderr(err), \
+                mock.patch.object(toolchain_pin, "check_commands", side_effect=OSError("no klt")):
+            self.assertEqual(toolchain_pin.ensure_commands("run_x"), 1)
+        hint = toolchain_pin.install_hint()
+        self.assertEqual(err.getvalue(),
+                         f"run_x: klt lacks ['drc', 'erc']; install: {hint}\n"
+                         "run_x: klt lacks ['drc', 'erc']; install the build\n"
+                         "run_x: cannot run klt: no klt\n")
+
+    def test_check_report_fresh_names_a_missing_or_stale_report(self):
+        calls = []
+
+        def stale(rep):
+            calls.append(rep)
+            return types.SimpleNamespace(returncode=1, stdout="x" * 250, stderr="")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            rep = pathlib.Path(tmp) / "c.json"
+            self.assertEqual(toolchain_pin.check_report_fresh("c", rep, "lvs", stale),
+                             [f"c: report {rep} missing"])
+            self.assertEqual(calls, [])
+            rep.write_text("{}")
+            self.assertEqual(toolchain_pin.check_report_fresh("c", rep, "lvs", stale),
+                             [f"c: klt lvs --check exit 1: {'x' * 200}"])
+            self.assertEqual(calls, [rep])
+            self.assertEqual(toolchain_pin.check_report_fresh("control c", rep, "erc", stale),
+                             [f"control c: klt erc --check exit 1: {'x' * 200}"])
+
+    def test_stray_reports_are_sorted_and_labelled(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = pathlib.Path(tmp)
+            for name in ("c.json", "a.json", "b.json"):
+                (d / name).write_text("{}")
+            self.assertEqual(toolchain_pin.stray_reports(d, ["c"]),
+                             ["stray report a.json", "stray report b.json"])
+            self.assertEqual(toolchain_pin.stray_reports(d, ["a", "b", "c"]), [])
+            self.assertEqual(toolchain_pin.stray_reports(d / "controls", set()), [])
+            (d / "controls").mkdir()
+            (d / "controls" / "z.json").write_text("{}")
+            strays = toolchain_pin.stray_reports(d / "controls", set(), "stray control report")
+            self.assertEqual(strays, ["stray control report z.json"])
+
+    def test_emit_check_errors_is_the_exit_tail(self):
+        with contextlib.redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(toolchain_pin.emit_check_errors([]), 0)
+            self.assertEqual(toolchain_pin.emit_check_errors(["first", "second"]), 1)
+        self.assertEqual(err.getvalue(), "first\nsecond\n")
+
+
+class RunnerCli(unittest.TestCase):
+    """run_lvs.main with klt stubbed: the flags it takes, and the exit code
+    and stderr of its capability preflight."""
+
+    def preflight(self, **behaviour):
+        err = io.StringIO()
+        with mock.patch.object(run_lvs.toolchain_pin, "check_commands", **behaviour), \
+                contextlib.redirect_stderr(err):
+            rc = run_lvs.main(["--config", str(CONFIG), "--check"])
+        return rc, err.getvalue()
+
+    def test_help_lists_the_flags(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as stop:
+            run_lvs.main(["--help"])
+        self.assertEqual(stop.exception.code, 0)
+        text = " ".join(out.getvalue().split())
+        self.assertIn("[-h] --config CONFIG [--gds GDS] [--out OUT] [--check]", text)
+        self.assertIn("Run `klt lvs` on every generated cell against its generator netlist.",
+                      text)
+
+    def test_missing_command_exits_1_naming_it_and_the_install_hint(self):
+        hint = toolchain_pin.install_hint()
+        self.assertEqual(self.preflight(return_value=["lvs"]),
+                         (1, f"run_lvs: klt lacks ['lvs']; install: {hint}\n"))
+
+    def test_unrunnable_klt_exits_1(self):
+        self.assertEqual(self.preflight(side_effect=OSError("no klt")),
+                         (1, "run_lvs: cannot run klt: no klt\n"))
 
 
 class Request(unittest.TestCase):
