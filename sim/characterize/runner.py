@@ -21,6 +21,7 @@ import tempfile
 from pathlib import Path
 
 from ..harness.evidence import CharacterizationExtensions
+from ..harness.klt import BATCH_CAPACITY_WAIT_S, klt_version
 from ..harness.report import allocate_record_id, commit_stamp, git_provenance
 from .request import (DEFAULT_CORNER, CellSpec, build_library_request, cells_from_config,
                       library_view_name)
@@ -31,23 +32,9 @@ RECORDS_DIR = HERE / "records"
 
 TABLES = ("cell_rise", "cell_fall", "rise_transition", "fall_transition", "rise_power", "fall_power")
 
-#: Host rule: every batch ``klt sim`` submit -- and a batch ``klt characterize``
-#: submit is one underneath -- must wait up to this long for fleet capacity
-#: instead of failing the step on ``batch_no_capacity``. ``klt`` rejects the
-#: flag on ``--backend local``, so it is added for batch submits only.
-BATCH_CAPACITY_WAIT_S = 600
-
 
 class CharacterizeFailed(RuntimeError):
     pass
-
-
-def klt_version() -> str:
-    try:
-        out = subprocess.run(["klt", "--version"], capture_output=True, text=True, check=False)
-    except FileNotFoundError:  # tool-free environments (CI) have no klt
-        return "unavailable"
-    return (out.stdout or out.stderr).strip() or "unknown"
 
 
 #: The PDK this library is characterized against, and the origin-URL marker a
