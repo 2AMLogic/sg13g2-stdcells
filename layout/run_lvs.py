@@ -27,9 +27,7 @@ layout/toolchain.json, klt failed) or `--check` drift; 2 invalid config;
 4 reports written but at least one cell is not `match` (the reports are the
 evidence; nothing is hidden or retried).
 """
-import argparse
 import json
-import os
 import pathlib
 import subprocess
 import sys
@@ -39,11 +37,9 @@ sys.path.insert(0, str(HERE))
 import toolchain_pin  # noqa: E402
 
 GEN_NETLISTS = HERE.parent / "design" / "gen_netlists.py"
-DECK = "sg13g2"
-
-
-def relpath(p):
-    return os.path.relpath(p)
+DECK = toolchain_pin.DECK
+relpath = toolchain_pin.relpath
+cell_names = toolchain_pin.cell_names
 
 
 def build_request(cell, gds_dir, netlist_dir):
@@ -82,10 +78,6 @@ def summarize(cell, report):
         report.get("power_connectivity", {}).get("status"), report.get("error_count"))
 
 
-def cell_names(config_path):
-    return [c["name"] for c in json.loads(pathlib.Path(config_path).read_text())["cells"]]
-
-
 def gen_netlists(config, outdir):
     return subprocess.run([sys.executable, str(GEN_NETLISTS), "--config", str(config),
                            "--out", str(outdir)], capture_output=True, text=True)
@@ -113,44 +105,22 @@ def do_check(cells, out, netlists, config):
         print(r.stderr, end="", file=sys.stderr)
     for cell in cells:
         rep = pathlib.Path(out) / f"{cell}.json"
-        if not rep.exists():
-            bad.append(f"{cell}: report {rep} missing")
-            continue
-        c = check_report(rep)
-        if c.returncode != 0:
-            bad.append(f"{cell}: klt lvs --check exit {c.returncode}: {c.stdout.strip()[:200]}")
-    stray = sorted(p.name for p in pathlib.Path(out).glob("*.json") if p.stem not in cells)
-    bad += [f"stray report {s}" for s in stray]
-    for b in bad:
-        print(b, file=sys.stderr)
-    return 1 if bad else 0
+        bad += toolchain_pin.check_report_fresh(cell, rep, "lvs", check_report)
+    bad += toolchain_pin.stray_reports(out, cells)
+    return toolchain_pin.emit_check_errors(bad)
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--config", required=True)
-    ap.add_argument("--gds")
-    ap.add_argument("--out")
-    ap.add_argument("--check", action="store_true")
-    a = ap.parse_args(argv)
-    cfgdir = pathlib.Path(a.config).resolve().parent
-    gds = pathlib.Path(a.gds) if a.gds else cfgdir / "gds"
-    out = pathlib.Path(a.out) if a.out else cfgdir / "lvs"
+    a, _, gds, out = toolchain_pin.parse_runner_args(__doc__, "lvs", argv)
     netlists = out / "netlists"
     try:
         cells = cell_names(a.config)
     except (OSError, ValueError, KeyError) as e:
         print(f"run_lvs: invalid config: {e}", file=sys.stderr)
         return 2
-    try:
-        missing = toolchain_pin.check_commands()
-    except (OSError, subprocess.CalledProcessError) as e:
-        print(f"run_lvs: cannot run klt: {e}", file=sys.stderr)
-        return 1
-    if missing:
-        print(f"run_lvs: klt lacks {missing}; install: {toolchain_pin.install_hint()}",
-              file=sys.stderr)
-        return 1
+    preflight = toolchain_pin.ensure_commands("run_lvs")
+    if preflight:
+        return preflight
     if a.check:
         return do_check(cells, out, netlists, a.config)
     r = gen_netlists(a.config, netlists)

@@ -37,7 +37,6 @@ no control streams on disk) or `--check` drift; 2 invalid config; 4 reports
 written but a verdict is wrong (the reports are the evidence; nothing is
 hidden or retried).
 """
-import argparse
 import hashlib
 import json
 import os
@@ -49,7 +48,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import toolchain_pin  # noqa: E402
 
-DECK = "sg13g2"
+DECK = toolchain_pin.DECK
 # The shared pin in layout/toolchain.json is deliberately untouched by #179, but
 # its commit predates the `well_complement_of` tie schema erc-spec.json uses:
 # that build advertises `erc` and then rejects the spec. The reports were
@@ -62,9 +61,7 @@ SCHEMA_HINT = ("the spec's substrate tie uses `well_complement_of` with a null `
                + " (or run `uvx --from " + ERC_INSTALL + " klt ...`)")
 ERC_EXIT_OK = (0, 3, 4)  # 3 violations / 4 antenna not_checked: report still written
 
-
-def relpath(p):
-    return os.path.relpath(p)
+relpath = toolchain_pin.relpath
 
 
 def build_command(layout, spec, top):
@@ -73,13 +70,12 @@ def build_command(layout, spec, top):
     return cmd + ["--top", top] if top else cmd
 
 
-def cell_names(config_path):
-    return [c["name"] for c in json.loads(pathlib.Path(config_path).read_text())["cells"]]
+cell_names = toolchain_pin.cell_names
 
 
-def supply_names(config_path):
+def supply_names(config):
     """[vdd_net, vss_net] the generated cells draw as their rails."""
-    proc = json.loads(pathlib.Path(config_path).read_text())["process"]
+    proc = toolchain_pin.load_json(config)["process"]
     return [proc["vdd_net"], proc["vss_net"]]
 
 
@@ -199,9 +195,14 @@ def binding_problems(report, layout, spec):
     return bad
 
 
-def do_check(cells, out, spec, gds, supplies):
+def check_report(report_path):
+    return subprocess.run(["klt", "erc", "--check", str(report_path)],
+                          capture_output=True, text=True)
+
+
+def do_check(cells, out, spec, gds, supplies, spec_doc=None):
     bad = []
-    spec_doc = json.loads(pathlib.Path(spec).read_text())
+    spec_doc = toolchain_pin.load_json(spec) if spec_doc is None else spec_doc
     ctl = controls(out)
     streams = [(c, pathlib.Path(out) / f"{c}.json", pathlib.Path(gds) / f"{c}.gds")
                for c in cells]
@@ -211,12 +212,9 @@ def do_check(cells, out, spec, gds, supplies):
         bad.append(f"no negative-control streams in {pathlib.Path(out) / 'controls'}; "
                    "regenerate with layout/gen_controls.py")
     for what, rep, layout in streams:
-        if not rep.exists():
-            bad.append(f"{what}: report {rep} missing")
-            continue
-        c = subprocess.run(["klt", "erc", "--check", str(rep)], capture_output=True, text=True)
-        if c.returncode != 0:
-            bad.append(f"{what}: klt erc --check exit {c.returncode}: {c.stdout.strip()[:200]}")
+        problems = toolchain_pin.check_report_fresh(what, rep, "erc", check_report)
+        bad += problems
+        if problems:
             continue
         doc = json.loads(rep.read_text())
         bad += [f"{what}: {b}" for b in binding_problems(doc, layout, spec)]
@@ -225,33 +223,20 @@ def do_check(cells, out, spec, gds, supplies):
                 bad.append(f"{what}: report no longer shows erc.missing_tie")
         elif not cell_ok(doc, supplies, spec_doc):
             bad.append(f"{summarize(what, doc)}: not a clean supply/tie verdict")
-    stray = sorted(p.name for p in pathlib.Path(out).glob("*.json") if p.stem not in cells)
-    bad += [f"stray report {s}" for s in stray]
-    cdir = pathlib.Path(out) / "controls"
-    stems = {s for s, _ in ctl}
-    if cdir.is_dir():
-        bad += [f"stray control report {p.name}" for p in sorted(cdir.glob("*.json"))
-                if p.stem not in stems]
-    for b in bad:
-        print(b, file=sys.stderr)
-    return 1 if bad else 0
+    bad += toolchain_pin.stray_reports(out, cells)
+    bad += toolchain_pin.stray_reports(pathlib.Path(out) / "controls", {s for s, _ in ctl},
+                                       "stray control report")
+    return toolchain_pin.emit_check_errors(bad)
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--config", required=True)
-    ap.add_argument("--spec")
-    ap.add_argument("--gds")
-    ap.add_argument("--out")
-    ap.add_argument("--check", action="store_true")
-    a = ap.parse_args(argv)
-    cfgdir = pathlib.Path(a.config).resolve().parent
+    a, cfgdir, gds, out = toolchain_pin.parse_runner_args(__doc__, "erc", argv,
+                                                          extra_flags=("--spec",))
     spec = pathlib.Path(a.spec) if a.spec else cfgdir / "erc-spec.json"
-    gds = pathlib.Path(a.gds) if a.gds else cfgdir / "gds"
-    out = pathlib.Path(a.out) if a.out else cfgdir / "erc"
     try:
-        cells = cell_names(a.config)
-        supplies = supply_names(a.config)
+        config = toolchain_pin.load_json(a.config)
+        cells = cell_names(config)
+        supplies = supply_names(config)
     except (OSError, ValueError, KeyError) as e:
         print(f"run_erc: invalid config: {e}", file=sys.stderr)
         return 2
@@ -267,17 +252,13 @@ def main(argv=None):
     if problems:
         print("run_erc: invalid spec: " + "; ".join(problems), file=sys.stderr)
         return 2
-    try:
-        missing = toolchain_pin.check_commands()
-    except (OSError, subprocess.CalledProcessError) as e:
-        print(f"run_erc: cannot run klt: {e}", file=sys.stderr)
-        return 1
-    if missing:
-        print(f"run_erc: klt lacks {missing}; install a build with `erc` and the "
-              f"tie schema erc-spec.json uses: {ERC_INSTALL}", file=sys.stderr)
-        return 1
+    preflight = toolchain_pin.ensure_commands(
+        "run_erc", "install a build with `erc` and the tie schema erc-spec.json uses: "
+        + ERC_INSTALL)
+    if preflight:
+        return preflight
     if a.check:
-        return do_check(cells, out, spec, gds, supplies)
+        return do_check(cells, out, spec, gds, supplies, spec_doc)
     ctl = controls(out)
     if not ctl:
         print(f"run_erc: no negative-control streams in {out / 'controls'}; "
