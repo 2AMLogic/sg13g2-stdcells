@@ -1,5 +1,5 @@
-"""Tests for layout/run_erc.py and layout/toolchain_pin.py pure helpers, plus
-the shape of the ERC evidence committed under layout/erc/."""
+"""Tests for layout/run_erc.py, plus the shape of the ERC evidence committed
+under layout/erc/."""
 import contextlib
 import io
 import json
@@ -14,37 +14,6 @@ from unittest import mock
 LAYOUT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(LAYOUT))
 import run_erc  # noqa: E402
-import toolchain_pin  # noqa: E402
-
-HELP = """usage: klt
-positional arguments:
-  <command>
-    layers              enumerate layers
-    drc                 run a headless DRC deck
-    lvs                 compare netlists
-"""
-
-HELP_WITH_ERC = """usage: klt
-positional arguments:
-  <command>
-    layers              enumerate layers
-    drc                 run a headless DRC deck
-    erc                 supply/tie connectivity checks
-    lvs                 compare netlists
-"""
-
-
-class ToolchainPin(unittest.TestCase):
-    def test_pin_lists_erc(self):
-        self.assertIn("erc", toolchain_pin.required_commands())
-
-    def test_missing_names_erc_command(self):
-        """The runner fails loudly when klt lacks `erc` (issue #179): the
-        shared check names it, so a missing subcommand is never skipped."""
-        self.assertEqual(toolchain_pin.missing_commands(["drc", "erc", "lvs"], HELP),
-                         ["erc"])
-        self.assertEqual(toolchain_pin.missing_commands(["drc", "erc", "lvs"], HELP_WITH_ERC),
-                         [])
 
 
 class Command(unittest.TestCase):
@@ -61,9 +30,10 @@ class Command(unittest.TestCase):
                                     "layout/erc-spec.json", None)
         self.assertNotIn("--top", cmd)
 
-    def test_cells_come_from_example_config(self):
-        self.assertEqual(run_erc.cell_names(LAYOUT / "example_config.json"),
-                         ["sg13g2_inv_1", "sg13g2_inv_2", "sg13g2_inv_4", "sg13g2_nand2_1"])
+    def test_supplies_come_from_the_config_or_its_parsed_document(self):
+        self.assertEqual(run_erc.supply_names(LAYOUT / "example_config.json"), ["VDD", "VSS"])
+        config = json.loads((LAYOUT / "example_config.json").read_text())
+        self.assertEqual(run_erc.supply_names(config), ["VDD", "VSS"])
 
 
 class Grading(unittest.TestCase):
@@ -129,6 +99,8 @@ class RecordedEvidence(unittest.TestCase):
             yield cell, json.loads((LAYOUT / "erc" / f"{cell}.json").read_text())
 
     def test_every_cell_clean_one_island_per_supply_no_skipped_tie(self):
+        # the spec committed beside the reports is the one they ran with
+        spec_sha = run_erc.sha(LAYOUT / "erc-spec.json")
         seen = 0
         for cell, rep in self.reports():
             self.assertTrue(run_erc.cell_ok(rep), cell)
@@ -137,11 +109,7 @@ class RecordedEvidence(unittest.TestCase):
                              [("VDD", 1, 1), ("VSS", 1, 1)], cell)
             self.assertEqual(run_erc.missing_ties(rep), [], cell)
             self.assertEqual(run_erc.degenerate_ties(rep), [], cell)
-            # the spec committed beside the reports is the one they ran with
-            import hashlib
-            digest = hashlib.sha256((LAYOUT / "erc-spec.json").read_bytes()).hexdigest()
-            self.assertEqual(rep["provenance"]["spec"]["content_hash"],
-                             f"sha256:{digest}", cell)
+            self.assertEqual(rep["provenance"]["spec"]["content_hash"], spec_sha, cell)
             seen += 1
         self.assertEqual(seen, 4)
 
@@ -205,6 +173,20 @@ class CheckMode(unittest.TestCase):
     def test_pristine_passes(self):
         self.assertEqual(self.run_check(), (0, ""))
 
+    def test_check_parses_the_config_and_spec_once(self):
+        real = pathlib.Path.read_text
+        reads = []
+
+        def counting(path, *args, **kwargs):
+            reads.append(path.name)
+            return real(path, *args, **kwargs)
+
+        with mock.patch.object(pathlib.Path, "read_text", counting):
+            rc, _ = self.run_check()
+        self.assertEqual(rc, 0)
+        self.assertEqual(reads.count("example_config.json"), 1)
+        self.assertEqual(reads.count("erc-spec.json"), 1)
+
     def test_report_copied_over_another_cell_fails(self):
         shutil.copy("layout/erc/sg13g2_inv_2.json", "layout/erc/sg13g2_inv_1.json")
         rc, err = self.run_check()
@@ -267,6 +249,45 @@ class CheckMode(unittest.TestCase):
         self.assertFalse(run_erc.cell_ok(rep, ["VDD", "GND"], spec))
         rep["erc_coverage"]["checked"].remove('erc.missing_tie:["substrate_tap"]')
         self.assertFalse(run_erc.cell_ok(rep, ["VDD", "VSS"], spec))
+
+
+class RunnerCli(unittest.TestCase):
+    """run_erc.main with klt stubbed: the flags it takes, and the exit code
+    and stderr of its config rejection and capability preflight."""
+
+    def test_help_lists_the_flags(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as stop:
+            run_erc.main(["--help"])
+        self.assertEqual(stop.exception.code, 0)
+        text = " ".join(out.getvalue().split())
+        self.assertIn("[-h] --config CONFIG [--spec SPEC] [--gds GDS] [--out OUT] [--check]",
+                      text)
+        self.assertIn("Run `klt erc` (supply + well/substrate-tie checks) on every generated "
+                      "cell.", text)
+
+    def test_invalid_config_exits_2(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            missing = pathlib.Path(tmp, "missing.json")
+            with contextlib.redirect_stderr(io.StringIO()) as err:
+                self.assertEqual(run_erc.main(["--config", str(missing), "--check"]), 2)
+            self.assertTrue(err.getvalue().startswith("run_erc: invalid config: [Errno 2]"),
+                            err.getvalue())
+            no_process = pathlib.Path(tmp, "no-process.json")
+            no_process.write_text('{"cells": [{"name": "c"}]}')
+            with contextlib.redirect_stderr(io.StringIO()) as err:
+                self.assertEqual(run_erc.main(["--config", str(no_process), "--check"]), 2)
+        self.assertEqual(err.getvalue(), "run_erc: invalid config: 'process'\n")
+
+    def test_missing_erc_exits_1_naming_the_report_producing_build(self):
+        err = io.StringIO()
+        check = mock.patch.object(run_erc.toolchain_pin, "check_commands", return_value=["erc"])
+        with check, contextlib.redirect_stderr(err):
+            rc = run_erc.main(["--config", str(LAYOUT / "example_config.json"), "--check"])
+        expected = ("run_erc: klt lacks ['erc']; install a build with `erc` and "
+                    "the tie schema erc-spec.json uses: "
+                    f"{run_erc.ERC_INSTALL}\n")
+        self.assertEqual((rc, err.getvalue()), (1, expected))
 
 
 class Install(unittest.TestCase):
