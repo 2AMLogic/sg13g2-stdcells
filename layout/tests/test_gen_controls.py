@@ -2,11 +2,12 @@
 committed notch DRC controls byte-exactly (each matching its own report's
 pinned content_hash), the --check exit codes, and restoration of the
 patched generator attributes after a failed row (issue #120)."""
+import contextlib
 import hashlib
+import io
 import json
 import pathlib
 import shutil
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -18,12 +19,26 @@ import gen_layouts as gl  # noqa: E402
 
 CONFIG = LAYOUT / "example_config.json"
 CONTROLS = LAYOUT / "drc" / "controls"
-SCRIPT = LAYOUT / "gen_controls.py"
 CFG = json.loads(CONFIG.read_text())
+CONTROL_NAMES = {p.name for p in CONTROLS.glob("*.gds")}
 
 
 def run(*args):
-    return subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True)
+    """The CLI in-process: (exit code, stdout, stderr)."""
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        rc = gc.main(list(args))
+    return rc, out.getvalue(), err.getvalue()
+
+
+@contextlib.contextmanager
+def assert_generator_restored(tc):
+    """Assert the generator attributes the forcing patches are the same objects on exit."""
+    prof0, hit0, order0 = gl._strip_profile, gl._notch_violation, gl.order_strips
+    yield
+    tc.assertIs(gl._strip_profile, prof0)
+    tc.assertIs(gl._notch_violation, hit0)
+    tc.assertIs(gl.order_strips, order0)
 
 
 class Table(unittest.TestCase):
@@ -52,8 +67,8 @@ class Table(unittest.TestCase):
 
 class Regeneration(unittest.TestCase):
     def test_each_control_matches_its_committed_stream_and_pinned_hash(self):
-        prof0, hit0, order0 = gl._strip_profile, gl._notch_violation, gl.order_strips
-        files = gc.generate_controls(CFG)
+        with assert_generator_restored(self):
+            files = gc.generate_controls(CFG)
         self.assertEqual(set(files), {f"{r['stem']}.gds" for r in gc.TABLE})
         for stem, data in files.items():
             with self.subTest(control=stem):
@@ -64,16 +79,13 @@ class Regeneration(unittest.TestCase):
                     report["provenance"]["input"]["content_hash"],
                     "regenerated stream does not match the hash its own report pinned",
                 )
-        self.assertIs(gl._strip_profile, prof0)
-        self.assertIs(gl._notch_violation, hit0)
-        self.assertIs(gl.order_strips, order0)
 
 
 class CheckMode(unittest.TestCase):
     def test_check_clean_tree_exits_0(self):
-        r = run("--check")
-        self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("fresh", r.stdout)
+        rc, out, err = run("--check")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("fresh", out)
 
     def test_check_tampered_copy_exits_1_naming_the_file(self):
         with tempfile.TemporaryDirectory() as d:
@@ -85,40 +97,37 @@ class CheckMode(unittest.TestCase):
             data = bytearray(victim.read_bytes())
             data[-10] ^= 0xFF
             victim.write_bytes(bytes(data))
-            r = run("--out", str(out), "--check")
-            self.assertEqual(r.returncode, 1)
-            self.assertIn(victim.name, r.stderr)
+            rc, _, err = run("--out", str(out), "--check")
+            self.assertEqual(rc, 1)
+            self.assertIn(victim.name, err)
 
     def test_check_reports_stray_and_missing(self):
         with tempfile.TemporaryDirectory() as d:
             out = pathlib.Path(d) / "controls"
             out.mkdir()
             (out / "stray.gds").write_bytes(b"")  # matches the glob, absent from the table
-            r = run("--out", str(out), "--check")
-            self.assertEqual(r.returncode, 1)
-            self.assertIn("stray", r.stderr)
+            rc, _, err = run("--out", str(out), "--check")
+            self.assertEqual(rc, 1)
+            self.assertIn("stray", err)
             for row in gc.TABLE:
-                self.assertIn(f"{row['stem']}.gds", r.stderr)  # every table file reported missing
+                self.assertIn(f"{row['stem']}.gds", err)  # every table file reported missing
 
 
 class WriteMode(unittest.TestCase):
     def test_write_to_temp_dir_matches_committed_bytes(self):
         with tempfile.TemporaryDirectory() as d:
             out = pathlib.Path(d) / "controls"
-            r = run("--out", str(out))
-            self.assertEqual(r.returncode, 0, r.stderr)
-            self.assertEqual(
-                {p.name for p in out.glob("*.gds")},
-                {p.name for p in CONTROLS.glob("*.gds")},
-            )
-            for p in CONTROLS.glob("*.gds"):
-                self.assertEqual((out / p.name).read_bytes(), p.read_bytes())
+            rc, _, err = run("--out", str(out))
+            self.assertEqual(rc, 0, err)
+            self.assertEqual({p.name for p in out.glob("*.gds")}, CONTROL_NAMES)
+            for name in CONTROL_NAMES:
+                self.assertEqual((out / name).read_bytes(), (CONTROLS / name).read_bytes())
 
 
 class OutputIsolation(unittest.TestCase):
     """`--out` alone is a single-output scratch run: it must not touch the
-    tracked ERC controls, and coincident output directories are rejected
-    before anything is written or pruned."""
+    tracked ERC controls or need the ERC rows, and coincident output
+    directories are rejected before anything is generated, written or pruned."""
 
     ERC = LAYOUT / "erc" / "controls"
 
@@ -134,28 +143,78 @@ class OutputIsolation(unittest.TestCase):
             cfgp = pathlib.Path(d) / "other.json"
             cfgp.write_text(json.dumps(cfg))
             out = pathlib.Path(d) / "drc"
-            r = run("--config", str(cfgp), "--out", str(out))
-            self.assertEqual(r.returncode, 0, r.stderr)
-            self.assertEqual({p.name for p in out.glob("*.gds")}, {p.name for p in CONTROLS.glob("*.gds")})
+            rc, _, err = run("--config", str(cfgp), "--out", str(out))
+            self.assertEqual(rc, 0, err)
+            self.assertEqual({p.name for p in out.glob("*.gds")}, CONTROL_NAMES)
         self.assertEqual(self._erc_snapshot(), before)
+
+    def test_single_output_run_needs_only_its_own_rows(self):
+        """A bare `--out` (or `--erc-out`) generates only its own set: a config
+        that cannot feed the other set's rows still writes the requested one."""
+        for flag, table in (("--out", gc.TABLE), ("--erc-out", gc.ERC_TABLE)):
+            needed = {r["cell"] for r in table if isinstance(r["cell"], str)}
+            cfg = {**CFG, "cells": [c for c in CFG["cells"] if c["name"] in needed]}
+            with self.subTest(flag=flag), tempfile.TemporaryDirectory() as d:
+                cfgp = pathlib.Path(d) / "cfg.json"
+                cfgp.write_text(json.dumps(cfg))
+                out = pathlib.Path(d) / "out"
+                rc, _, err = run("--config", str(cfgp), flag, str(out))
+                self.assertEqual(rc, 0, err)
+                self.assertEqual({p.name for p in out.glob("*.gds")}, {f"{r['stem']}.gds" for r in table})
+
+    def test_failed_set_leaves_both_directories_untouched(self):
+        """Every selected set is generated before any is written: when the ERC
+        rows cannot be fed, the notch set is not written either."""
+        erc_cells = {r["cell"] for r in gc.ERC_TABLE}
+        cfg = {**CFG, "cells": [c for c in CFG["cells"] if c["name"] not in erc_cells]}
+        with tempfile.TemporaryDirectory() as d:
+            cfgp = pathlib.Path(d) / "cfg.json"
+            cfgp.write_text(json.dumps(cfg))
+            rc, _, err = run("--config", str(cfgp), "--out", str(pathlib.Path(d) / "a"), "--erc-out", str(pathlib.Path(d) / "b"))
+            self.assertEqual(rc, 2, err)
+            self.assertEqual([p.name for p in pathlib.Path(d).iterdir()], ["cfg.json"])
 
     def test_coincident_out_dirs_rejected_before_writing(self):
         with tempfile.TemporaryDirectory() as d:
             marker = pathlib.Path(d) / "keep.gds"
             marker.write_bytes(b"x")
-            r = run("--out", d, "--erc-out", d)
-            self.assertEqual(r.returncode, 2, r.stderr)
-            self.assertIn("same directory", r.stderr)
+            rc, _, err = run("--out", d, "--erc-out", d)
+            self.assertEqual(rc, 2, err)
+            self.assertIn("same directory", err)
+            # Settled before a stream is generated: an unplaceable config would be exit 3.
+            cfgp = pathlib.Path(d) / "unplaceable.json"
+            cfgp.write_text(json.dumps({**CFG, "layout": {**CFG["layout"], "row_height_nm": 1}}))
+            rc, _, err = run("--config", str(cfgp), "--out", d, "--erc-out", d)
+            self.assertEqual(rc, 2, err)
+            self.assertIn("same directory", err)
             self.assertEqual(marker.read_bytes(), b"x")
             self.assertEqual([p.name for p in pathlib.Path(d).glob("*.gds")], ["keep.gds"])
 
     def test_distinct_out_dirs_write_both_sets(self):
         with tempfile.TemporaryDirectory() as d:
             a, b = pathlib.Path(d) / "a", pathlib.Path(d) / "b"
-            r = run("--out", str(a), "--erc-out", str(b))
-            self.assertEqual(r.returncode, 0, r.stderr)
-            self.assertEqual({p.name for p in a.glob("*.gds")}, {p.name for p in CONTROLS.glob("*.gds")})
+            rc, _, err = run("--out", str(a), "--erc-out", str(b))
+            self.assertEqual(rc, 0, err)
+            self.assertEqual({p.name for p in a.glob("*.gds")}, CONTROL_NAMES)
             self.assertEqual({p.name for p in b.glob("*.gds")}, set(self._erc_snapshot()))
+
+
+class Validation(unittest.TestCase):
+    """Each set validates the config itself: a bare `--erc-out` run does not
+    borrow the notch generator's check, and neither does a direct call."""
+
+    def test_erc_controls_reject_an_invalid_config_on_their_own(self):
+        bad = {**CFG, "schema_version": 99}
+        with self.assertRaises(ValueError):
+            gc.generate_erc_controls(bad)
+        with tempfile.TemporaryDirectory() as d:
+            cfgp = pathlib.Path(d) / "bad.json"
+            cfgp.write_text(json.dumps(bad))
+            out = pathlib.Path(d) / "erc"
+            rc, _, err = run("--config", str(cfgp), "--erc-out", str(out))
+            self.assertFalse(out.exists(), "a refused config must write nothing")
+        self.assertEqual(rc, 2, err)
+        self.assertIn("invalid config", err)
 
 
 class PatchRestoration(unittest.TestCase):
@@ -163,32 +222,22 @@ class PatchRestoration(unittest.TestCase):
         """The p420 forcing with the notch check left live is exactly the
         refusal the recorded row stubbed off -- a failed row must not leave
         the generator patched for the next one."""
-        prof0, hit0, order0 = gl._strip_profile, gl._notch_violation, gl.order_strips
         row = dict(gc.TABLE[0], notch_off=False)
-        with self.assertRaises(gl.PlaceError):
+        with assert_generator_restored(self), self.assertRaises(gl.PlaceError):
             gc.regenerate(row, CFG)
-        self.assertIs(gl._strip_profile, prof0)
-        self.assertIs(gl._notch_violation, hit0)
-        self.assertIs(gl.order_strips, order0)
 
     def test_failed_break_row_restores_order_strips(self):
         """A break row that fails to place inside `forced_break` must not
         leave `order_strips` patched for the next one."""
-        order0 = gl.order_strips
         row = next(r for r in gc.TABLE if "breaks" in r)
         broken = dict(row, layout=dict(row["layout"], row_height_nm=1))
-        with self.assertRaises(gl.PlaceError):
+        with assert_generator_restored(self), self.assertRaises(gl.PlaceError):
             gc.regenerate(broken, CFG)
-        self.assertIs(gl.order_strips, order0)
 
     def test_generate_controls_restores_attributes_when_a_row_fails(self):
-        prof0, hit0, order0 = gl._strip_profile, gl._notch_violation, gl.order_strips
         broken = dict(gc.TABLE[1], layout=dict(gc.TABLE[1]["layout"], row_height_nm=1))
-        with self.assertRaises(gl.PlaceError):
+        with assert_generator_restored(self), self.assertRaises(gl.PlaceError):
             gc.generate_controls(CFG, [gc.TABLE[0], broken, gc.TABLE[2]])
-        self.assertIs(gl._strip_profile, prof0)
-        self.assertIs(gl._notch_violation, hit0)
-        self.assertIs(gl.order_strips, order0)
 
 
 if __name__ == "__main__":

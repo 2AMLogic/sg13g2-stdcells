@@ -159,27 +159,28 @@ def regenerate(row, config):
         # The naming rule every committed stream follows: the config's cell
         # name is the GDS structure name, with "_lib" appended for the library.
         cell["name"] = f"break_{strip}_p{cfg['layout']['gate_pitch_nm']}"
+        forcing = forced_break(*row["breaks"])
     else:
         strip, profile = row["force"]
         cell["name"] = f"notch_{strip}_p{cfg['layout']['gate_pitch_nm']}"
+        forcing = forced_strip_profile(strip, profile, notch_off=row["notch_off"])
     cfg["cells"] = [cell]
-
-    if "breaks" in row:
-        forcing = forced_break(*row["breaks"])
-    else:
-        forcing = forced_strip_profile(strip, row["force"][1], notch_off=row["notch_off"])
     with forcing:
         files = gl.generate(cfg)
     (name,) = files  # one control cell in, one stream out
     return {f"{row['stem']}.gds": files[name]}
 
 
+def _collect_rows(table, render, config):
+    files = {}
+    for row in table:
+        files.update(render(row, config))
+    return files
+
+
 def generate_controls(config, table=None):
     """{committed control filename: bytes} for every table row."""
-    files = {}
-    for row in (table if table is not None else TABLE):
-        files.update(regenerate(row, config))
-    return files
+    return _collect_rows(TABLE if table is None else table, regenerate, config)
 
 
 # The layers each tap band draws on (implant polarity picks the band: nsd is
@@ -204,13 +205,12 @@ def regenerate_erc(row, config):
     that no longer ties its well is exactly the defect under test); the
     `klt erc` tie check sees no tap geometry inside the well and reports
     `erc.missing_tie` (layout/run_erc.py grades that direction)."""
-    cfg = copy.deepcopy(config)
-    cell = _base_cell(cfg, row["cell"])
+    gl.validate(config)
+    cell = _base_cell(config, row["cell"])
     cell["name"] = row["top"]
-    cfg["cells"] = [cell]
-    lay = cfg["layout"]
+    lay = config["layout"]
     layers = {k: tuple(v) for k, v in lay["layers"].items()}
-    shapes, _, _ = gl.layout_cell(cell, cfg["process"], lay)
+    shapes, _, _ = gl.layout_cell(cell, config["process"], lay)
     p_y1 = lay["row_height_nm"] - lay["p_diff_top_margin_nm"]
     n_y0 = lay["n_diff_y0_nm"]
 
@@ -226,10 +226,7 @@ def regenerate_erc(row, config):
 
 def generate_erc_controls(config, table=None):
     """{committed ERC control filename: bytes} for every ERC table row."""
-    files = {}
-    for row in (table if table is not None else ERC_TABLE):
-        files.update(regenerate_erc(row, config))
-    return files
+    return _collect_rows(ERC_TABLE if table is None else table, regenerate_erc, config)
 
 
 def main(argv=None):
@@ -239,33 +236,33 @@ def main(argv=None):
     ap.add_argument("--erc-out", help="ERC tap controls directory (default: layout/erc/controls)")
     ap.add_argument("--check", action="store_true", help="fail if committed control GDS differ from regenerated ones")
     a = ap.parse_args(argv)
+    both_default = not a.out and not a.erc_out
+    targets = []
+    if a.out or both_default:
+        targets.append((generate_controls, pathlib.Path(a.out) if a.out else CONTROLS, "control GDS", "control GDS file(s)"))
+    if a.erc_out or both_default:
+        targets.append((generate_erc_controls, pathlib.Path(a.erc_out) if a.erc_out else ERC_CONTROLS, "ERC control GDS", "ERC control GDS file(s)"))
+    # A bare `--out` keeps its single-output behavior (only the notch DRC set is
+    # generated and written there); a bare `--erc-out` handles only the ERC set.
+    # With neither, both committed sets are regenerated in place. Each set is
+    # pruned by its own `*.gds` sync, so the two directories must never coincide
+    # (settled before the config is read); all are generated before any is written.
+    if len(targets) == 2 and targets[0][1].resolve() == targets[1][1].resolve():
+        print(f"gen_controls: --out and --erc-out resolve to the same directory {targets[0][1]}; "
+              "each set prunes *.gds, so they must differ", file=sys.stderr)
+        return 2
     cfg_path = pathlib.Path(a.config)
     try:
         config = json.loads(cfg_path.read_text())
-        files = generate_controls(config)
-        erc_files = generate_erc_controls(config)
+        sets = [(generate(config), tdir, plural, out_of_date) for generate, tdir, plural, out_of_date in targets]
     except (ValueError, OSError) as e:
         print(f"gen_controls: invalid config {cfg_path}: {e}", file=sys.stderr)
         return 2
     except gl.PlaceError as e:
         print(f"gen_controls: cannot place: {e}", file=sys.stderr)
         return 3
-    # A bare `--out` keeps its single-output behavior (only the notch DRC set is
-    # written there); a bare `--erc-out` writes only the ERC set. With neither,
-    # both committed sets are regenerated in place. Each set is pruned by its
-    # own `*.gds` sync, so the two directories must never coincide.
-    both_default = not a.out and not a.erc_out
-    targets = []
-    if a.out or both_default:
-        targets.append((files, pathlib.Path(a.out) if a.out else CONTROLS, "control GDS", "control GDS file(s)"))
-    if a.erc_out or both_default:
-        targets.append((erc_files, pathlib.Path(a.erc_out) if a.erc_out else ERC_CONTROLS, "ERC control GDS", "ERC control GDS file(s)"))
-    if len(targets) == 2 and targets[0][1].resolve() == targets[1][1].resolve():
-        print(f"gen_controls: --out and --erc-out resolve to the same directory {targets[0][1]}; "
-              "each set prunes *.gds, so they must differ", file=sys.stderr)
-        return 2
     rc = 0
-    for tfiles, tdir, plural, out_of_date in targets:
+    for tfiles, tdir, plural, out_of_date in sets:
         rc |= gn.sync_outputs(
             tfiles, tdir, "*.gds", check=a.check, tool="gen_controls", script="layout/gen_controls.py",
             plural=plural, out_of_date=out_of_date,
