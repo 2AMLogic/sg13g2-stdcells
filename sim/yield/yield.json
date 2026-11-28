@@ -1,0 +1,523 @@
+{
+  "samples": "samples.json",
+  "limits": "limits.json",
+  "source": {
+    "kind": "sample-set",
+    "netlist": null,
+    "monte_carlo": null,
+    "provenance": {
+      "seed": 20261122,
+      "draws_per_population": 400
+    },
+    "sample_count": 1600,
+    "native": {
+      "module": "klt_yield_native",
+      "version": "0.1.0"
+    }
+  },
+  "schema_version": 1,
+  "confidence": 0.95,
+  "target_ci_halfwidth": 0.01,
+  "min_samples": 2,
+  "status": "pass",
+  "measurement_count": 4,
+  "measurements": [
+    {
+      "name": "inv_tpdlh",
+      "unit": "s",
+      "n": 400,
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "censored": 0,
+      "inconclusive": 0,
+      "limits": {
+        "max": 6.709241e-11,
+        "target_yield": 0.99
+      },
+      "source_corners": [
+        "mos_tt_mismatch/1.200V/25C"
+      ],
+      "distribution": {
+        "model": "normal",
+        "mean": 6.108222500000002e-11,
+        "stddev": 1.5207986327184136e-12,
+        "min": 5.71344e-11,
+        "max": 6.55871e-11,
+        "median": 6.10102e-11,
+        "skewness": -0.03236317025025082,
+        "excess_kurtosis": -0.2729041134528556,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": 0.3248565292912896,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "consistent"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 1.0,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9908201954163351,
+            "high": 1.0
+          },
+          "n": 400
+        },
+        "normal": {
+          "method": "normal-delta",
+          "estimate": 0.9999612484371754,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9999141360066601,
+            "high": 1.0
+          },
+          "n": 400
+        },
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": null,
+        "cpk": 1.3173308792492435,
+        "cpk_confidence_interval": {
+          "low": 1.220269806116113,
+          "high": 1.414391952382374
+        },
+        "sigma_to_spec": 3.951992637747731,
+        "sigma_to_spec_confidence_interval": {
+          "low": 3.660809418348339,
+          "high": 4.243175857147122
+        },
+        "limiting_side": "upper"
+      },
+      "sample_size": {
+        "n": 400,
+        "observed_ci_halfwidth": 0.004589902291832426,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 183,
+        "required_n_for_target": 368,
+        "verdict": "sufficient",
+        "method": "clopper-pearson-zero-failures",
+        "variance_reduced": null
+      },
+      "negative_control": {
+        "description": "seeded defect: every DUT channel width halved (drive roughly halved); expected effect: every arc delay far past the 1.10x-nominal limit",
+        "n": 400,
+        "errored": 0,
+        "failed_unmeasurable": 0,
+        "censored": 0,
+        "yield": {
+          "empirical": {
+            "method": "clopper-pearson",
+            "estimate": 0.0,
+            "confidence": 0.95,
+            "confidence_interval": {
+              "low": 0.0,
+              "high": 0.009179804583664908
+            },
+            "n": 400
+          },
+          "normal": {
+            "method": "normal-delta",
+            "estimate": 1.4886377233391997e-28,
+            "confidence": 0.95,
+            "confidence_interval": {
+              "low": 0.0,
+              "high": 1.4226613222875878e-27
+            },
+            "n": 400
+          },
+          "variance_reduced": null
+        },
+        "nominal_empirical_estimate": 1.0,
+        "degradation_detected": true,
+        "verdict": "detected"
+      },
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "status": "pass",
+      "warnings": [
+        "measurement 'inv_tpdlh': no sample fell outside the limits, so the empirical yield is bounded only from below -- \"at least 99.0820% at 95% confidence, N = 400\" is the honest statement, not \"100% yield\""
+      ],
+      "spec_row": "0003-R1"
+    },
+    {
+      "name": "inv_tpdhl",
+      "unit": "s",
+      "n": 400,
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "censored": 0,
+      "inconclusive": 0,
+      "limits": {
+        "max": 6.153125e-11,
+        "target_yield": 0.99
+      },
+      "source_corners": [
+        "mos_tt_mismatch/1.200V/25C"
+      ],
+      "distribution": {
+        "model": "normal",
+        "mean": 5.589403075000008e-11,
+        "stddev": 1.712559796129096e-12,
+        "min": 5.17083e-11,
+        "max": 6.05756e-11,
+        "median": 5.57568e-11,
+        "skewness": 0.19794349208169473,
+        "excess_kurtosis": -0.1484771655815691,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": 0.6879836127453046,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "consistent"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 1.0,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9908201954163351,
+            "high": 1.0
+          },
+          "n": 400
+        },
+        "normal": {
+          "method": "normal-delta",
+          "estimate": 0.9995020668034197,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9990625519609196,
+            "high": 0.9999415816459197
+          },
+          "n": 400
+        },
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": null,
+        "cpk": 1.097230641277801,
+        "cpk_confidence_interval": {
+          "low": 1.0143901418780117,
+          "high": 1.1800711406775903
+        },
+        "sigma_to_spec": 3.291691923833403,
+        "sigma_to_spec_confidence_interval": {
+          "low": 3.043170425634035,
+          "high": 3.540213422032771
+        },
+        "limiting_side": "upper"
+      },
+      "sample_size": {
+        "n": 400,
+        "observed_ci_halfwidth": 0.004589902291832426,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 183,
+        "required_n_for_target": 368,
+        "verdict": "sufficient",
+        "method": "clopper-pearson-zero-failures",
+        "variance_reduced": null
+      },
+      "negative_control": {
+        "description": "seeded defect: every DUT channel width halved (drive roughly halved); expected effect: every arc delay far past the 1.10x-nominal limit",
+        "n": 400,
+        "errored": 0,
+        "failed_unmeasurable": 0,
+        "censored": 0,
+        "yield": {
+          "empirical": {
+            "method": "clopper-pearson",
+            "estimate": 0.0,
+            "confidence": 0.95,
+            "confidence_interval": {
+              "low": 0.0,
+              "high": 0.009179804583664908
+            },
+            "n": 400
+          },
+          "normal": {
+            "method": "normal-delta",
+            "estimate": 2.504911353864526e-10,
+            "confidence": 0.95,
+            "confidence_interval": {
+              "low": 0.0,
+              "high": 9.558980887684815e-10
+            },
+            "n": 400
+          },
+          "variance_reduced": null
+        },
+        "nominal_empirical_estimate": 1.0,
+        "degradation_detected": true,
+        "verdict": "detected"
+      },
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "status": "pass",
+      "warnings": [
+        "measurement 'inv_tpdhl': no sample fell outside the limits, so the empirical yield is bounded only from below -- \"at least 99.0820% at 95% confidence, N = 400\" is the honest statement, not \"100% yield\""
+      ],
+      "spec_row": "0003-R1"
+    },
+    {
+      "name": "nand_tpdlh",
+      "unit": "s",
+      "n": 400,
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "censored": 0,
+      "inconclusive": 0,
+      "limits": {
+        "max": 7.434856e-11,
+        "target_yield": 0.99
+      },
+      "source_corners": [
+        "mos_tt_mismatch/1.200V/25C"
+      ],
+      "distribution": {
+        "model": "normal",
+        "mean": 6.758629575000002e-11,
+        "stddev": 1.6293483060146232e-12,
+        "min": 6.29036e-11,
+        "max": 7.29506e-11,
+        "median": 6.760955e-11,
+        "skewness": -0.003315815651136385,
+        "excess_kurtosis": -0.00736740476096287,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": 0.14228493731565447,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "consistent"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 1.0,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9908201954163351,
+            "high": 1.0
+          },
+          "n": 400
+        },
+        "normal": {
+          "method": "normal-delta",
+          "estimate": 0.9999833971190176,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.999961357293512,
+            "high": 1.0
+          },
+          "n": 400
+        },
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": null,
+        "cpk": 1.3834292367153926,
+        "cpk_confidence_interval": {
+          "low": 1.2820379072204255,
+          "high": 1.4848205662103597
+        },
+        "sigma_to_spec": 4.150287710146178,
+        "sigma_to_spec_confidence_interval": {
+          "low": 3.8461137216612764,
+          "high": 4.454461698631079
+        },
+        "limiting_side": "upper"
+      },
+      "sample_size": {
+        "n": 400,
+        "observed_ci_halfwidth": 0.004589902291832426,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 183,
+        "required_n_for_target": 368,
+        "verdict": "sufficient",
+        "method": "clopper-pearson-zero-failures",
+        "variance_reduced": null
+      },
+      "negative_control": {
+        "description": "seeded defect: every DUT channel width halved (drive roughly halved); expected effect: every arc delay far past the 1.10x-nominal limit",
+        "n": 400,
+        "errored": 0,
+        "failed_unmeasurable": 0,
+        "censored": 0,
+        "yield": {
+          "empirical": {
+            "method": "clopper-pearson",
+            "estimate": 0.0,
+            "confidence": 0.95,
+            "confidence_interval": {
+              "low": 0.0,
+              "high": 0.009179804583664908
+            },
+            "n": 400
+          },
+          "normal": {
+            "method": "normal-delta",
+            "estimate": 2.707514288520262e-25,
+            "confidence": 0.95,
+            "confidence_interval": {
+              "low": 0.0,
+              "high": 2.3082492738601468e-24
+            },
+            "n": 400
+          },
+          "variance_reduced": null
+        },
+        "nominal_empirical_estimate": 1.0,
+        "degradation_detected": true,
+        "verdict": "detected"
+      },
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "status": "pass",
+      "warnings": [
+        "measurement 'nand_tpdlh': no sample fell outside the limits, so the empirical yield is bounded only from below -- \"at least 99.0820% at 95% confidence, N = 400\" is the honest statement, not \"100% yield\""
+      ],
+      "spec_row": "0003-R1"
+    },
+    {
+      "name": "nand_tpdhl",
+      "unit": "s",
+      "n": 400,
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "censored": 0,
+      "inconclusive": 0,
+      "limits": {
+        "max": 5.937283e-11,
+        "target_yield": 0.99
+      },
+      "source_corners": [
+        "mos_tt_mismatch/1.200V/25C"
+      ],
+      "distribution": {
+        "model": "normal",
+        "mean": 5.397306374999999e-11,
+        "stddev": 1.0661801798950027e-12,
+        "min": 5.11287e-11,
+        "max": 5.74043e-11,
+        "median": 5.39802e-11,
+        "skewness": 0.11199477094267216,
+        "excess_kurtosis": -0.34943494227888827,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": 0.49472880626527055,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "consistent"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 1.0,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9908201954163351,
+            "high": 1.0
+          },
+          "n": 400
+        },
+        "normal": {
+          "method": "normal-delta",
+          "estimate": 0.9999997953606558,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9999994039637187,
+            "high": 1.0
+          },
+          "n": 400
+        },
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": null,
+        "cpk": 1.6881969082473416,
+        "cpk_confidence_interval": {
+          "low": 1.5665967024511638,
+          "high": 1.8097971140435194
+        },
+        "sigma_to_spec": 5.0645907247420245,
+        "sigma_to_spec_confidence_interval": {
+          "low": 4.699790107353492,
+          "high": 5.429391342130558
+        },
+        "limiting_side": "upper"
+      },
+      "sample_size": {
+        "n": 400,
+        "observed_ci_halfwidth": 0.004589902291832426,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 183,
+        "required_n_for_target": 368,
+        "verdict": "sufficient",
+        "method": "clopper-pearson-zero-failures",
+        "variance_reduced": null
+      },
+      "negative_control": {
+        "description": "seeded defect: every DUT channel width halved (drive roughly halved); expected effect: every arc delay far past the 1.10x-nominal limit",
+        "n": 400,
+        "errored": 0,
+        "failed_unmeasurable": 0,
+        "censored": 0,
+        "yield": {
+          "empirical": {
+            "method": "clopper-pearson",
+            "estimate": 0.0,
+            "confidence": 0.95,
+            "confidence_interval": {
+              "low": 0.0,
+              "high": 0.009179804583664908
+            },
+            "n": 400
+          },
+          "normal": {
+            "method": "normal-delta",
+            "estimate": 9.59831085103701e-28,
+            "confidence": 0.95,
+            "confidence_interval": {
+              "low": 0.0,
+              "high": 8.926993478315806e-27
+            },
+            "n": 400
+          },
+          "variance_reduced": null
+        },
+        "nominal_empirical_estimate": 1.0,
+        "degradation_detected": true,
+        "verdict": "detected"
+      },
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "status": "pass",
+      "warnings": [
+        "measurement 'nand_tpdhl': no sample fell outside the limits, so the empirical yield is bounded only from below -- \"at least 99.0820% at 95% confidence, N = 400\" is the honest statement, not \"100% yield\""
+      ],
+      "spec_row": "0003-R1"
+    }
+  ],
+  "warnings": []
+}

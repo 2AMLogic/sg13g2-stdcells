@@ -1,0 +1,14 @@
+* sim/yield/testbench-stock-inv.spice -- record-0003 reference bench. The
+* equally named inverter of the stock PDK library sg13g2_stdcell (the
+* benchmark denominator of spec-0001 rows 10-12) in the same stimulus / load
+* / threshold shape as testbench-cells.spice, so the stock-vs-ours arc
+* numbers are one measurement basis. Stock subckt pin order is Y A VDD VSS.
+* The include is expanded on the executing host; run with $PDK_ROOT set
+* (see sim/yield/README.md replay commands).
+.include "$PDK_ROOT/ihp-sg13g2/libs.ref/sg13g2_stdcell/spice/sg13g2_stdcell.spice"
+
+VSUP VDD 0 1.2
+
+VA1 a_ref 0 PULSE(0 1.2 2n 0.05n 0.05n 4n 10n)
+XDUT1 y_ref a_ref VDD 0 sg13g2_inv_1
+CL1 y_ref 0 10f

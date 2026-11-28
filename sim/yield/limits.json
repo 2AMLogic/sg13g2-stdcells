@@ -1,0 +1,11 @@
+{
+  "confidence": 0.95,
+  "target_ci_halfwidth": 0.01,
+  "target_yield": 0.99,
+  "measurements": {
+    "inv_tpdlh": { "max": 6.709241e-11, "target_yield": 0.99, "spec_row": "0003-R1" },
+    "inv_tpdhl": { "max": 6.153125e-11, "target_yield": 0.99, "spec_row": "0003-R1" },
+    "nand_tpdlh": { "max": 7.434856e-11, "target_yield": 0.99, "spec_row": "0003-R1" },
+    "nand_tpdhl": { "max": 5.937283e-11, "target_yield": 0.99, "spec_row": "0003-R1" }
+  }
+}
