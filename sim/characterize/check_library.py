@@ -374,8 +374,9 @@ def check(lib_path: Path, repo_root: Path = REPO_ROOT,
                 f"measurement's PDK pin is not a pin")
 
         corner = (prov.get("corner") or {}).get("name")
+        blocks = _measurement_blocks(record_text)
         for cell in claimed:
-            measured = [b for b in _measurement_blocks(record_text)
+            measured = [b for b in blocks
                         if b.get("Cell") == cell
                         and (not corner or b.get("Corner") == corner)]
             if not measured:

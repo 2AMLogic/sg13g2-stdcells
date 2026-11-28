@@ -234,6 +234,21 @@ def test_record_missing_a_cell_is_drift(tree):
     assert any("sg13g2_inv_4" in p for p in run(tree))
 
 
+def test_record_is_parsed_once_per_check(tree, monkeypatch):
+    _, lib, _ = tree
+    assert len(json.loads(Path(str(lib) + ".provenance").read_text())["cells"]) > 1
+    calls = []
+    parse = check_library._measurement_blocks
+
+    def counting_parse(record_text):
+        calls.append(record_text)
+        return parse(record_text)
+
+    monkeypatch.setattr(check_library, "_measurement_blocks", counting_parse)
+    assert run(tree) == []
+    assert calls == [REAL_RECORD.read_text()]
+
+
 def test_missing_sidecar_is_drift(tree):
     _, lib, _ = tree
     Path(str(lib) + ".provenance").unlink()
