@@ -4,6 +4,8 @@ Chronological record of merged PRs and closed issues. Maintained by the Guide ro
 
 ### 2026-11-28
 
+- **PR #320**: refactor: call gen_netlists in-process in run_lvs and netlist tests
+- **Issue #319** (closed): Call gen_netlists in-process and share demo-config helpers across design/tests/test_gen_netlists.py and layout/run_lvs.py
 - **PR #307**: refactor: share layout test fixtures and failure checks
 - **Issue #303** (closed): Share CLI temp-config, wide-row config, strip-run, and driven-route helpers in layout/tests/test_gen_layouts.py
 
