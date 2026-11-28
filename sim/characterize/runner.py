@@ -239,7 +239,6 @@ def evidence_for(data: dict) -> list[CharacterizationExtensions]:
         for i, slew in enumerate(slews):
             for j, load in enumerate(loads):
                 ext = CharacterizationExtensions(
-                    record_kind="characterization",
                     data_provenance="simulated",
                     cell=data["cell"],
                     arc_related_pin=arc["related_pin"],

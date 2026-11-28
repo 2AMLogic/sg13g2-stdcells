@@ -12,7 +12,6 @@ from sim.characterize.request import CellSpec
 from sim.harness import corners, evidence
 
 GOOD = dict(
-    record_kind="characterization",
     data_provenance="simulated",
     cell="sg13g2_nand2_1",
     arc_related_pin="A",
@@ -42,7 +41,7 @@ def test_characterization_corners_are_paired_not_factorial():
 def test_valid_record_passes_and_renders():
     ext = evidence.CharacterizationExtensions(**GOOD)
     ext.validate()
-    assert ext.as_dict()["cell"] == "sg13g2_nand2_1"
+    assert ext.cell == "sg13g2_nand2_1"
     assert any("Netlist provenance" in line for line in ext.render_lines())
 
 
@@ -62,11 +61,6 @@ def test_bad_sense_and_corner_rejected():
     for patch in ({"arc_sense": "sideways"}, {"corner": "fs"}, {"delay_ns": -1.0}):
         with pytest.raises(evidence.EvidenceFormatError):
             evidence.CharacterizationExtensions(**{**GOOD, **patch}).validate()
-
-
-def test_char_fields_rejected_on_other_record_kind():
-    with pytest.raises(evidence.EvidenceFormatError):
-        evidence.CharacterizationExtensions(record_kind="corner-matrix", cell="x").validate()
 
 
 # --- record provenance carries the simulator (issue #125) -----------------
