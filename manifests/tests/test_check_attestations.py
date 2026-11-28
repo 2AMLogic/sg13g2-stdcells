@@ -51,12 +51,12 @@ def single_shape_envelope(rel: str, content: bytes, checks=()) -> dict:
     }
 
 
-def list_shape_envelope(entries: list, aggregate: str) -> dict:
+def list_shape_envelope(entries: list, aggregate: str, checks=()) -> dict:
     return {
         "schema_version": 1,
         "kind": "generic",
         "status": "pass",
-        "attestation": {"producer": "klt signoff --attest", "checks": []},
+        "attestation": {"producer": "klt signoff --attest", "checks": list(checks)},
         "provenance": {"input": {"paths": entries, "content_hash": aggregate}},
     }
 
@@ -164,26 +164,19 @@ def test_malformed_content_hash_fails(tmp_path):
 
 
 def test_invalid_json_fails(tmp_path):
-    root = tmp_path / "repo"
-    env_dir = root / "envelopes"
-    env_dir.mkdir(parents=True)
+    root, env_dir = make_repo(tmp_path, {}, {})
     (env_dir / "broken.attest.json").write_text("{not json")
     assert run(root, env_dir) == 2
 
 
 def test_zero_hash_envelope_fails_not_vacuously(tmp_path):
-    envelope = {
-        "schema_version": 1,
-        "kind": "generic",
-        "status": "pass",
-        "attestation": {
-            "producer": "klt signoff --attest",
-            "checks": [
-                {"check": "command", "role": "audit", "name": "c", "argv": ["true"], "passed": True}
-            ],
-        },
-        "provenance": {"input": {"paths": [], "content_hash": sha(b"")}},
-    }
+    envelope = list_shape_envelope(
+        [],
+        aggregate=sha(b""),
+        checks=[
+            {"check": "command", "role": "audit", "name": "c", "argv": ["true"], "passed": True}
+        ],
+    )
     root, env_dir = make_repo(tmp_path, {}, {"item.attest.json": envelope})
     assert run(root, env_dir) == 2
 
@@ -237,10 +230,15 @@ def single_envelope_repo(tmp_path):
     return root
 
 
+@pytest.fixture
+def empty_repo(tmp_path):
+    return make_repo(tmp_path, {}, {})[0]
+
+
 def test_real_committed_manifest_pins_match_envelopes():
     manifest = Path(__file__).resolve().parents[1] / "sg13g2-stdcells.json"
     repo_root = Path(__file__).resolve().parents[2]
-    assert ca.main(["--manifest", str(manifest), "--repo-root", str(repo_root)]) == 0
+    assert run_manifest(repo_root, manifest) == 0
 
 
 def test_manifest_pin_match_passes_both_provenance_shapes(tmp_path):
@@ -403,26 +401,14 @@ def netlist_report_envelope(netlist_rel: str, content: bytes) -> dict:
     }
 
 
-def write_report(root: Path, rel: str, envelope: dict) -> None:
-    p = root / rel
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(envelope, indent=1) + "\n")
-
-
 @pytest.fixture
 def item5_reports(tmp_path):
-    root, _ = make_repo(
-        tmp_path,
-        {"sim/records/a.spice": b"a netlist", "sim/records/b.spice": b"b netlist"},
-        {},
-    )
-    for name, content in (("a", b"a netlist"), ("b", b"b netlist")):
-        write_report(
-            root,
-            f"sim/records/{name}.report.json",
-            netlist_report_envelope(f"sim/records/{name}.spice", content),
-        )
-    return root
+    netlists = {"a": b"a netlist", "b": b"b netlist"}
+    files = {f"sim/records/{name}.spice": content for name, content in netlists.items()}
+    for name, content in netlists.items():
+        report = netlist_report_envelope(f"sim/records/{name}.spice", content)
+        files[f"sim/records/{name}.report.json"] = (json.dumps(report, indent=1) + "\n").encode()
+    return make_repo(tmp_path, files, {})[0]
 
 
 def run_item5_manifest(root, pins):
@@ -464,12 +450,9 @@ def test_manifest_list_of_pinned_objects_wrong_pin_fails(item5_reports, capsys):
     assert sha(b"b netlist") in err
 
 
-def test_manifest_list_pinned_object_naming_missing_report_fails(
-    tmp_path, capsys
-):
-    root, _ = make_repo(tmp_path, {}, {})
+def test_manifest_list_pinned_object_naming_missing_report_fails(empty_repo, capsys):
     pins = [{"file": "sim/records/gone.report.json", "content_hash": sha(b"x")}]
-    assert run_item5_manifest(root, pins) == 2
+    assert run_item5_manifest(empty_repo, pins) == 2
     err = capsys.readouterr().err
     assert 'evidence["5.analog"][0]' in err
     assert "does not exist" in err
@@ -540,77 +523,70 @@ def test_manifest_nested_group_wrong_pin_fails_naming_group(item5_reports, capsy
     assert 'evidence["5.analog"][0][0]' in capsys.readouterr().err
 
 
-def test_manifest_empty_or_string_only_list_still_pins_nothing(tmp_path, capsys):
+def test_manifest_empty_or_string_only_list_still_pins_nothing(empty_repo, capsys):
     # Edge cases (#220 test plan): an empty list and a string-only list pin
     # nothing -- skipped element by element -- so a manifest with no other
     # pins still hits the zero-pin error (#129).
-    root, _ = make_repo(tmp_path, {}, {})
     evidence = {"5.analog": [], "11.digital": ["flow/records/r/erc.json"]}
-    assert run_evidence(root, evidence) == 2
+    assert run_evidence(empty_repo, evidence) == 2
     assert "no evidence pins" in capsys.readouterr().err
 
 
-def test_manifest_with_zero_pins_fails_not_vacuously(tmp_path, capsys):
+def test_manifest_with_zero_pins_fails_not_vacuously(empty_repo, capsys):
     # Negative control (#129): a manifest whose evidence carries only bare
     # path strings and lists pins nothing, so the run verifies nothing -- the
     # sibling of an empty envelope dir in the default mode. It must exit 2
     # naming the manifest, never print the success line.
-    root, _ = make_repo(tmp_path, {}, {})
     evidence = {
         "1.digital": "flow/records/r/synthesize.json",
         "4.analog": ["layout/lvs/cell_1.json", "layout/lvs/cell_2.json"],
     }
-    assert run_evidence(root, evidence) == 2
+    assert run_evidence(empty_repo, evidence) == 2
     captured = capsys.readouterr()
     assert captured.out == ""
     assert MANIFEST_NAME in captured.err
     assert "no evidence pins" in captured.err
 
 
-def test_manifest_missing_file_exits_2_not_traceback(tmp_path, capsys):
+def test_manifest_missing_file_exits_2_not_traceback(empty_repo, capsys):
     # #129 gap 2: a --manifest path that does not exist must report a
     # readable error and exit 2, not traceback with FileNotFoundError (exit 1).
-    missing = tmp_path / "repo" / "does-not-exist.json"
-    assert ca.main(["--manifest", str(missing), "--repo-root", str(tmp_path)]) == 2
+    missing = empty_repo / "does-not-exist.json"
+    assert run_manifest(empty_repo, missing) == 2
     err = capsys.readouterr().err
     assert err.strip()
     assert "cannot read" in err
     assert "does-not-exist.json" in err
 
 
-def test_manifest_directory_path_exits_2_not_traceback(tmp_path, capsys):
-    d = tmp_path / "repo" / "a-directory"
-    d.mkdir(parents=True)
-    assert ca.main(["--manifest", str(d), "--repo-root", str(tmp_path)]) == 2
+def test_manifest_directory_path_exits_2_not_traceback(empty_repo, capsys):
+    d = empty_repo / "a-directory"
+    d.mkdir()
+    assert run_manifest(empty_repo, d) == 2
     assert "cannot read" in capsys.readouterr().err
 
 
-def test_manifest_non_utf8_file_exits_2_not_traceback(tmp_path, capsys):
-    root = tmp_path / "repo"
-    root.mkdir(parents=True)
-    path = root / "binary.json"
+def test_manifest_non_utf8_file_exits_2_not_traceback(empty_repo, capsys):
+    path = empty_repo / "binary.json"
     path.write_bytes(b"\x80\x81\xfe\xff")
-    assert ca.main(["--manifest", str(path), "--repo-root", str(root)]) == 2
+    assert run_manifest(empty_repo, path) == 2
     assert "cannot read" in capsys.readouterr().err
 
 
-def test_manifest_invalid_json_keeps_specific_message(tmp_path, capsys):
+def test_manifest_invalid_json_keeps_specific_message(empty_repo, capsys):
     # Regression: a readable file holding invalid JSON keeps the existing
     # "not valid JSON" message rather than the generic "cannot read" one.
-    root = tmp_path / "repo"
-    root.mkdir(parents=True)
-    path = root / "broken.json"
+    path = empty_repo / "broken.json"
     path.write_text("{not json")
-    assert ca.main(["--manifest", str(path), "--repo-root", str(root)]) == 2
+    assert run_manifest(empty_repo, path) == 2
     err = capsys.readouterr().err
     assert "not valid JSON" in err
     assert "cannot read" not in err
 
 
-def test_manifest_naming_missing_envelope_fails_loudly(tmp_path, capsys):
-    root, _ = make_repo(tmp_path, {}, {})
+def test_manifest_naming_missing_envelope_fails_loudly(empty_repo, capsys):
     pin = {"file": "envelopes/gone.attest.json", "content_hash": sha(b"x")}
-    assert run_evidence(root, {"2.digital": pin}) == 2
+    assert run_evidence(empty_repo, {"2.digital": pin}) == 2
     err = capsys.readouterr().err
     assert 'evidence["2.digital"]' in err
     assert "envelopes/gone.attest.json" in err
@@ -630,44 +606,39 @@ def test_manifest_malformed_pin_fails_loudly(single_envelope_repo):
     assert run_evidence(single_envelope_repo, {"9.digital": pin}) == 2
 
 
-def test_manifest_naming_unparseable_envelope_fails_loudly(tmp_path, capsys):
-    root, _ = make_repo(tmp_path, {}, {})
-    env_path = root / "envelopes" / "broken.attest.json"
-    env_path.write_text("{not json")
+def test_manifest_naming_unparseable_envelope_fails_loudly(empty_repo, capsys):
+    (empty_repo / "envelopes" / "broken.attest.json").write_text("{not json")
     pin = {"file": "envelopes/broken.attest.json", "content_hash": sha(b"x")}
-    assert run_evidence(root, {"1.analog": pin}) == 2
+    assert run_evidence(empty_repo, {"1.analog": pin}) == 2
     assert "broken.attest.json" in capsys.readouterr().err
 
 
-def test_manifest_without_evidence_object_fails_loudly(tmp_path, capsys):
-    root, _ = make_repo(tmp_path, {}, {})
-    manifest = write_manifest(root, {"block": "fake"})
-    assert run_manifest(root, manifest) == 2
+def test_manifest_without_evidence_object_fails_loudly(empty_repo, capsys):
+    manifest = write_manifest(empty_repo, {"block": "fake"})
+    assert run_manifest(empty_repo, manifest) == 2
     assert "no evidence object" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("raw", ["[]\n", "null\n", '"s"\n', "42\n"])
-def test_manifest_non_object_top_level_fails_loudly(tmp_path, capsys, raw):
+def test_manifest_non_object_top_level_fails_loudly(empty_repo, capsys, raw):
     # #137 site 1: a readable manifest holding valid JSON whose top level
     # is not an object must report rc 2 with a clean message naming the
     # file, never an AttributeError traceback.
-    root, _ = make_repo(tmp_path, {}, {})
-    path = root / "nonobject.json"
+    path = empty_repo / "nonobject.json"
     path.write_text(raw)  # write_manifest() can't produce a non-object top level
-    assert ca.main(["--manifest", str(path), "--repo-root", str(root)]) == 2
+    assert run_manifest(empty_repo, path) == 2
     err = capsys.readouterr().err
     assert "nonobject.json: top level is not a JSON object" in err
     assert "Traceback" not in err
 
 
-def test_manifest_naming_non_object_envelope_fails_loudly(tmp_path, capsys):
+def test_manifest_naming_non_object_envelope_fails_loudly(empty_repo, capsys):
     # #137 site 2: a pin naming an envelope whose top level is not an
     # object must report rc 2 with a clean message naming that envelope,
     # never a traceback.
-    root, _ = make_repo(tmp_path, {}, {})
-    (root / "envelopes" / "list.attest.json").write_text("[]\n")
+    (empty_repo / "envelopes" / "list.attest.json").write_text("[]\n")
     pin = {"file": "envelopes/list.attest.json", "content_hash": sha(b"x")}
-    assert run_evidence(root, {"1.analog": pin}) == 2
+    assert run_evidence(empty_repo, {"1.analog": pin}) == 2
     err = capsys.readouterr().err
     assert "list.attest.json: top level is not a JSON object" in err
     assert "Traceback" not in err
@@ -727,38 +698,22 @@ def item9_envelope(pdk_value=None, include_pin_check=True, inventory=b'{"pins": 
     if include_pin_check:
         value = pdk_value if pdk_value is not None else dict(PIN)
         checks.append({"check": "pin", "role": "pdk", "passed": True, "value": value})
-    return {
-        "schema_version": 1,
-        "kind": "generic",
-        "status": "pass",
-        "t1_item": 9,
-        "attestation": {"producer": "klt signoff --attest", "checks": checks},
-        "provenance": {
-            "input": {
-                "path": {"path": "inv/item9.json", "scope": "repo"},
-                "content_hash": sha(inventory),
-            }
-        },
-    }
+    envelope = single_shape_envelope("inv/item9.json", inventory, checks=checks)
+    envelope["t1_item"] = 9
+    return envelope
 
 
-def make_item9_repo(tmp_path, envelope, sidecar_pdk="default"):
-    root, env_dir = make_repo(
-        tmp_path, {"inv/item9.json": b'{"pins": {}}'},
-        {"item9.attest.json": envelope},
-    )
-    if sidecar_pdk is not None:
-        pdk = dict(PIN) if sidecar_pdk == "default" else sidecar_pdk
-        (root / "views").mkdir()
-        (root / "views" / "sg13g2_stdcells_tt.lib.provenance").write_text(
-            json.dumps({"pdk": pdk}) + "\n"
-        )
-    return root, env_dir
+def run_item9(tmp_path, envelope, sidecar="default") -> int:
+    files = {"inv/item9.json": b'{"pins": {}}'}
+    if sidecar is not None:
+        doc = {"pdk": dict(PIN)} if sidecar == "default" else sidecar
+        files["views/sg13g2_stdcells_tt.lib.provenance"] = (json.dumps(doc) + "\n").encode()
+    root, env_dir = make_repo(tmp_path, files, {"item9.attest.json": envelope})
+    return run(root, env_dir)
 
 
 def test_item9_pdk_pin_matching_sidecar_passes(tmp_path):
-    root, env_dir = make_item9_repo(tmp_path, item9_envelope())
-    assert run(root, env_dir) == 0
+    assert run_item9(tmp_path, item9_envelope()) == 0
 
 
 def test_item9_pdk_pin_disagreeing_with_sidecar_fails(tmp_path, capsys):
@@ -766,42 +721,34 @@ def test_item9_pdk_pin_disagreeing_with_sidecar_fails(tmp_path, capsys):
     # the committed measurement still cites the old one: every content_hash
     # matches, only the focused check sees it.
     envelope = item9_envelope(pdk_value={"name": "IHP-Open-PDK", "revision": "b" * 40})
-    root, env_dir = make_item9_repo(tmp_path, envelope)
-    assert run(root, env_dir) == 1
+    assert run_item9(tmp_path, envelope) == 1
     err = capsys.readouterr().err
     assert "item9.attest.json" in err and "was not taken against" in err, err
 
 
 def test_item9_pdk_pin_name_disagreement_fails(tmp_path):
     envelope = item9_envelope(pdk_value={"name": "other-pdk", "revision": PIN["revision"]})
-    root, env_dir = make_item9_repo(tmp_path, envelope)
-    assert run(root, env_dir) == 1
+    assert run_item9(tmp_path, envelope) == 1
 
 
 def test_item9_pin_against_sidecar_without_pdk_pin_fails(tmp_path):
     # The measurement predates the PDK pin: the sidecar records none, so the
     # inventory pins a PDK the committed view was not measured against.
-    root, env_dir = make_item9_repo(tmp_path, item9_envelope(), sidecar_pdk=None)
-    (root / "views").mkdir()
-    (root / "views" / "sg13g2_stdcells_tt.lib.provenance").write_text("{}\n")
-    assert run(root, env_dir) == 1
+    assert run_item9(tmp_path, item9_envelope(), sidecar={}) == 1
 
 
 def test_item9_none_pdk_form_skips_sidecar_comparison(tmp_path):
     # The digital partition's no-PDK form consumes no PDK; there is nothing
     # to compare and no sidecar is required.
     envelope = item9_envelope(pdk_value={"none": True, "reason": "behavioral RTL"})
-    root, env_dir = make_item9_repo(tmp_path, envelope, sidecar_pdk=None)
-    assert run(root, env_dir) == 0
+    assert run_item9(tmp_path, envelope, sidecar=None) == 0
 
 
 def test_item9_envelope_without_pdk_pin_check_is_an_error(tmp_path):
     # Silence never means "no PDK": an item-9 envelope recording no pdk pin
     # check is malformed, not vacuously passing.
-    root, env_dir = make_item9_repo(tmp_path, item9_envelope(include_pin_check=False))
-    assert run(root, env_dir) == 2
+    assert run_item9(tmp_path, item9_envelope(include_pin_check=False)) == 2
 
 
 def test_item9_pdk_pin_with_no_sidecar_to_compare_is_an_error(tmp_path):
-    root, env_dir = make_item9_repo(tmp_path, item9_envelope(), sidecar_pdk=None)
-    assert run(root, env_dir) == 2
+    assert run_item9(tmp_path, item9_envelope(), sidecar=None) == 2
