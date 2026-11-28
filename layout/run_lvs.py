@@ -27,6 +27,8 @@ layout/toolchain.json, klt failed) or `--check` drift; 2 invalid config;
 4 reports written but at least one cell is not `match` (the reports are the
 evidence; nothing is hidden or retried).
 """
+import contextlib
+import io
 import json
 import pathlib
 import subprocess
@@ -36,7 +38,9 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import toolchain_pin  # noqa: E402
 
-GEN_NETLISTS = HERE.parent / "design" / "gen_netlists.py"
+sys.path.insert(0, str(HERE.parent / "design"))
+import gen_netlists as gn  # noqa: E402
+
 DECK = toolchain_pin.DECK
 relpath = toolchain_pin.relpath
 cell_names = toolchain_pin.cell_names
@@ -78,14 +82,13 @@ def summarize(cell, report):
         report.get("power_connectivity", {}).get("status"), report.get("error_count"))
 
 
-def gen_netlists(config, outdir):
-    return subprocess.run([sys.executable, str(GEN_NETLISTS), "--config", str(config),
-                           "--out", str(outdir)], capture_output=True, text=True)
-
-
-def check_netlists(config, outdir):
-    return subprocess.run([sys.executable, str(GEN_NETLISTS), "--config", str(config),
-                           "--out", str(outdir), "--check"], capture_output=True, text=True)
+def gen_netlists(config, outdir, *, check=False):
+    """design/gen_netlists.py in-process on `config` into `outdir` (`--check`
+    with `check`): its stdout is swallowed, its diagnostics go straight to
+    stderr, and its exit code (0 ok, 1 drift, 2 invalid config) is returned."""
+    argv = ["--config", str(config), "--out", str(outdir)] + (["--check"] if check else [])
+    with contextlib.redirect_stdout(io.StringIO()):
+        return gn.main(argv)
 
 
 def check_report(report_path):
@@ -99,10 +102,8 @@ def run_klt_lvs(request, report_path):
 
 def do_check(cells, out, netlists, config):
     bad = []
-    r = check_netlists(config, netlists)
-    if r.returncode != 0:
+    if gen_netlists(config, netlists, check=True) != 0:
         bad.append("netlists: reference netlists not fresh (generator diagnostics above)")
-        print(r.stderr, end="", file=sys.stderr)
     for cell in cells:
         rep = pathlib.Path(out) / f"{cell}.json"
         bad += toolchain_pin.check_report_fresh(cell, rep, "lvs", check_report)
@@ -123,10 +124,9 @@ def main(argv=None):
         return preflight
     if a.check:
         return do_check(cells, out, netlists, a.config)
-    r = gen_netlists(a.config, netlists)
-    if r.returncode != 0:
-        print(r.stderr, file=sys.stderr)
-        return 2 if r.returncode == 2 else 1
+    rc = gen_netlists(a.config, netlists)
+    if rc != 0:
+        return 2 if rc == 2 else 1
     out.mkdir(parents=True, exist_ok=True)
     worst = 0
     for cell in cells:

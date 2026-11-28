@@ -4,13 +4,15 @@ The generated netlists are parsed independently of the generator and checked
 with a switch-level truth-table simulation. Models are the demo config's
 placeholder names, not any PDK.
 """
+import contextlib
 import copy
+import io
 import itertools
 import json
 import pathlib
-import subprocess
 import sys
 import tempfile
+import types
 import unittest
 
 DESIGN = pathlib.Path(__file__).resolve().parents[1]
@@ -20,6 +22,14 @@ import gen_netlists as gn  # noqa: E402
 CONFIG = DESIGN / "example_config.json"
 CFG = json.loads(CONFIG.read_text())
 PROC = CFG["process"]
+FILES = gn.generate(CFG, CONFIG.name)
+
+
+def one_cell_cfg(inputs, outputs, **proc):
+    cfg = copy.deepcopy(CFG)
+    cfg["process"].update(proc)
+    cfg["cells"] = [{"name": "t", "family": "t", "drive": 1, "inputs": inputs, "outputs": outputs}]
+    return cfg
 
 
 def parse_netlist(text):
@@ -68,9 +78,8 @@ def switch_level(devs, vec):
 
 class TopologyTest(unittest.TestCase):
     def test_truth_tables_switch_level_all_cells(self):
-        files = gn.generate(CFG, CONFIG.name)
         for cell in CFG["cells"]:
-            ports, devs = parse_netlist(files[f"{cell['name']}.spice"])
+            ports, devs = parse_netlist(FILES[f"{cell['name']}.spice"])
             self.assertEqual(ports, cell["inputs"] + sorted(cell["outputs"]) + [PROC["vdd_net"], PROC["vss_net"]])
             for bits in itertools.product((0, 1), repeat=len(cell["inputs"])):
                 vec = dict(zip(cell["inputs"], bits))
@@ -84,24 +93,21 @@ class TopologyTest(unittest.TestCase):
             self.assertIn(f, fams)
 
     def test_non_inverting_has_output_inverter(self):
-        files = gn.generate(CFG, CONFIG.name)
-        _, devs = parse_netlist(files["demo_buf_2.spice"])
+        _, devs = parse_netlist(FILES["demo_buf_2.spice"])
         self.assertEqual(len(devs), 4)  # stage inverter + output inverter
 
     def test_xor_shares_complement_literals(self):
-        files = gn.generate(CFG, CONFIG.name)
-        _, devs = parse_netlist(files["demo_xor2_1.spice"])
+        _, devs = parse_netlist(FILES["demo_xor2_1.spice"])
         inverters = [d for d in devs if d[2] in ("A", "B") and d[1].endswith("_b")]
         self.assertEqual(len(inverters), 4)  # one n+p unit inverter each for A and B, not per use
 
     def test_four_input_stack_compensation(self):
-        files = gn.generate(CFG, CONFIG.name)
-        _, devs = parse_netlist(files["demo_nand4_1.spice"])
+        _, devs = parse_netlist(FILES["demo_nand4_1.spice"])
         nw = {int(p["w"][:-1]) for m, *_, p in devs if m == PROC["nmos_model"]}
         self.assertEqual(nw, {PROC["unit_n_nm"] * 4})
 
     def test_finger_caps_respected(self):
-        for text in gn.generate(CFG, CONFIG.name).values():
+        for text in FILES.values():
             for model, _, _, _, prm in parse_netlist(text)[1]:
                 w, ng = int(prm["w"][:-1]), int(prm["ng"])
                 cap = PROC["finger_max_n"] if model == PROC["nmos_model"] else PROC["finger_max_p"]
@@ -114,18 +120,14 @@ class TopologyTest(unittest.TestCase):
         # netlist must state that same decomposition, or resimulating it
         # against the extracted layout compares a different device than the
         # layout drew and folds the representation into the parasitic delta
-        cfg = copy.deepcopy(CFG)
-        cfg["cells"] = [c for c in CFG["cells"] if c["name"] == "demo_inv_2"]
-        _, devs = parse_netlist(gn.generate(cfg, CONFIG.name)["demo_inv_2.spice"])
+        _, devs = parse_netlist(FILES["demo_inv_2.spice"])
         per_gate = {}
         for model, _, gate, _, prm in devs:
             per_gate.setdefault(gate, set()).add(int(prm["ng"]))
         self.assertEqual(per_gate, {"A": {2}})
 
     def test_gate_shared_fold_keeps_total_width(self):
-        cfg = copy.deepcopy(CFG)
-        cfg["cells"] = [c for c in CFG["cells"] if c["name"] == "demo_inv_2"]
-        _, devs = parse_netlist(gn.generate(cfg, CONFIG.name)["demo_inv_2.spice"])
+        _, devs = parse_netlist(FILES["demo_inv_2.spice"])
         widths = {(m, int(p["w"][:-1])) for m, _, _, _, p in devs}
         self.assertEqual(widths, {(PROC["nmos_model"], 2 * PROC["unit_n_nm"]),
                                   (PROC["pmos_model"], 2 * PROC["unit_p_nm"])})
@@ -134,10 +136,7 @@ class TopologyTest(unittest.TestCase):
         # 510 nm has no equal 2-finger split on the 10 nm grid, so a gate
         # whose other device folds to 2 fingers is impossible to draw, not
         # silently misstated
-        cfg = copy.deepcopy(CFG)
-        cfg["process"].update(unit_n_nm=510, unit_p_nm=1300)
-        cfg["cells"] = [{"name": "t", "family": "inv", "drive": 1,
-                         "inputs": ["A"], "outputs": {"Y": "!A"}}]
+        cfg = one_cell_cfg(["A"], {"Y": "!A"}, unit_n_nm=510, unit_p_nm=1300)
         with self.assertRaises(ValueError) as cm:
             gn.generate(cfg)
         self.assertIn("2-finger", str(cm.exception))
@@ -164,67 +163,47 @@ class ParserTest(unittest.TestCase):
                 gn.parse(bad)
 
     def test_single_input_cell(self):
+        self.assertEqual(len(gn.generate(one_cell_cfg(["A"], {"Y": "!A"}))), 1)
+
+    def bad(self, mutate):
         cfg = copy.deepcopy(CFG)
-        cfg["cells"] = [c for c in cfg["cells"] if c["name"] == "demo_inv_1"]
-        self.assertEqual(len(gn.generate(cfg)), 1)
+        mutate(cfg)
+        with self.assertRaises(ValueError):
+            gn.generate(cfg)
 
     def test_invalid_config_rejected(self):
-        cfg = copy.deepcopy(CFG)
-        cfg["cells"][0]["outputs"] = {"Y": "!Z"}
-        with self.assertRaises(ValueError):
-            gn.generate(cfg)
-        cfg = copy.deepcopy(CFG)
-        del cfg["process"]["unit_n_nm"]
-        with self.assertRaises(ValueError):
-            gn.generate(cfg)
-        cfg = copy.deepcopy(CFG)
-        cfg["cells"][0]["outputs"] = {"Y": ""}
-        with self.assertRaises(ValueError):
-            gn.generate(cfg)
+        self.bad(lambda c: c["cells"][0].update(outputs={"Y": "!Z"}))
+        self.bad(lambda c: c["process"].pop("unit_n_nm"))
+        self.bad(lambda c: c["cells"][0].update(outputs={"Y": ""}))
 
     def test_schema_version_must_be_1(self):
-        cfg = copy.deepcopy(CFG)
-        cfg["schema_version"] = 99
-        with self.assertRaises(ValueError):
-            gn.generate(cfg)
-        cfg = copy.deepcopy(CFG)
-        del cfg["schema_version"]
-        with self.assertRaises(ValueError):
-            gn.generate(cfg)
-        cfg = copy.deepcopy(CFG)
-        cfg["schema_version"] = True
-        with self.assertRaises(ValueError):
-            gn.generate(cfg)
+        self.bad(lambda c: c.update(schema_version=99))
+        self.bad(lambda c: c.pop("schema_version"))
+        self.bad(lambda c: c.update(schema_version=True))
 
 
 class PinNameAndGridTest(unittest.TestCase):
-    def _cfg(self, inputs, outputs, **proc):
-        cfg = copy.deepcopy(CFG)
-        cfg["process"].update(proc)
-        cfg["cells"] = [{"name": "t", "family": "t", "drive": 1, "inputs": inputs, "outputs": outputs}]
-        return cfg
-
     def test_reserved_pin_names_rejected(self):
         bad = [(["n1"], {"Y": "!n1"}), (["A_b"], {"Y": "!A_b"}), (["A"], {"Y_i": "!A"}),
                (["A"], {"Y_b": "!A"}), (["VDD"], {"Y": "!VDD"}), (["A"], {"VSS": "!A"}),
                (["A", "B"], {"A": "!B"}), (["n12"], {"Y": "!n12"})]
         for ins, outs in bad:
             with self.assertRaises(ValueError, msg=(ins, outs)) as cm:
-                gn.generate(self._cfg(ins, outs))
+                gn.generate(one_cell_cfg(ins, outs))
             self.assertIn("'t'", str(cm.exception))
 
     def test_legal_pin_names_accepted(self):
         for ins, outs in [(["n"], {"Y": "!n"}), (["nA"], {"Y": "!nA"}), (["A_B"], {"Y": "!A_B"}),
                           (["A1", "S"], {"X": "A1*S"})]:
-            gn.generate(self._cfg(ins, outs))
+            gn.generate(one_cell_cfg(ins, outs))
 
     def test_grid_nm(self):
         with self.assertRaises(ValueError):
-            gn.generate(self._cfg(["A"], {"Y": "!A"}, unit_n_nm=505))
-        gn.generate(self._cfg(["A"], {"Y": "!A"}, unit_n_nm=505, grid_nm=5))
+            gn.generate(one_cell_cfg(["A"], {"Y": "!A"}, unit_n_nm=505))
+        gn.generate(one_cell_cfg(["A"], {"Y": "!A"}, unit_n_nm=505, grid_nm=5))
         for bad in (0, -5, 2.5, True, "5"):
             with self.assertRaises(ValueError, msg=bad):
-                gn.generate(self._cfg(["A"], {"Y": "!A"}, grid_nm=bad))
+                gn.generate(one_cell_cfg(["A"], {"Y": "!A"}, grid_nm=bad))
 
     def test_grid_drives_finger_split(self):
         c = gn.Cell("t", dict(PROC, grid_nm=5, finger_max_n=300))
@@ -236,7 +215,11 @@ class PinNameAndGridTest(unittest.TestCase):
 
 class DeterminismAndCheckTest(unittest.TestCase):
     def run_cli(self, *args):
-        return subprocess.run([sys.executable, str(DESIGN / "gen_netlists.py"), *args], capture_output=True, text=True)
+        """The CLI in-process: a .returncode / .stdout / .stderr result."""
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = gn.main(list(args))
+        return types.SimpleNamespace(returncode=rc, stdout=out.getvalue(), stderr=err.getvalue())
 
     def test_two_runs_identical(self):
         with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
@@ -290,8 +273,7 @@ class DeterminismAndCheckTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             c = pathlib.Path(td) / "c.json"
             c.write_text(json.dumps(cfg))
-            return subprocess.run([sys.executable, str(DESIGN / "gen_netlists.py"), "--config", str(c), "--out", td],
-                                  capture_output=True, text=True, timeout=30)
+            return self.run_cli("--config", str(c), "--out", td)
 
     def test_off_grid_unit_width_exit_2(self):
         self.assertEqual(self._run_bad(unit_n_nm=505).returncode, 2)

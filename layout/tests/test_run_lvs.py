@@ -230,18 +230,13 @@ class DoCheckTest(unittest.TestCase):
     """
 
     def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self.out = pathlib.Path(self._tmp.name) / "lvs"
+        self.out = pathlib.Path(self.enterContext(tempfile.TemporaryDirectory())) / "lvs"
         self.netlists = self.out / "netlists"
         self.cells = run_lvs.cell_names(CONFIG)
-        r = run_lvs.gen_netlists(CONFIG, self.netlists)
-        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(run_lvs.gen_netlists(CONFIG, self.netlists), 0)
         self.out.mkdir(parents=True, exist_ok=True)
         for cell in self.cells:
             (self.out / f"{cell}.json").write_text("{}")
-
-    def tearDown(self):
-        self._tmp.cleanup()
 
     def snapshot(self):
         return {p.name: p.read_bytes()
@@ -249,7 +244,8 @@ class DoCheckTest(unittest.TestCase):
 
     def do_check(self, report_exit=0):
         fake = types.SimpleNamespace(returncode=report_exit, stdout="stale", stderr="")
-        with mock.patch.object(run_lvs, "check_report", return_value=fake) as rep:
+        with mock.patch.object(run_lvs, "check_report", return_value=fake) as rep, \
+                contextlib.redirect_stderr(io.StringIO()):
             rc = run_lvs.do_check(self.cells, self.out, self.netlists, str(CONFIG))
         present = [c for c in self.cells if (self.out / f"{c}.json").exists()]
         self.assertEqual(rep.call_count, len(present))  # every present report re-checked
