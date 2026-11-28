@@ -62,14 +62,9 @@ def write_record(tmp_path, git):
                          repo_root=tmp_path, git=git)
 
 
-def repo_commit_line(path):
+def header_line(path, field):
     return next(line for line in path.read_text().splitlines()
-                if line.startswith("**Repo commit**"))
-
-
-def pdk_line(path):
-    return next(line for line in path.read_text().splitlines()
-                if line.startswith("**PDK**"))
+                if line.startswith(f"**{field}**"))
 
 
 def sidecar(tmp_path, path, git):
@@ -83,9 +78,9 @@ def sidecar(tmp_path, path, git):
 def test_record_and_sidecar_stamp_one_tree_state(tmp_path):
     path = write_record(tmp_path, GIT)
     prov = sidecar(tmp_path, path, GIT)
-    assert repo_commit_line(path) == f"**Repo commit**: {GIT['commit']}"
+    assert header_line(path, "Repo commit") == f"**Repo commit**: {GIT['commit']}"
     assert prov["repo_commit"] == GIT["commit"]  # no spurious "(dirty)" suffix
-    assert repo_commit_line(path) == f"**Repo commit**: {prov['repo_commit']}"
+    assert header_line(path, "Repo commit") == f"**Repo commit**: {prov['repo_commit']}"
 
 
 def test_record_and_sidecar_stamp_one_pdk(tmp_path):
@@ -94,22 +89,22 @@ def test_record_and_sidecar_stamp_one_pdk(tmp_path):
     # name and full SHA the sidecar's pdk object pins.
     path = write_record(tmp_path, GIT)
     prov = sidecar(tmp_path, path, GIT)
-    assert pdk_line(path) == f"**PDK**: {PDK['name']} @ {PDK['revision']}"
+    assert header_line(path, "PDK") == f"**PDK**: {PDK['name']} @ {PDK['revision']}"
     assert prov["pdk"] == PDK
-    assert pdk_line(path) == f"**PDK**: {prov['pdk']['name']} @ {prov['pdk']['revision']}"
+    assert header_line(path, "PDK") == (
+        f"**PDK**: {prov['pdk']['name']} @ {prov['pdk']['revision']}")
 
 
 def test_dirty_snapshot_marks_both_stamps(tmp_path):
     path = write_record(tmp_path, GIT_DIRTY)
     prov = sidecar(tmp_path, path, GIT_DIRTY)
-    assert repo_commit_line(path) == f"**Repo commit**: {commit_stamp(GIT_DIRTY)}"
+    assert header_line(path, "Repo commit") == f"**Repo commit**: {commit_stamp(GIT_DIRTY)}"
     assert prov["repo_commit"] == commit_stamp(GIT_DIRTY)
 
 
 def test_notes_line_names_klt_once(tmp_path):
     path = write_record(tmp_path, GIT)
-    notes = next(line for line in path.read_text().splitlines()
-                 if line.startswith("**Notes**"))
+    notes = header_line(path, "Notes")
     assert "klt 0.9.2.dev1029," in notes
     assert "klt klt" not in notes
 
@@ -140,6 +135,15 @@ def library_response():
     }
 
 
+def write_config(tmp_path):
+    config = tmp_path / "layout" / "example_config.json"
+    config.parent.mkdir(exist_ok=True)
+    config.write_text(json.dumps(
+        {"process": {}, "cells": [{"name": "sg13g2_inv_1", "inputs": ["A"],
+                                   "outputs": {"Y": "!A"}}]}) + "\n")
+    return config
+
+
 def test_characterize_library_snapshots_once_before_writing(tmp_path, monkeypatch):
     """``characterize_library`` captures git provenance once, before any write.
 
@@ -164,11 +168,7 @@ def test_characterize_library_snapshots_once_before_writing(tmp_path, monkeypatc
         pdk_calls.append(pdk_dir)
         return PDK
 
-    config = tmp_path / "layout" / "example_config.json"
-    config.parent.mkdir()
-    config.write_text(json.dumps(
-        {"process": {}, "cells": [{"name": "sg13g2_inv_1", "inputs": ["A"],
-                                   "outputs": {"Y": "!A"}}]}) + "\n")
+    config = write_config(tmp_path)
 
     monkeypatch.setattr(runner, "git_provenance", snapshot)
     monkeypatch.setattr(runner, "pdk_provenance", pdk_snapshot)
@@ -181,12 +181,12 @@ def test_characterize_library_snapshots_once_before_writing(tmp_path, monkeypatc
                                        lib_path=tmp_path / "out.lib",
                                        records_dir=tmp_path / "records")
 
-    assert repo_commit_line(path) == f"**Repo commit**: {GIT['commit']}"
+    assert header_line(path, "Repo commit") == f"**Repo commit**: {GIT['commit']}"
     prov = json.loads((tmp_path / "out.lib.provenance").read_text())
     assert prov["repo_commit"] == GIT["commit"]  # no spurious "(dirty)" suffix
-    assert repo_commit_line(path) == f"**Repo commit**: {prov['repo_commit']}"
+    assert header_line(path, "Repo commit") == f"**Repo commit**: {prov['repo_commit']}"
     assert calls == [runner.REPO_ROOT]  # consulted exactly once, before the writes
-    assert pdk_line(path) == f"**PDK**: {PDK['name']} @ {PDK['revision']}"
+    assert header_line(path, "PDK") == f"**PDK**: {PDK['name']} @ {PDK['revision']}"
     assert prov["pdk"] == PDK  # one snapshot, both writers
     assert pdk_calls == [tmp_path / "pdk"]  # captured before anything ran
     assert repo_status() == status_before  # nothing written inside the repository
@@ -195,16 +195,21 @@ def test_characterize_library_snapshots_once_before_writing(tmp_path, monkeypatc
 # --- PDK revision capture (issue #178) ---------------------------------------
 
 
-def make_pdk_checkout(root: Path, origin: str | None, commit: bool = True) -> str:
-    """A throwaway IHP-Open-PDK-shaped git checkout; returns its HEAD SHA.
+PDK_ORIGIN = "https://github.com/IHP-GmbH/IHP-Open-PDK.git"
+
+
+def make_pdk_checkout(root: Path, origin: str = PDK_ORIGIN,
+                      commit: bool = True) -> tuple[Path, str]:
+    """A throwaway IHP-Open-PDK-shaped git checkout; returns ``(variant, HEAD SHA)``.
 
     The variant lives in an ``ihp-sg13g2`` subdirectory, the layout a real
     clone has, so the subdirectory-resolution path is the one exercised.
     """
     repo = root / "IHP-Open-PDK"
-    variant = repo / "ihp-sg13g2" / "libs.tech" / "ngspice" / "models"
-    variant.mkdir(parents=True)
-    (variant / "cornerMOSlv.lib").write_text("* corner models\n")
+    variant = repo / "ihp-sg13g2"
+    models = variant / "libs.tech" / "ngspice" / "models"
+    models.mkdir(parents=True)
+    (models / "cornerMOSlv.lib").write_text("* corner models\n")
 
     def git(*args: str) -> str:
         proc = subprocess.run(
@@ -213,25 +218,22 @@ def make_pdk_checkout(root: Path, origin: str | None, commit: bool = True) -> st
         return proc.stdout.strip()
 
     git("init", "-q", "-b", "main")
-    if origin is not None:
-        git("remote", "add", "origin", origin)
+    git("remote", "add", "origin", origin)
     if commit:
         git("add", "-A")
         git("commit", "-q", "-m", "pdk fixture")
-        return git("rev-parse", "HEAD")
-    return ""
+        return variant, git("rev-parse", "HEAD")
+    return variant, ""
 
 
 def test_pdk_provenance_reads_variant_subdirectory_commit(tmp_path):
-    sha = make_pdk_checkout(tmp_path, "https://github.com/IHP-GmbH/IHP-Open-PDK.git")
-    variant = tmp_path / "IHP-Open-PDK" / "ihp-sg13g2"
+    variant, sha = make_pdk_checkout(tmp_path)
     assert runner.pdk_provenance(variant) == {"name": "IHP-Open-PDK", "revision": sha}
     assert runner.pdk_provenance(variant / "libs.tech")["revision"] == sha  # any depth
 
 
 def test_pdk_provenance_rejects_dirty_checkout(tmp_path):
-    make_pdk_checkout(tmp_path, "https://github.com/IHP-GmbH/IHP-Open-PDK.git")
-    variant = tmp_path / "IHP-Open-PDK" / "ihp-sg13g2"
+    variant, _ = make_pdk_checkout(tmp_path)
     (variant / "libs.tech" / "ngspice" / "models" / "cornerMOSlv.lib").write_text(
         "* tampered\n")
     with pytest.raises(runner.CharacterizeFailed, match="dirty"):
@@ -242,9 +244,7 @@ def test_pdk_provenance_rejects_dirty_checkout(tmp_path):
 
 
 def test_pdk_provenance_rejects_missing_revision(tmp_path):
-    make_pdk_checkout(tmp_path, "https://github.com/IHP-GmbH/IHP-Open-PDK.git",
-                      commit=False)
-    variant = tmp_path / "IHP-Open-PDK" / "ihp-sg13g2"
+    variant, _ = make_pdk_checkout(tmp_path, commit=False)
     with pytest.raises(runner.CharacterizeFailed, match="cannot determine"):
         runner.pdk_provenance(variant)
 
@@ -260,8 +260,7 @@ def test_pdk_provenance_rejects_foreign_git_tree(tmp_path):
     # A PDK copied inside an unrelated repository (this repo's shape) must
     # never acquire the enclosing project's SHA: clean and committed does not
     # help when the repository is not IHP-Open-PDK's own.
-    sha = make_pdk_checkout(tmp_path, "https://github.com/2AMLogic/sg13g2-stdcells.git")
-    variant = tmp_path / "IHP-Open-PDK" / "ihp-sg13g2"
+    variant, sha = make_pdk_checkout(tmp_path, "https://github.com/2AMLogic/sg13g2-stdcells.git")
     with pytest.raises(runner.CharacterizeFailed, match="not an IHP-Open-PDK"):
         runner.pdk_provenance(variant)
     assert sha  # the refusal is about identity, not a missing commit
@@ -286,11 +285,7 @@ def test_characterize_library_refuses_unpinnable_pdk_before_any_write(tmp_path, 
                         lambda request, *, workdir, backend="local",
                         lib_path=None: ran.append("klt") or {})
 
-    config = tmp_path / "layout" / "example_config.json"
-    config.parent.mkdir()
-    config.write_text(json.dumps(
-        {"process": {}, "cells": [{"name": "sg13g2_inv_1", "inputs": ["A"],
-                                   "outputs": {"Y": "!A"}}]}) + "\n")
+    config = write_config(tmp_path)
     lib = tmp_path / "out.lib"
 
     with pytest.raises(runner.CharacterizeFailed, match="cannot determine"):
@@ -304,19 +299,12 @@ def test_characterize_library_refuses_unpinnable_pdk_before_any_write(tmp_path, 
 
 # --- Scratch-dir hygiene of characterize_library (issue #149) ---------------
 
-def write_config(tmp_path):
-    config = tmp_path / "layout" / "example_config.json"
-    config.parent.mkdir(exist_ok=True)
-    config.write_text(json.dumps(
-        {"process": {}, "cells": [{"name": "sg13g2_inv_1", "inputs": ["A"],
-                                   "outputs": {"Y": "!A"}}]}) + "\n")
-    return config
-
-
-def fake_klt_ok(cmd, capture_output=True, text=True, check=False):
-    if "--version" in cmd:
-        return subprocess.CompletedProcess(cmd, 0, stdout="klt 9.9.9-test", stderr="")
-    return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(library_response()), stderr="")
+def fake_klt(returncode=0, stdout="", stderr=""):
+    def run(cmd, **_kwargs):
+        if "--version" in cmd:
+            return subprocess.CompletedProcess(cmd, 0, stdout="klt 9.9.9-test", stderr="")
+        return subprocess.CompletedProcess(cmd, returncode, stdout=stdout, stderr=stderr)
+    return run
 
 
 def scratch_names():
@@ -332,16 +320,22 @@ def hermetic_tempdir(tmp_path, monkeypatch):
     monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
 
 
-def test_characterize_library_leaves_no_scratch_dir(tmp_path, monkeypatch):
-    """Regression (issue #149): ``run_klt``'s ``workdir=None`` fallback leaked
-    one ``/tmp/klt-characterize-*`` dir per call; the caller now owns a
-    TemporaryDirectory and passes ``workdir=``."""
+def scratch_run_setup(tmp_path, monkeypatch, run):
     config = write_config(tmp_path)
     hermetic_tempdir(tmp_path, monkeypatch)
     monkeypatch.setattr(runner, "pdk_provenance", lambda pdk_dir: PDK)
     monkeypatch.setattr(runner, "generate_netlists", lambda config, out: None)
-    monkeypatch.setattr(runner.subprocess, "run", fake_klt_ok)
+    monkeypatch.setattr(runner.subprocess, "run", run)
     monkeypatch.setattr(runner, "git_provenance", lambda repo_root: GIT)
+    return config
+
+
+def test_characterize_library_leaves_no_scratch_dir(tmp_path, monkeypatch):
+    """Regression (issue #149): ``run_klt``'s ``workdir=None`` fallback leaked
+    one ``/tmp/klt-characterize-*`` dir per call; the caller now owns a
+    TemporaryDirectory and passes ``workdir=``."""
+    config = scratch_run_setup(tmp_path, monkeypatch,
+                               fake_klt(stdout=json.dumps(library_response())))
     records_dir = tmp_path / "records"
 
     before = scratch_names()
@@ -356,19 +350,8 @@ def test_characterize_library_leaves_no_scratch_dir(tmp_path, monkeypatch):
 def test_characterize_library_failure_cleans_scratch_and_reports(tmp_path, monkeypatch):
     """The CharacterizeFailed path must also reap the scratch dir and keep
     carrying klt's output in the exception message."""
-    config = write_config(tmp_path)
-    hermetic_tempdir(tmp_path, monkeypatch)
-
-    def failing(cmd, capture_output=True, text=True, check=False):
-        if "--version" in cmd:
-            return subprocess.CompletedProcess(cmd, 0, stdout="klt 9.9.9-test", stderr="")
-        return subprocess.CompletedProcess(cmd, 1, stdout="",
-                                           stderr="boom: missing cell arc")
-
-    monkeypatch.setattr(runner.subprocess, "run", failing)
-    monkeypatch.setattr(runner, "pdk_provenance", lambda pdk_dir: PDK)
-    monkeypatch.setattr(runner, "generate_netlists", lambda config, out: None)
-    monkeypatch.setattr(runner, "git_provenance", lambda repo_root: GIT)
+    config = scratch_run_setup(tmp_path, monkeypatch,
+                               fake_klt(1, stderr="boom: missing cell arc"))
 
     before = scratch_names()
     with pytest.raises(runner.CharacterizeFailed) as excinfo:
