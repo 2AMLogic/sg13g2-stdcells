@@ -2,8 +2,19 @@
 
 Chronological record of merged PRs and closed issues. Maintained by the Guide role.
 
+### 2026-11-28
+
+- **PR #307**: refactor: share layout test fixtures and failure checks
+- **Issue #303** (closed): Share CLI temp-config, wide-row config, strip-run, and driven-route helpers in layout/tests/test_gen_layouts.py
+
 ### 2026-11-27
 
+- **PR #316**: refactor(layout): generate only the requested control set
+- **Issue #315** (closed): Simplify target selection, row loops, and CLI/patch-restoration tests in layout/gen_controls.py
+- **PR #314**: refactor: share run_lvs/run_erc runner plumbing via toolchain_pin
+- **Issue #312** (closed): Consolidate run_lvs and run_erc preflight, check-mode, and config plumbing in layout/toolchain_pin.py
+- **PR #309**: refactor: share provenance-input, pin-check and report helpers in check_attestations
+- **Issue #308** (closed): Share provenance-input validation, manifest pin dispatch, and CLI reporting in manifests/check_attestations.py
 - **PR #305**: refactor: count shared diffusion breaks during strip pairing
 - **Issue #304** (closed): Count diffusion breaks once per column in the bounded pairing search
 - **PR #294**: refactor: share evidence and single-envelope setup in manifest tests
