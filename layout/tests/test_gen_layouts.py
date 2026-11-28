@@ -1,14 +1,15 @@
 """Tests for layout/gen_layouts.py: config validation, determinism, --check
 exit codes, named placement failures, and a second (fake) process config."""
+import contextlib
 import copy
+import io
 import json
 import pathlib
-import subprocess
 import sys
 import tempfile
+import types
 import unittest
 from collections import Counter
-from contextlib import contextmanager
 from unittest.mock import patch
 
 LAYOUT = pathlib.Path(__file__).resolve().parents[1]
@@ -18,17 +19,23 @@ import gen_layouts as gl  # noqa: E402
 
 CONFIG = LAYOUT / "example_config.json"
 CFG = json.loads(CONFIG.read_text())
-SCRIPT = LAYOUT / "gen_layouts.py"
+DESIGN_CELLS = json.loads((LAYOUT.parent / "design" / "example_config.json").read_text())["cells"]
 T1_FIXTURE = json.loads((LAYOUT / "tests" / "fixtures" / "t1_row3360.json").read_text())
 AND2 = {"name": "x_and2_1", "family": "and2", "drive": 1,
         "inputs": ["A", "B"], "outputs": {"X": "(A*B)"}}
+NOR2 = {"name": "x_nor2_1", "family": "nor2", "drive": 1,
+        "inputs": ["A", "B"], "outputs": {"Y": "!(A+B)"}}
 
 
 def run(*args):
-    return subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True)
+    """The CLI in-process: a .returncode / .stdout / .stderr result."""
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        rc = gl.main(list(args))
+    return types.SimpleNamespace(returncode=rc, stdout=out.getvalue(), stderr=err.getvalue())
 
 
-@contextmanager
+@contextlib.contextmanager
 def run_config(cfg):
     with tempfile.TemporaryDirectory() as directory:
         config = pathlib.Path(directory) / "c.json"
@@ -58,38 +65,81 @@ def read_gds_boxes(data):
     return out
 
 
-class Validation(unittest.TestCase):
-    def bad(self, mutate):
-        cfg = copy.deepcopy(CFG)
-        mutate(cfg)
-        with self.assertRaises(ValueError):
-            gl.generate(cfg)
+def one_cell_cfg(cell, base=CFG):
+    """`base` generating `cell` alone."""
+    return {**copy.deepcopy(base), "cells": [cell]}
 
+
+def fake_process_cfg():
+    """The committed config on a second process: other model and rail names, a
+    taller, wider row."""
+    cfg = copy.deepcopy(CFG)
+    cfg["process"].update(nmos_model="fake_n", pmos_model="fake_p", vdd_net="PWR", vss_net="GND", l_nm=200)
+    lay = cfg["layout"]
+    lay["row_height_nm"] = 4800
+    lay["gate_pitch_nm"] = 600
+    lay["rules"].update(m1_width_nm=200, m1_space_nm=220, rail_width_nm=200, poly_width_nm=200)
+    return cfg
+
+
+def assert_bad_config(tc, mutate):
+    """A committed config mutated by `mutate` is refused by validate() as a
+    ValueError; the message is returned."""
+    cfg = copy.deepcopy(CFG)
+    mutate(cfg)
+    with tc.assertRaises(ValueError) as cm:
+        gl.generate(cfg)
+    return str(cm.exception)
+
+
+def assert_place_error(tc, cfg, *fragments, regex=None, cli=False):
+    """`gl.generate(cfg)` refuses as a PlaceError naming every `fragment` (and
+    matching `regex`); with `cli` the CLI refuses the same way: exit 3, the
+    fragments on stderr, and no GDS directory written. The message is returned."""
+    with tc.assertRaises(gl.PlaceError) as cm:
+        gl.generate(cfg)
+    msg = str(cm.exception)
+    for fragment in fragments:
+        tc.assertIn(fragment, msg)
+    if regex is not None:
+        tc.assertRegex(msg, regex)
+    if cli:
+        with run_config(cfg) as (r, gds):
+            tc.assertEqual(r.returncode, 3)
+            for fragment in fragments:
+                tc.assertIn(fragment, r.stderr)
+            if regex is not None:
+                tc.assertRegex(r.stderr, regex)
+            tc.assertFalse(gds.exists())
+    return msg
+
+
+class Validation(unittest.TestCase):
     def test_missing_layout_block(self):
-        self.bad(lambda c: c.pop("layout"))
+        assert_bad_config(self, lambda c: c.pop("layout"))
 
     def test_missing_rule(self):
-        self.bad(lambda c: c["layout"]["rules"].pop("m1_width_nm"))
+        assert_bad_config(self, lambda c: c["layout"]["rules"].pop("m1_width_nm"))
 
     def test_missing_notch_space_rule(self):
         """The notch predicate reads psd_space_nm / nwell_space_nm; a config
         without one must exit 2 naming the key, not silently skip a check."""
-        self.bad(lambda c: c["layout"]["rules"].pop("psd_space_nm"))
-        self.bad(lambda c: c["layout"]["rules"].pop("nwell_space_nm"))
+        assert_bad_config(self, lambda c: c["layout"]["rules"].pop("psd_space_nm"))
+        assert_bad_config(self, lambda c: c["layout"]["rules"].pop("nwell_space_nm"))
 
     def test_bad_layer(self):
-        self.bad(lambda c: c["layout"]["layers"].update(metal1=[8]))
+        assert_bad_config(self, lambda c: c["layout"]["layers"].update(metal1=[8]))
 
     def test_odd_pitch(self):
-        self.bad(lambda c: c["layout"].update(gate_pitch_nm=421))
+        assert_bad_config(self, lambda c: c["layout"].update(gate_pitch_nm=421))
 
     def test_netlist_side_validation_still_applies(self):
-        self.bad(lambda c: c["process"].pop("l_nm"))
+        assert_bad_config(self, lambda c: c["process"].pop("l_nm"))
 
     def test_schema_version_must_be_1(self):
-        self.bad(lambda c: c.update(schema_version=99))
-        self.bad(lambda c: c.pop("schema_version"))
-        self.bad(lambda c: c.update(schema_version=True))
+        assert_bad_config(self, lambda c: c.update(schema_version=99))
+        assert_bad_config(self, lambda c: c.pop("schema_version"))
+        assert_bad_config(self, lambda c: c.update(schema_version=True))
 
     def test_cli_exit_2(self):
         with run_config({}) as (r, _):
@@ -98,7 +148,7 @@ class Validation(unittest.TestCase):
 
 class Determinism(unittest.TestCase):
     def test_two_runs_identical(self):
-        self.assertEqual(gl.generate(CFG), gl.generate(copy.deepcopy(CFG)))
+        self.assertEqual(CFG_FILES, gl.generate(copy.deepcopy(CFG)))
 
     def test_committed_gds_fresh(self):
         r = run("--config", str(CONFIG), "--check")
@@ -123,7 +173,7 @@ class Determinism(unittest.TestCase):
 
 class Geometry(unittest.TestCase):
     def test_gds_is_parseable_and_on_layout_grid(self):
-        files = gl.generate(CFG)
+        files = CFG_FILES
         L = {tuple(v): k for k, v in CFG["layout"]["layers"].items()}
         for name, data in files.items():
             boxes = read_gds_boxes(data)
@@ -133,16 +183,22 @@ class Geometry(unittest.TestCase):
                 self.assertTrue(all(x >= -1000 for x in xs + ys))
 
     def test_cell_width_follows_pitch(self):
-        cell = next(c for c in CFG["cells"] if c["name"] == "sg13g2_nand2_1")
-        S, W, H = gl.layout_cell(cell, CFG["process"], CFG["layout"])
+        S, W, H = layout_of(cell_named("sg13g2_nand2_1"))
         self.assertEqual((W, H), (4 * 420, 3360))
 
 
-def cell_named(name):
-    return next(c for c in CFG["cells"] if c["name"] == name)
+def cell_named(name, cells=CFG["cells"]):
+    return next(c for c in cells if c["name"] == name)
+
+
+CFG_FILES = gl.generate(CFG)  # the committed GDS, and its cells' layouts: built once, shared read-only
+CFG_LAYOUTS = {c["name"]: gl.layout_cell(c, CFG["process"], CFG["layout"]) for c in CFG["cells"]}
 
 
 def layout_of(cell, cfg=CFG):
+    """A config cell's (shapes, width, height); the committed config's come from CFG_LAYOUTS."""
+    if cfg is CFG:
+        return CFG_LAYOUTS[cell["name"]]
     return gl.layout_cell(cell, cfg["process"], cfg["layout"])
 
 
@@ -239,27 +295,25 @@ class PinOnGrid(unittest.TestCase):
     def test_control_baseline_passes(self):
         self.assert_on_grid({"sg13g2_inv_1": self.rail_only()})
 
+    def assert_shifted_label_fails(self, dx, dy, why):
+        """inv_1's last rail label moved by (dx, dy): the check fails naming
+        exactly that label, at its new position, with `why`."""
+        S = self.rail_only()
+        layer, x, y, text = S.labels[-1]
+        S.labels[-1] = (layer, x + dx, y + dy, text)
+        cells = {"sg13g2_inv_1": S}
+        self.assertEqual(self.offenders(cells), [f"sg13g2_inv_1: {text} at ({x + dx}, {y + dy}) -- {why}"])
+        with self.assertRaises(AssertionError):
+            self.assert_on_grid(cells)
+
     def test_control_one_label_moved_off_the_grid_fails_naming_it(self):
         """One DBU (the GDS unit, 1 nm) on either axis, or the half pitch the
         generator's own labels carry: the check fails on exactly that label."""
         for dx, dy, axes in ((1, 0, "x"), (0, 1, "y"), (self.P // 2, 0, "x")):
-            S = self.rail_only()
-            layer, x, y, text = S.labels[-1]
-            S.labels[-1] = (layer, x + dx, y + dy, text)
-            cells = {"sg13g2_inv_1": S}
-            self.assertEqual(self.offenders(cells),
-                             [f"sg13g2_inv_1: {text} at ({x + dx}, {y + dy}) -- off grid on {axes}"])
-            with self.assertRaises(AssertionError):
-                self.assert_on_grid(cells)
+            self.assert_shifted_label_fails(dx, dy, f"off grid on {axes}")
 
     def test_control_label_on_the_grid_but_off_metal_fails_naming_it(self):
-        S = self.rail_only()
-        layer, x, y, text = S.labels[-1]
-        S.labels[-1] = (layer, x, y + self.P, text)
-        cells = {"sg13g2_inv_1": S}
-        self.assertEqual(self.offenders(cells), [f"sg13g2_inv_1: {text} at ({x}, {y + self.P}) -- not on Metal1"])
-        with self.assertRaises(AssertionError):
-            self.assert_on_grid(cells)
+        self.assert_shifted_label_fails(0, self.P, "not on Metal1")
 
 
 class MultiFinger(unittest.TestCase):
@@ -286,34 +340,20 @@ class MultiFinger(unittest.TestCase):
         self.assertEqual(sum(1 for b in S.boxes if b[0] == "gatpoly" and b[4] - b[2] == pw and b[3] - b[1] > pw), 0)
 
     def test_multi_finger_output_deterministic(self):
-        a = gl.generate(CFG)["sg13g2_inv_4.gds"]
-        self.assertEqual(a, gl.generate(copy.deepcopy(CFG))["sg13g2_inv_4.gds"])
+        self.assertEqual(CFG_FILES["sg13g2_inv_4.gds"], gl.generate(copy.deepcopy(CFG))["sg13g2_inv_4.gds"])
 
     def test_series_stack_of_fingers_still_exits_3_with_reason(self):
         cfg = copy.deepcopy(CFG)
         cfg["cells"].append({"name": "x_nand2_2", "family": "nand2", "drive": 2, "inputs": ["A", "B"], "outputs": {"Y": "!(A*B)"}})
-        with self.assertRaises(gl.PlaceError) as cm:
-            gl.generate(cfg)
-        self.assertIn("x_nand2_2", str(cm.exception))
-        self.assertIn("channel tracks", str(cm.exception))
-        with run_config(cfg) as (r, _):
-            self.assertEqual(r.returncode, 3)
-            self.assertIn("x_nand2_2", r.stderr)
+        assert_place_error(self, cfg, "x_nand2_2", "channel tracks", cli=True)
 
     def test_even_finger_series_stack_needs_two_tracks(self):
         """The break model places nand4's even-finger series stack as two
         chains, but the stack's middle net is split across them, so with one
         track the refusal is the channel-track one, naming the split net."""
-        cfg = copy.deepcopy(CFG)
-        cfg["cells"] = [{"name": "x_nand4_1", "family": "nand4", "drive": 1, "inputs": ["A", "B", "C", "D"], "outputs": {"Y": "!(A*B*C*D)"}}]
-        with self.assertRaises(gl.PlaceError) as cm:
-            gl.generate(cfg)
-        self.assertIn("x_nand4_1", str(cm.exception))
-        self.assertIn("channel tracks", str(cm.exception))
-        self.assertIn("'n2'", str(cm.exception))
-        with run_config(cfg) as (r, _):
-            self.assertEqual(r.returncode, 3)
-            self.assertIn("x_nand4_1", r.stderr)
+        cfg = one_cell_cfg({"name": "x_nand4_1", "family": "nand4", "drive": 1,
+                            "inputs": ["A", "B", "C", "D"], "outputs": {"Y": "!(A*B*C*D)"}})
+        assert_place_error(self, cfg, "x_nand4_1", "channel tracks", "'n2'", cli=True)
 
     def test_no_rule_value_loosened(self):
         self.assertEqual(CFG["layout"]["rules"], {
@@ -414,36 +454,24 @@ class Taps(unittest.TestCase):
         # nsd is a required layer (issue #80): a config without it is an
         # exit-2 config error from validate(), not a per-cell placement
         # failure -- the message names the key and no cell.
-        cfg = copy.deepcopy(CFG)
-        cfg["layout"]["layers"].pop("nsd")
-        with self.assertRaises(ValueError) as cm:
-            gl.generate(cfg)
-        self.assertIn("layout.layers.nsd", str(cm.exception))
-        self.assertNotIn("sg13g2_inv_1", str(cm.exception))
+        msg = assert_bad_config(self, lambda c: c["layout"]["layers"].pop("nsd"))
+        self.assertIn("layout.layers.nsd", msg)
+        self.assertNotIn("sg13g2_inv_1", msg)
 
     def test_malformed_nsd_layer_is_a_config_error(self):
-        cfg = copy.deepcopy(CFG)
-        cfg["layout"]["layers"]["nsd"] = [7]  # not [layer, datatype]
-        with self.assertRaises(ValueError) as cm:
-            gl.generate(cfg)
-        self.assertIn("layout.layers.nsd must be [layer, datatype]", str(cm.exception))
-        self.assertNotIn("sg13g2_inv_1", str(cm.exception))
+        msg = assert_bad_config(self, lambda c: c["layout"]["layers"].update(nsd=[7]))  # not [layer, datatype]
+        self.assertIn("layout.layers.nsd must be [layer, datatype]", msg)
+        self.assertNotIn("sg13g2_inv_1", msg)
 
     def test_implant_reaching_past_the_band_is_a_named_failure(self):
         cfg = copy.deepcopy(CFG)
         cfg["layout"]["rules"]["sd_enc_activ_nm"] = 260  # > activ_space_nm, so psd would swallow the band
-        with self.assertRaises(gl.PlaceError) as cm:
-            gl.generate(cfg)
-        self.assertIn("sd_enc_activ", str(cm.exception))
+        assert_place_error(self, cfg, "sd_enc_activ")
 
     def test_taps_follow_the_second_process(self):
         """FakeProcess geometry: taps come from the config, with no engine change."""
-        cfg = copy.deepcopy(CFG)
-        cfg["process"].update(nmos_model="fake_n", pmos_model="fake_p", vdd_net="PWR", vss_net="GND", l_nm=200)
+        cfg = fake_process_cfg()
         lay = cfg["layout"]
-        lay["row_height_nm"] = 4800
-        lay["gate_pitch_nm"] = 600
-        lay["rules"].update(m1_width_nm=200, m1_space_nm=220, rail_width_nm=200, poly_width_nm=200)
         R = lay["rules"]
         for name in ("sg13g2_inv_1", "sg13g2_inv_4"):
             S, W, H, sub, well = self.bands(name, cfg)
@@ -538,19 +566,7 @@ class MixedFingerWidths(unittest.TestCase):
         """nor2's NMOS folds to 250 nm fingers, under the 300 nm a contact needs
         (2 * activ_enc_cont + cont). The floor is per device, so it fires even
         though the strip's tallest run is 800 nm."""
-        cell = {"name": "x_nor2_1", "family": "nor2", "drive": 1,
-                "inputs": ["A", "B"], "outputs": {"Y": "!(A+B)"}}
-        cfg = wide_cfg(cell)
-        with self.assertRaises(gl.PlaceError) as cm:
-            gl.generate(cfg)
-        msg = str(cm.exception)
-        self.assertIn("x_nor2_1", msg)
-        self.assertIn("too short for a contact", msg)
-        self.assertIn("250", msg)
-        with run_config(cfg) as (r, gds):
-            self.assertEqual(r.returncode, 3)
-            self.assertIn("x_nor2_1", r.stderr)
-            self.assertFalse(gds.exists())
+        assert_place_error(self, wide_cfg(NOR2), "x_nor2_1", "too short for a contact", "250", cli=True)
 
     def test_failure_message_names_one_fingered_geometry(self):
         """The netlist generator states the fold itself (its `build` folds
@@ -558,12 +574,7 @@ class MixedFingerWidths(unittest.TestCase):
         drawing cannot disagree on fingering and the message names one
         geometry -- nor2's NMOS is 2 fingers of 250 nm in both (issue #272
         dropped the layout-side fold that made the two differ)."""
-        cell = {"name": "x_nor2_1", "family": "nor2", "drive": 1,
-                "inputs": ["A", "B"], "outputs": {"Y": "!(A+B)"}}
-        with self.assertRaises(gl.PlaceError) as cm:
-            gl.generate(wide_cfg(cell))
-        msg = str(cm.exception)
-        self.assertIn("2 fingers of 250 nm", msg)
+        msg = assert_place_error(self, wide_cfg(NOR2), "2 fingers of 250 nm")
         self.assertNotIn("netlist 500 nm", msg)
 
     def test_no_equal_split_names_the_gate_and_fingers(self):
@@ -574,21 +585,14 @@ class MixedFingerWidths(unittest.TestCase):
         (#267); no committed config reaches it."""
         cell = {"name": "x_nor4_1", "family": "nor4", "drive": 1,
                 "inputs": ["A", "B", "C", "D"], "outputs": {"Y": "!(A+B+C+D)"}}
-        with self.assertRaises(gl.PlaceError) as cm:
-            gl.generate(wide_cfg(cell))
-        msg = str(cm.exception)
-        self.assertIn("x_nor4_1", msg)
-        self.assertIn("gate A", msg)
-        self.assertIn("4-finger split", msg)
+        assert_place_error(self, wide_cfg(cell), "x_nor4_1", "gate A", "4-finger split")
 
     def test_implants_may_not_meet_in_the_channel(self):
         """Both implants grow `sd_enc_activ` into the channel, so a channel that
         clears the strips can still leave psd over nsd -- not a real mask."""
         cfg = wide_cfg()
         cfg["layout"]["rules"] = dict(cfg["layout"]["rules"], sd_enc_activ_nm=900)
-        with self.assertRaises(gl.PlaceError) as cm:
-            gl.generate(cfg)
-        self.assertIn("sd_enc_activ", str(cm.exception))
+        assert_place_error(self, cfg, "sd_enc_activ")
 
 
 class DiffusionBreaks(unittest.TestCase):
@@ -700,38 +704,26 @@ class DiffusionBreaks(unittest.TestCase):
         """a22oi's strips order only as two chains each; every internal net
         then has nodes in both chains and the split is named per net, with
         the break no longer the failure."""
-        with self.assertRaises(gl.PlaceError) as cm:
-            gl.generate({**copy.deepcopy(CFG), "cells": [self.A22OI]})
-        msg = str(cm.exception)
-        self.assertIn("x_a22oi_1", msg)
-        self.assertIn("channel tracks", msg)
-        for net in ("'X'", "'n1'", "'n2'", "'n3'"):
-            self.assertIn(net, msg)
+        msg = assert_place_error(self, one_cell_cfg(self.A22OI),
+                                 "x_a22oi_1", "channel tracks", "'X'", "'n1'", "'n2'", "'n3'")
         self.assertNotIn("diffusion break", msg)
 
     def test_demo_census_reports_no_diffusion_break(self):
         """AC of issue #169: every demo cell either places or names a different
         limit. demo_xor2_1 / demo_mux2_1 / demo_a21oi_1 land on their measured
         next limits (a contact floor, a 550 nm nwell opening, a contact floor)."""
-        design = json.loads((LAYOUT.parent / "design" / "example_config.json").read_text())
-        for cell in design["cells"]:
-            cfg = copy.deepcopy(CFG)
-            cfg["cells"] = [cell]
+        limits = {}  # cell name -> the limit it refuses naming; absent: it places
+        for cell in DESIGN_CELLS:
             try:
-                gl.generate(cfg)
-                continue
+                gl.generate(one_cell_cfg(cell))
             except gl.PlaceError as e:
-                msg = str(e)
-            self.assertNotIn("diffusion break", msg, cell["name"])
+                limits[cell["name"]] = str(e)
+                self.assertNotIn("diffusion break", str(e), cell["name"])
         for name, fragment in (("demo_xor2_1", "too short for a contact"),
                                ("demo_mux2_1", "an opening of 550 nm in nwell"),
                                ("demo_a21oi_1", "too short for a contact")):
-            cell = next(c for c in design["cells"] if c["name"] == name)
-            cfg = copy.deepcopy(CFG)
-            cfg["cells"] = [cell]
-            with self.assertRaises(gl.PlaceError) as cm:
-                gl.generate(cfg)
-            self.assertIn(fragment, str(cm.exception), name)
+            self.assertIn(name, limits, f"{name} places instead of naming its limit")
+            self.assertIn(fragment, limits[name], name)
 
 
 class GreedyFallback(unittest.TestCase):
@@ -802,14 +794,24 @@ class DrivenGateRoute(unittest.TestCase):
                          "inputs": ["A"], "outputs": {"Y": "A"}}]
         return cfg
 
+    def buf_layout(self, cfg):
+        """The buffer of `cfg`, a `buf_cfg()`: (shapes, width, height)."""
+        return gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+
+    def label_root(self, S, text):
+        """`m1_components(S)`, and the root of the component carrying the
+        `metal1_label` `text`."""
+        boxes, roots = m1_components(S)
+        lx, ly = next((x, y) for lay, x, y, t in S.labels if lay == "metal1_label" and t == text)
+        root = next(roots[i] for i, b in enumerate(boxes) if b[0] <= lx <= b[2] and b[1] <= ly <= b[3])
+        return boxes, roots, root
+
     def route(self, S, text):
         """(Metal1 boxes, contacts under them) of the component carrying a
         net label: reading the drawn geometry, not the generator's bookkeeping
         -- the bug was that the bookkeeping said fine while the metal was
         two pieces."""
-        boxes, roots = m1_components(S)
-        lx, ly = next((x, y) for lay, x, y, t in S.labels if lay == "metal1_label" and t == text)
-        root = next(roots[i] for i, b in enumerate(boxes) if b[0] <= lx <= b[2] and b[1] <= ly <= b[3])
+        boxes, roots, root = self.label_root(S, text)
         comp = [b for i, b in enumerate(boxes) if roots[i] == root]
         conts = [c for c in S.boxes if c[0] == "cont"
                  and any(c[1] < b[2] and b[0] < c[3] and c[2] < b[3] and b[1] < c[4] for b in comp)]
@@ -831,24 +833,20 @@ class DrivenGateRoute(unittest.TestCase):
 
     def test_driven_gate_is_a_terminal_of_its_nets_route(self):
         cfg = self.buf_cfg()
-        S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        S, _, _ = self.buf_layout(cfg)
         self.assert_driven_route(S, "Y_i", cfg["layout"]["row_height_nm"])
 
     def test_input_gate_keeps_its_standalone_pad(self):
-        cfg = self.buf_cfg()
-        S, _, _ = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
+        S, _, _ = self.buf_layout(self.buf_cfg())
         comp, conts = self.route(S, "A")
         self.assertEqual(len(conts), 1, "an input pad should carry exactly its gate contact")
         self.assertTrue(self.on_poly(S, conts[0]))
 
     def test_nets_stay_separate_conductors(self):
-        cfg = self.buf_cfg()
-        S, W, H = gl.layout_cell(cfg["cells"][0], cfg["process"], cfg["layout"])
-        boxes, roots = m1_components(S)
+        S = self.buf_layout(self.buf_cfg())[0]
         seen = set()
         for text in ("A", "Y_i", "Y", "VSS", "VDD"):
-            lx, ly = next((x, y) for lay, x, y, t in S.labels if lay == "metal1_label" and t == text)
-            root = next(roots[i] for i, b in enumerate(boxes) if b[0] <= lx <= b[2] and b[1] <= ly <= b[3])
+            root = self.label_root(S, text)[2]
             self.assertNotIn(root, seen, f"{text} shares Metal1 with another labelled net")
             seen.add(root)
 
@@ -862,18 +860,9 @@ class DrivenGateRoute(unittest.TestCase):
         internal net and the routing constraint, with no partial GDS written
         (a standalone labelled pad instead of the riser is exactly the split
         this issue is about, so the refusal is the only other outcome)."""
-        cfg = self.buf_cfg(gate_pitch_nm=420)
-        with self.assertRaises(gl.PlaceError) as cm:
-            gl.generate(cfg)
-        msg = str(cm.exception)
-        self.assertIn("buf", msg)
         # Whichever gate pad runs out of room first is the one named: the
         # input's contact or the internal net's riser.
-        self.assertRegex(msg, r"riser|gate contact of A")
-        with run_config(cfg) as (r, gds):
-            self.assertEqual(r.returncode, 3)
-            self.assertRegex(r.stderr, r"riser|gate contact of A")
-            self.assertFalse(gds.exists())
+        assert_place_error(self, self.buf_cfg(gate_pitch_nm=420), "buf", regex=r"riser|gate contact of A", cli=True)
 
     def test_break_selected_buffer_beside_inverter_is_placed_or_refused(self):
         """A buffer on A beside an inverter on B needs an automatic diffusion
@@ -991,14 +980,14 @@ class ForcedNotch(unittest.TestCase):
     def test_pmos_notch_refused_naming_cell_strip_layer_and_numbers(self):
         cfg = wide_cfg(pitch=840)
         self.force("p", [800, 500, 800])
-        with self.assertRaises(gl.PlaceError) as cm:
-            gl.generate(cfg)
-        msg = str(cm.exception)
-        self.assertIn("x_and2_1", msg)                                   # the cell
-        self.assertIn("PMOS strip height profile [800, 500, 800]", msg)  # the strip and the profile
-        self.assertIn("psd", msg)                                        # the offending layer
-        self.assertIn("180 nm", msg)                                     # the opening: 840 - 2 * (150 + 180)
-        self.assertIn("310 nm", msg)                                     # the threshold: psd_space_nm
+        assert_place_error(
+            self, cfg,
+            "x_and2_1",                                   # the cell
+            "PMOS strip height profile [800, 500, 800]",  # the strip and the profile
+            "psd",                                        # the offending layer
+            "180 nm",                                     # the opening: 840 - 2 * (150 + 180)
+            "310 nm",                                     # the threshold: psd_space_nm
+        )
         # the identical valley on the NMOS strip is fine -- psd/nwell do not
         # bind there and activ admits it; only the PMOS strip refuses the cell
         self.assertIsNone(gl._notch_violation([800, 500, 800], 840, notch_layers()["n"]))
@@ -1038,19 +1027,12 @@ class Failures(unittest.TestCase):
     def test_unplaceable_cell_named_and_nothing_written(self):
         cfg = copy.deepcopy(CFG)
         cfg["cells"].append({"name": "x_xor2_1", "family": "xor2", "drive": 1, "inputs": ["A", "B"], "outputs": {"X": "(A^B)"}})
-        with self.assertRaises(gl.PlaceError) as cm:
-            gl.generate(cfg)
-        self.assertIn("x_xor2_1", str(cm.exception))
-        with run_config(cfg) as (r, gds):
-            self.assertEqual(r.returncode, 3)
-            self.assertIn("x_xor2_1", r.stderr)
-            self.assertFalse(gds.exists())
+        assert_place_error(self, cfg, "x_xor2_1", cli=True)
 
     def test_row_too_short(self):
         cfg = copy.deepcopy(CFG)
         cfg["layout"]["row_height_nm"] = 2000
-        with self.assertRaises(gl.PlaceError):
-            gl.generate(cfg)
+        assert_place_error(self, cfg)
 
 
 class T1Fixture(unittest.TestCase):
@@ -1074,7 +1056,7 @@ class T1Fixture(unittest.TestCase):
     }
 
     def one(self, cell, tracks):
-        cfg = copy.deepcopy({**T1_FIXTURE, "cells": [cell]})
+        cfg = one_cell_cfg(cell, T1_FIXTURE)
         cfg["layout"]["channel_tracks"] = tracks
         return cfg
 
@@ -1089,33 +1071,18 @@ class T1Fixture(unittest.TestCase):
         for tracks, want in self.EXPECT.items():
             for cell in T1_FIXTURE["cells"]:
                 with self.subTest(cell=cell["name"], channel_tracks=tracks):
-                    with self.assertRaises(gl.PlaceError) as cm:
-                        gl.generate(self.one(cell, tracks))
-                    self.assertIn(cell["name"], str(cm.exception))
-                    self.assertIn(want[cell["family"]], str(cm.exception))
+                    assert_place_error(self, self.one(cell, tracks), cell["name"], want[cell["family"]])
 
     def test_failure_is_deterministic_and_writes_no_gds(self):
         cell = T1_FIXTURE["cells"][1]
-        msgs = []
-        for _ in range(2):
-            with self.assertRaises(gl.PlaceError) as cm:
-                gl.generate(self.one(cell, 2))
-            msgs.append(str(cm.exception))
-        self.assertEqual(msgs[0], msgs[1])
-        with run_config(self.one(cell, 2)) as (r, gds):
-            self.assertEqual(r.returncode, 3)
-            self.assertEqual(list(gds.glob("*.gds")), [])
+        first = assert_place_error(self, self.one(cell, 2))
+        self.assertEqual(assert_place_error(self, self.one(cell, 2), cli=True), first)
 
     def test_demo_buf_and_and2_still_name_their_limit(self):
-        design = json.loads((LAYOUT.parent / "design" / "example_config.json").read_text())
         for name in ("demo_buf_2", "demo_and2_1"):
-            cfg = copy.deepcopy(CFG)
-            cfg["layout"]["channel_tracks"] = 1
-            cfg["cells"] = [c for c in design["cells"] if c["name"] == name]
             with self.subTest(cell=name):
-                with self.assertRaises(gl.PlaceError) as cm:
-                    gl.generate(cfg)
-                self.assertIn("nets ['X', 'X_i'] need 2 channel tracks, config allows 1", str(cm.exception))
+                assert_place_error(self, one_cell_cfg(cell_named(name, DESIGN_CELLS)),
+                                   "nets ['X', 'X_i'] need 2 channel tracks, config allows 1")
 
 
 class FoldedSeriesInterleave(unittest.TestCase):
@@ -1236,14 +1203,10 @@ class FakeProcess(unittest.TestCase):
     """A second process (different names, layers, geometry) needs no code change."""
 
     def test_fake_process(self):
-        cfg = copy.deepcopy(CFG)
-        cfg["process"].update(nmos_model="fake_n", pmos_model="fake_p", vdd_net="PWR", vss_net="GND", l_nm=200)
+        cfg = fake_process_cfg()
         lay = cfg["layout"]
-        lay["row_height_nm"] = 4800
-        lay["gate_pitch_nm"] = 600
         lay["layers"] = {k: [50 + i, 3] for i, k in enumerate(lay["layers"])}
-        lay["rules"].update(m1_width_nm=200, m1_space_nm=220, rail_width_nm=200, poly_width_nm=200)
-        base, fake = gl.generate(CFG), gl.generate(cfg)
+        base, fake = CFG_FILES, gl.generate(cfg)
         self.assertEqual(set(base), set(fake))
         self.assertNotEqual(base["sg13g2_inv_1.gds"], fake["sg13g2_inv_1.gds"])
         layers = {(l, d) for data in fake.values() for l, d, _, _ in read_gds_boxes(data)}
